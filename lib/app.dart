@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'services/app_database.dart';
 import 'providers/clientes_provider.dart';
-import 'screens/clientes_screen.dart';
+import 'screens/main_shell.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -12,7 +12,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<AppDatabase>(create: (_) => AppDatabase()),
-        ChangeNotifierProvider<ClientesProvider>(
+        ChangeNotifierProvider(
           create: (context) => ClientesProvider(context.read<AppDatabase>()),
         ),
       ],
@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
           primarySwatch: Colors.blueGrey,
           useMaterial3: true,
         ),
-        home: const ClientesScreen(),
+        home: const MainShell(),
       ),
     );
   }

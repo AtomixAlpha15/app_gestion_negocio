@@ -11,13 +11,34 @@ class ClientesScreen extends StatefulWidget {
 
 class _ClientesScreenState extends State<ClientesScreen> {
   final nombreController = TextEditingController();
+  final telefonoController = TextEditingController();
+  final emailController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    // Carga los clientes al iniciar
     Future.microtask(() =>
         context.read<ClientesProvider>().cargarClientes());
+  }
+
+  @override
+  void dispose() {
+    nombreController.dispose();
+    telefonoController.dispose();
+    emailController.dispose();
+    super.dispose();
+  }
+
+  void _anadirCliente() {
+    if (nombreController.text.trim().isEmpty) return;
+    context.read<ClientesProvider>().insertarCliente(
+          nombre: nombreController.text.trim(),
+          telefono: telefonoController.text.trim().isEmpty ? null : telefonoController.text.trim(),
+          email: emailController.text.trim().isEmpty ? null : emailController.text.trim(),
+        );
+    nombreController.clear();
+    telefonoController.clear();
+    emailController.clear();
   }
 
   @override
@@ -30,24 +51,37 @@ class _ClientesScreenState extends State<ClientesScreen> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Expanded(
                   child: TextField(
                     controller: nombreController,
                     decoration: const InputDecoration(
-                      labelText: 'Nombre cliente',
+                      labelText: 'Nombre',
                     ),
                   ),
                 ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: telefonoController,
+                    decoration: const InputDecoration(
+                      labelText: 'Teléfono',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: emailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
                 ElevatedButton(
-                  onPressed: () {
-                    if (nombreController.text.trim().isNotEmpty) {
-                      provider.insertarCliente(
-                        nombre: nombreController.text.trim(),
-                      );
-                      nombreController.clear();
-                    }
-                  },
+                  onPressed: _anadirCliente,
                   child: const Text('Añadir'),
                 ),
               ],
@@ -63,7 +97,9 @@ class _ClientesScreenState extends State<ClientesScreen> {
                       final c = provider.clientes[idx];
                       return ListTile(
                         title: Text(c.nombre),
-                        subtitle: Text(c.email ?? ''),
+                        subtitle: Text(
+                          '${c.telefono ?? ''}${(c.telefono != null && c.email != null) ? ' · ' : ''}${c.email ?? ''}',
+                        ),
                         trailing: IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
                           onPressed: () => provider.eliminarCliente(c.id),
