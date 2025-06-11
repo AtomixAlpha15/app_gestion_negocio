@@ -13,6 +13,7 @@ class Clientes extends Table {
   TextColumn get telefono => text().nullable()();
   TextColumn get email => text().nullable()();
   TextColumn get notas => text().nullable()();
+  TextColumn get imagenPath => text().nullable()();
   
   @override
   Set<Column> get primaryKey => {id};

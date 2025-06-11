@@ -34,8 +34,15 @@ class $ClientesTable extends Clientes with TableInfo<$ClientesTable, Cliente> {
   late final GeneratedColumn<String> notas = GeneratedColumn<String>(
       'notas', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _imagenPathMeta =
+      const VerificationMeta('imagenPath');
   @override
-  List<GeneratedColumn> get $columns => [id, nombre, telefono, email, notas];
+  late final GeneratedColumn<String> imagenPath = GeneratedColumn<String>(
+      'imagen_path', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, nombre, telefono, email, notas, imagenPath];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -69,6 +76,12 @@ class $ClientesTable extends Clientes with TableInfo<$ClientesTable, Cliente> {
       context.handle(
           _notasMeta, notas.isAcceptableOrUnknown(data['notas']!, _notasMeta));
     }
+    if (data.containsKey('imagen_path')) {
+      context.handle(
+          _imagenPathMeta,
+          imagenPath.isAcceptableOrUnknown(
+              data['imagen_path']!, _imagenPathMeta));
+    }
     return context;
   }
 
@@ -88,6 +101,8 @@ class $ClientesTable extends Clientes with TableInfo<$ClientesTable, Cliente> {
           .read(DriftSqlType.string, data['${effectivePrefix}email']),
       notas: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}notas']),
+      imagenPath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}imagen_path']),
     );
   }
 
@@ -103,12 +118,14 @@ class Cliente extends DataClass implements Insertable<Cliente> {
   final String? telefono;
   final String? email;
   final String? notas;
+  final String? imagenPath;
   const Cliente(
       {required this.id,
       required this.nombre,
       this.telefono,
       this.email,
-      this.notas});
+      this.notas,
+      this.imagenPath});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -122,6 +139,9 @@ class Cliente extends DataClass implements Insertable<Cliente> {
     }
     if (!nullToAbsent || notas != null) {
       map['notas'] = Variable<String>(notas);
+    }
+    if (!nullToAbsent || imagenPath != null) {
+      map['imagen_path'] = Variable<String>(imagenPath);
     }
     return map;
   }
@@ -137,6 +157,9 @@ class Cliente extends DataClass implements Insertable<Cliente> {
           email == null && nullToAbsent ? const Value.absent() : Value(email),
       notas:
           notas == null && nullToAbsent ? const Value.absent() : Value(notas),
+      imagenPath: imagenPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imagenPath),
     );
   }
 
@@ -149,6 +172,7 @@ class Cliente extends DataClass implements Insertable<Cliente> {
       telefono: serializer.fromJson<String?>(json['telefono']),
       email: serializer.fromJson<String?>(json['email']),
       notas: serializer.fromJson<String?>(json['notas']),
+      imagenPath: serializer.fromJson<String?>(json['imagenPath']),
     );
   }
   @override
@@ -160,6 +184,7 @@ class Cliente extends DataClass implements Insertable<Cliente> {
       'telefono': serializer.toJson<String?>(telefono),
       'email': serializer.toJson<String?>(email),
       'notas': serializer.toJson<String?>(notas),
+      'imagenPath': serializer.toJson<String?>(imagenPath),
     };
   }
 
@@ -168,13 +193,15 @@ class Cliente extends DataClass implements Insertable<Cliente> {
           String? nombre,
           Value<String?> telefono = const Value.absent(),
           Value<String?> email = const Value.absent(),
-          Value<String?> notas = const Value.absent()}) =>
+          Value<String?> notas = const Value.absent(),
+          Value<String?> imagenPath = const Value.absent()}) =>
       Cliente(
         id: id ?? this.id,
         nombre: nombre ?? this.nombre,
         telefono: telefono.present ? telefono.value : this.telefono,
         email: email.present ? email.value : this.email,
         notas: notas.present ? notas.value : this.notas,
+        imagenPath: imagenPath.present ? imagenPath.value : this.imagenPath,
       );
   Cliente copyWithCompanion(ClientesCompanion data) {
     return Cliente(
@@ -183,6 +210,8 @@ class Cliente extends DataClass implements Insertable<Cliente> {
       telefono: data.telefono.present ? data.telefono.value : this.telefono,
       email: data.email.present ? data.email.value : this.email,
       notas: data.notas.present ? data.notas.value : this.notas,
+      imagenPath:
+          data.imagenPath.present ? data.imagenPath.value : this.imagenPath,
     );
   }
 
@@ -193,13 +222,15 @@ class Cliente extends DataClass implements Insertable<Cliente> {
           ..write('nombre: $nombre, ')
           ..write('telefono: $telefono, ')
           ..write('email: $email, ')
-          ..write('notas: $notas')
+          ..write('notas: $notas, ')
+          ..write('imagenPath: $imagenPath')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, nombre, telefono, email, notas);
+  int get hashCode =>
+      Object.hash(id, nombre, telefono, email, notas, imagenPath);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -208,7 +239,8 @@ class Cliente extends DataClass implements Insertable<Cliente> {
           other.nombre == this.nombre &&
           other.telefono == this.telefono &&
           other.email == this.email &&
-          other.notas == this.notas);
+          other.notas == this.notas &&
+          other.imagenPath == this.imagenPath);
 }
 
 class ClientesCompanion extends UpdateCompanion<Cliente> {
@@ -217,6 +249,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
   final Value<String?> telefono;
   final Value<String?> email;
   final Value<String?> notas;
+  final Value<String?> imagenPath;
   final Value<int> rowid;
   const ClientesCompanion({
     this.id = const Value.absent(),
@@ -224,6 +257,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
     this.telefono = const Value.absent(),
     this.email = const Value.absent(),
     this.notas = const Value.absent(),
+    this.imagenPath = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ClientesCompanion.insert({
@@ -232,6 +266,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
     this.telefono = const Value.absent(),
     this.email = const Value.absent(),
     this.notas = const Value.absent(),
+    this.imagenPath = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         nombre = Value(nombre);
@@ -241,6 +276,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
     Expression<String>? telefono,
     Expression<String>? email,
     Expression<String>? notas,
+    Expression<String>? imagenPath,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -249,6 +285,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
       if (telefono != null) 'telefono': telefono,
       if (email != null) 'email': email,
       if (notas != null) 'notas': notas,
+      if (imagenPath != null) 'imagen_path': imagenPath,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -259,6 +296,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
       Value<String?>? telefono,
       Value<String?>? email,
       Value<String?>? notas,
+      Value<String?>? imagenPath,
       Value<int>? rowid}) {
     return ClientesCompanion(
       id: id ?? this.id,
@@ -266,6 +304,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
       telefono: telefono ?? this.telefono,
       email: email ?? this.email,
       notas: notas ?? this.notas,
+      imagenPath: imagenPath ?? this.imagenPath,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -288,6 +327,9 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
     if (notas.present) {
       map['notas'] = Variable<String>(notas.value);
     }
+    if (imagenPath.present) {
+      map['imagen_path'] = Variable<String>(imagenPath.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -302,6 +344,7 @@ class ClientesCompanion extends UpdateCompanion<Cliente> {
           ..write('telefono: $telefono, ')
           ..write('email: $email, ')
           ..write('notas: $notas, ')
+          ..write('imagenPath: $imagenPath, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1073,6 +1116,7 @@ typedef $$ClientesTableCreateCompanionBuilder = ClientesCompanion Function({
   Value<String?> telefono,
   Value<String?> email,
   Value<String?> notas,
+  Value<String?> imagenPath,
   Value<int> rowid,
 });
 typedef $$ClientesTableUpdateCompanionBuilder = ClientesCompanion Function({
@@ -1081,6 +1125,7 @@ typedef $$ClientesTableUpdateCompanionBuilder = ClientesCompanion Function({
   Value<String?> telefono,
   Value<String?> email,
   Value<String?> notas,
+  Value<String?> imagenPath,
   Value<int> rowid,
 });
 
@@ -1127,6 +1172,9 @@ class $$ClientesTableFilterComposer
   ColumnFilters<String> get notas => $composableBuilder(
       column: $table.notas, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<String> get imagenPath => $composableBuilder(
+      column: $table.imagenPath, builder: (column) => ColumnFilters(column));
+
   Expression<bool> citasRefs(
       Expression<bool> Function($$CitasTableFilterComposer f) f) {
     final $$CitasTableFilterComposer composer = $composerBuilder(
@@ -1172,6 +1220,9 @@ class $$ClientesTableOrderingComposer
 
   ColumnOrderings<String> get notas => $composableBuilder(
       column: $table.notas, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get imagenPath => $composableBuilder(
+      column: $table.imagenPath, builder: (column) => ColumnOrderings(column));
 }
 
 class $$ClientesTableAnnotationComposer
@@ -1197,6 +1248,9 @@ class $$ClientesTableAnnotationComposer
 
   GeneratedColumn<String> get notas =>
       $composableBuilder(column: $table.notas, builder: (column) => column);
+
+  GeneratedColumn<String> get imagenPath => $composableBuilder(
+      column: $table.imagenPath, builder: (column) => column);
 
   Expression<T> citasRefs<T extends Object>(
       Expression<T> Function($$CitasTableAnnotationComposer a) f) {
@@ -1248,6 +1302,7 @@ class $$ClientesTableTableManager extends RootTableManager<
             Value<String?> telefono = const Value.absent(),
             Value<String?> email = const Value.absent(),
             Value<String?> notas = const Value.absent(),
+            Value<String?> imagenPath = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               ClientesCompanion(
@@ -1256,6 +1311,7 @@ class $$ClientesTableTableManager extends RootTableManager<
             telefono: telefono,
             email: email,
             notas: notas,
+            imagenPath: imagenPath,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -1264,6 +1320,7 @@ class $$ClientesTableTableManager extends RootTableManager<
             Value<String?> telefono = const Value.absent(),
             Value<String?> email = const Value.absent(),
             Value<String?> notas = const Value.absent(),
+            Value<String?> imagenPath = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               ClientesCompanion.insert(
@@ -1272,6 +1329,7 @@ class $$ClientesTableTableManager extends RootTableManager<
             telefono: telefono,
             email: email,
             notas: notas,
+            imagenPath: imagenPath,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
