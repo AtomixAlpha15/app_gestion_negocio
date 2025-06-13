@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-
 part 'app_database.g.dart'; // Drift genera este archivo automáticamente
 
 // Tabla de clientes
@@ -30,6 +29,16 @@ class Servicios extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+// Tabla de extras asociados a un servicio
+class ExtrasServicio extends Table {
+  TextColumn get id => text()();
+  TextColumn get servicioId => text().references(Servicios, #id)();
+  TextColumn get nombre => text()();
+  RealColumn get precio => real()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 // Tabla de citas
 class Citas extends Table {
   TextColumn get id => text()();
@@ -38,16 +47,25 @@ class Citas extends Table {
   DateTimeColumn get inicio => dateTime()();
   DateTimeColumn get fin => dateTime()();
   RealColumn get precio => real()();
+  BoolColumn get pagada => boolean().withDefault(const Constant(false))();
   TextColumn get metodoPago => text().nullable()(); // 'efectivo', 'bizum', etc
   TextColumn get notas => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }
 
+class ExtrasCita extends Table {
+  TextColumn get citaId => text().references(Citas, #id)();
+  TextColumn get extraId => text().references(ExtrasServicio, #id)();
+  @override
+  Set<Column> get primaryKey => {citaId, extraId};
+}
+
+
 // Importa las tablas arriba definidas
 
 @DriftDatabase(
-  tables: [Clientes, Servicios, Citas],
+  tables: [Clientes, Servicios, Citas, ExtrasServicio,ExtrasCita],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());

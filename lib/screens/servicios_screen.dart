@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/app_database.dart';
 import '../providers/servicios_provider.dart';
+import '../providers/extras_servicio_provider.dart';
 
 class ServiciosScreen extends StatefulWidget {
   const ServiciosScreen({super.key});
@@ -153,7 +155,7 @@ class _ServicioCard extends StatelessWidget {
 
 class _ServicioDialogo extends StatefulWidget {
   final dynamic servicio;
-  const _ServicioDialogo({super.key, this.servicio});
+  const _ServicioDialogo({ this.servicio});
 
   @override
   State<_ServicioDialogo> createState() => _ServicioDialogoState();
@@ -237,6 +239,116 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
     if (mounted) Navigator.pop(context);
   }
 
+  Widget _extrasSection(String servicioId) {
+  return Consumer<ExtrasServicioProvider>(
+    builder: (context, extrasProvider, child) {
+      return FutureBuilder<List<ExtrasServicioData>>(
+        future: extrasProvider.obtenerExtrasPorServicio(servicioId),
+        builder: (context, snapshot) {
+          final extras = snapshot.data ?? [];
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              const Text('Extras para este servicio:', style: TextStyle(fontWeight: FontWeight.bold)),
+              ...extras.map((extra) => ListTile(
+                    title: Text('${extra.nombre}'),
+                    subtitle: Text('+${extra.precio.toStringAsFixed(2)} €'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blueGrey),
+                          onPressed: () {
+                            _mostrarDialogoExtra(context, servicioId, extra: extra);
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () async {
+                            await extrasProvider.eliminarExtra(extra.id);
+                            setState(() {}); // refresca el futurebuilder
+                          },
+                        ),
+                      ],
+                    ),
+                  )),
+              const SizedBox(height: 8),
+              ElevatedButton.icon(
+                onPressed: () {
+                  _mostrarDialogoExtra(context, servicioId);
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Añadir extra'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+  void _mostrarDialogoExtra(BuildContext context, String servicioId, {ExtrasServicioData? extra}) {
+  final nombreController = TextEditingController(text: extra?.nombre ?? '');
+  final precioController = TextEditingController(text: extra?.precio?.toString() ?? '');
+
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: Text(extra == null ? 'Nuevo Extra' : 'Editar Extra'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: nombreController,
+            decoration: const InputDecoration(labelText: 'Nombre del extra'),
+          ),
+          TextField(
+            controller: precioController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'Precio (€)'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            final nombre = nombreController.text.trim();
+            final precio = double.tryParse(precioController.text.trim().replaceAll(',', '.')) ?? 0.0;
+            if (nombre.isEmpty || precio <= 0) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Datos inválidos')),
+              );
+              return;
+            }
+            final provider = context.read<ExtrasServicioProvider>();
+            if (extra == null) {
+              await provider.insertarExtra(
+                servicioId: servicioId,
+                nombre: nombre,
+                precio: precio,
+              );
+            } else {
+              await provider.actualizarExtra(
+                id: extra.id,
+                nombre: nombre,
+                precio: precio,
+              );
+            }
+            if (context.mounted) Navigator.pop(context);
+          },
+          child: Text(extra == null ? 'Crear' : 'Guardar'),
+        ),
+      ],
+    ),
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     final esNuevo = widget.servicio == null;
@@ -268,6 +380,8 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
               decoration: const InputDecoration(labelText: 'Descripción'),
               maxLines: 2,
             ),
+            if (!esNuevo)
+              _extrasSection(widget.servicio.id),
           ],
         ),
       ),

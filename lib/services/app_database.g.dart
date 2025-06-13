@@ -710,6 +710,15 @@ class $CitasTable extends Citas with TableInfo<$CitasTable, Cita> {
   late final GeneratedColumn<double> precio = GeneratedColumn<double>(
       'precio', aliasedName, false,
       type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _pagadaMeta = const VerificationMeta('pagada');
+  @override
+  late final GeneratedColumn<bool> pagada = GeneratedColumn<bool>(
+      'pagada', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("pagada" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _metodoPagoMeta =
       const VerificationMeta('metodoPago');
   @override
@@ -722,8 +731,17 @@ class $CitasTable extends Citas with TableInfo<$CitasTable, Cita> {
       'notas', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, clienteId, servicioId, inicio, fin, precio, metodoPago, notas];
+  List<GeneratedColumn> get $columns => [
+        id,
+        clienteId,
+        servicioId,
+        inicio,
+        fin,
+        precio,
+        pagada,
+        metodoPago,
+        notas
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -771,6 +789,10 @@ class $CitasTable extends Citas with TableInfo<$CitasTable, Cita> {
     } else if (isInserting) {
       context.missing(_precioMeta);
     }
+    if (data.containsKey('pagada')) {
+      context.handle(_pagadaMeta,
+          pagada.isAcceptableOrUnknown(data['pagada']!, _pagadaMeta));
+    }
     if (data.containsKey('metodo_pago')) {
       context.handle(
           _metodoPagoMeta,
@@ -802,6 +824,8 @@ class $CitasTable extends Citas with TableInfo<$CitasTable, Cita> {
           .read(DriftSqlType.dateTime, data['${effectivePrefix}fin'])!,
       precio: attachedDatabase.typeMapping
           .read(DriftSqlType.double, data['${effectivePrefix}precio'])!,
+      pagada: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}pagada'])!,
       metodoPago: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}metodo_pago']),
       notas: attachedDatabase.typeMapping
@@ -822,6 +846,7 @@ class Cita extends DataClass implements Insertable<Cita> {
   final DateTime inicio;
   final DateTime fin;
   final double precio;
+  final bool pagada;
   final String? metodoPago;
   final String? notas;
   const Cita(
@@ -831,6 +856,7 @@ class Cita extends DataClass implements Insertable<Cita> {
       required this.inicio,
       required this.fin,
       required this.precio,
+      required this.pagada,
       this.metodoPago,
       this.notas});
   @override
@@ -842,6 +868,7 @@ class Cita extends DataClass implements Insertable<Cita> {
     map['inicio'] = Variable<DateTime>(inicio);
     map['fin'] = Variable<DateTime>(fin);
     map['precio'] = Variable<double>(precio);
+    map['pagada'] = Variable<bool>(pagada);
     if (!nullToAbsent || metodoPago != null) {
       map['metodo_pago'] = Variable<String>(metodoPago);
     }
@@ -859,6 +886,7 @@ class Cita extends DataClass implements Insertable<Cita> {
       inicio: Value(inicio),
       fin: Value(fin),
       precio: Value(precio),
+      pagada: Value(pagada),
       metodoPago: metodoPago == null && nullToAbsent
           ? const Value.absent()
           : Value(metodoPago),
@@ -877,6 +905,7 @@ class Cita extends DataClass implements Insertable<Cita> {
       inicio: serializer.fromJson<DateTime>(json['inicio']),
       fin: serializer.fromJson<DateTime>(json['fin']),
       precio: serializer.fromJson<double>(json['precio']),
+      pagada: serializer.fromJson<bool>(json['pagada']),
       metodoPago: serializer.fromJson<String?>(json['metodoPago']),
       notas: serializer.fromJson<String?>(json['notas']),
     );
@@ -891,6 +920,7 @@ class Cita extends DataClass implements Insertable<Cita> {
       'inicio': serializer.toJson<DateTime>(inicio),
       'fin': serializer.toJson<DateTime>(fin),
       'precio': serializer.toJson<double>(precio),
+      'pagada': serializer.toJson<bool>(pagada),
       'metodoPago': serializer.toJson<String?>(metodoPago),
       'notas': serializer.toJson<String?>(notas),
     };
@@ -903,6 +933,7 @@ class Cita extends DataClass implements Insertable<Cita> {
           DateTime? inicio,
           DateTime? fin,
           double? precio,
+          bool? pagada,
           Value<String?> metodoPago = const Value.absent(),
           Value<String?> notas = const Value.absent()}) =>
       Cita(
@@ -912,6 +943,7 @@ class Cita extends DataClass implements Insertable<Cita> {
         inicio: inicio ?? this.inicio,
         fin: fin ?? this.fin,
         precio: precio ?? this.precio,
+        pagada: pagada ?? this.pagada,
         metodoPago: metodoPago.present ? metodoPago.value : this.metodoPago,
         notas: notas.present ? notas.value : this.notas,
       );
@@ -924,6 +956,7 @@ class Cita extends DataClass implements Insertable<Cita> {
       inicio: data.inicio.present ? data.inicio.value : this.inicio,
       fin: data.fin.present ? data.fin.value : this.fin,
       precio: data.precio.present ? data.precio.value : this.precio,
+      pagada: data.pagada.present ? data.pagada.value : this.pagada,
       metodoPago:
           data.metodoPago.present ? data.metodoPago.value : this.metodoPago,
       notas: data.notas.present ? data.notas.value : this.notas,
@@ -939,6 +972,7 @@ class Cita extends DataClass implements Insertable<Cita> {
           ..write('inicio: $inicio, ')
           ..write('fin: $fin, ')
           ..write('precio: $precio, ')
+          ..write('pagada: $pagada, ')
           ..write('metodoPago: $metodoPago, ')
           ..write('notas: $notas')
           ..write(')'))
@@ -946,8 +980,8 @@ class Cita extends DataClass implements Insertable<Cita> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, clienteId, servicioId, inicio, fin, precio, metodoPago, notas);
+  int get hashCode => Object.hash(id, clienteId, servicioId, inicio, fin,
+      precio, pagada, metodoPago, notas);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -958,6 +992,7 @@ class Cita extends DataClass implements Insertable<Cita> {
           other.inicio == this.inicio &&
           other.fin == this.fin &&
           other.precio == this.precio &&
+          other.pagada == this.pagada &&
           other.metodoPago == this.metodoPago &&
           other.notas == this.notas);
 }
@@ -969,6 +1004,7 @@ class CitasCompanion extends UpdateCompanion<Cita> {
   final Value<DateTime> inicio;
   final Value<DateTime> fin;
   final Value<double> precio;
+  final Value<bool> pagada;
   final Value<String?> metodoPago;
   final Value<String?> notas;
   final Value<int> rowid;
@@ -979,6 +1015,7 @@ class CitasCompanion extends UpdateCompanion<Cita> {
     this.inicio = const Value.absent(),
     this.fin = const Value.absent(),
     this.precio = const Value.absent(),
+    this.pagada = const Value.absent(),
     this.metodoPago = const Value.absent(),
     this.notas = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -990,6 +1027,7 @@ class CitasCompanion extends UpdateCompanion<Cita> {
     required DateTime inicio,
     required DateTime fin,
     required double precio,
+    this.pagada = const Value.absent(),
     this.metodoPago = const Value.absent(),
     this.notas = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1006,6 +1044,7 @@ class CitasCompanion extends UpdateCompanion<Cita> {
     Expression<DateTime>? inicio,
     Expression<DateTime>? fin,
     Expression<double>? precio,
+    Expression<bool>? pagada,
     Expression<String>? metodoPago,
     Expression<String>? notas,
     Expression<int>? rowid,
@@ -1017,6 +1056,7 @@ class CitasCompanion extends UpdateCompanion<Cita> {
       if (inicio != null) 'inicio': inicio,
       if (fin != null) 'fin': fin,
       if (precio != null) 'precio': precio,
+      if (pagada != null) 'pagada': pagada,
       if (metodoPago != null) 'metodo_pago': metodoPago,
       if (notas != null) 'notas': notas,
       if (rowid != null) 'rowid': rowid,
@@ -1030,6 +1070,7 @@ class CitasCompanion extends UpdateCompanion<Cita> {
       Value<DateTime>? inicio,
       Value<DateTime>? fin,
       Value<double>? precio,
+      Value<bool>? pagada,
       Value<String?>? metodoPago,
       Value<String?>? notas,
       Value<int>? rowid}) {
@@ -1040,6 +1081,7 @@ class CitasCompanion extends UpdateCompanion<Cita> {
       inicio: inicio ?? this.inicio,
       fin: fin ?? this.fin,
       precio: precio ?? this.precio,
+      pagada: pagada ?? this.pagada,
       metodoPago: metodoPago ?? this.metodoPago,
       notas: notas ?? this.notas,
       rowid: rowid ?? this.rowid,
@@ -1067,6 +1109,9 @@ class CitasCompanion extends UpdateCompanion<Cita> {
     if (precio.present) {
       map['precio'] = Variable<double>(precio.value);
     }
+    if (pagada.present) {
+      map['pagada'] = Variable<bool>(pagada.value);
+    }
     if (metodoPago.present) {
       map['metodo_pago'] = Variable<String>(metodoPago.value);
     }
@@ -1088,8 +1133,479 @@ class CitasCompanion extends UpdateCompanion<Cita> {
           ..write('inicio: $inicio, ')
           ..write('fin: $fin, ')
           ..write('precio: $precio, ')
+          ..write('pagada: $pagada, ')
           ..write('metodoPago: $metodoPago, ')
           ..write('notas: $notas, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ExtrasServicioTable extends ExtrasServicio
+    with TableInfo<$ExtrasServicioTable, ExtrasServicioData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExtrasServicioTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _servicioIdMeta =
+      const VerificationMeta('servicioId');
+  @override
+  late final GeneratedColumn<String> servicioId = GeneratedColumn<String>(
+      'servicio_id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES servicios (id)'));
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+      'nombre', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _precioMeta = const VerificationMeta('precio');
+  @override
+  late final GeneratedColumn<double> precio = GeneratedColumn<double>(
+      'precio', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [id, servicioId, nombre, precio];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'extras_servicio';
+  @override
+  VerificationContext validateIntegrity(Insertable<ExtrasServicioData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('servicio_id')) {
+      context.handle(
+          _servicioIdMeta,
+          servicioId.isAcceptableOrUnknown(
+              data['servicio_id']!, _servicioIdMeta));
+    } else if (isInserting) {
+      context.missing(_servicioIdMeta);
+    }
+    if (data.containsKey('nombre')) {
+      context.handle(_nombreMeta,
+          nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta));
+    } else if (isInserting) {
+      context.missing(_nombreMeta);
+    }
+    if (data.containsKey('precio')) {
+      context.handle(_precioMeta,
+          precio.isAcceptableOrUnknown(data['precio']!, _precioMeta));
+    } else if (isInserting) {
+      context.missing(_precioMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ExtrasServicioData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExtrasServicioData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      servicioId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}servicio_id'])!,
+      nombre: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}nombre'])!,
+      precio: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}precio'])!,
+    );
+  }
+
+  @override
+  $ExtrasServicioTable createAlias(String alias) {
+    return $ExtrasServicioTable(attachedDatabase, alias);
+  }
+}
+
+class ExtrasServicioData extends DataClass
+    implements Insertable<ExtrasServicioData> {
+  final String id;
+  final String servicioId;
+  final String nombre;
+  final double precio;
+  const ExtrasServicioData(
+      {required this.id,
+      required this.servicioId,
+      required this.nombre,
+      required this.precio});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['servicio_id'] = Variable<String>(servicioId);
+    map['nombre'] = Variable<String>(nombre);
+    map['precio'] = Variable<double>(precio);
+    return map;
+  }
+
+  ExtrasServicioCompanion toCompanion(bool nullToAbsent) {
+    return ExtrasServicioCompanion(
+      id: Value(id),
+      servicioId: Value(servicioId),
+      nombre: Value(nombre),
+      precio: Value(precio),
+    );
+  }
+
+  factory ExtrasServicioData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExtrasServicioData(
+      id: serializer.fromJson<String>(json['id']),
+      servicioId: serializer.fromJson<String>(json['servicioId']),
+      nombre: serializer.fromJson<String>(json['nombre']),
+      precio: serializer.fromJson<double>(json['precio']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'servicioId': serializer.toJson<String>(servicioId),
+      'nombre': serializer.toJson<String>(nombre),
+      'precio': serializer.toJson<double>(precio),
+    };
+  }
+
+  ExtrasServicioData copyWith(
+          {String? id, String? servicioId, String? nombre, double? precio}) =>
+      ExtrasServicioData(
+        id: id ?? this.id,
+        servicioId: servicioId ?? this.servicioId,
+        nombre: nombre ?? this.nombre,
+        precio: precio ?? this.precio,
+      );
+  ExtrasServicioData copyWithCompanion(ExtrasServicioCompanion data) {
+    return ExtrasServicioData(
+      id: data.id.present ? data.id.value : this.id,
+      servicioId:
+          data.servicioId.present ? data.servicioId.value : this.servicioId,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      precio: data.precio.present ? data.precio.value : this.precio,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExtrasServicioData(')
+          ..write('id: $id, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('nombre: $nombre, ')
+          ..write('precio: $precio')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, servicioId, nombre, precio);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExtrasServicioData &&
+          other.id == this.id &&
+          other.servicioId == this.servicioId &&
+          other.nombre == this.nombre &&
+          other.precio == this.precio);
+}
+
+class ExtrasServicioCompanion extends UpdateCompanion<ExtrasServicioData> {
+  final Value<String> id;
+  final Value<String> servicioId;
+  final Value<String> nombre;
+  final Value<double> precio;
+  final Value<int> rowid;
+  const ExtrasServicioCompanion({
+    this.id = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    this.nombre = const Value.absent(),
+    this.precio = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ExtrasServicioCompanion.insert({
+    required String id,
+    required String servicioId,
+    required String nombre,
+    required double precio,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        servicioId = Value(servicioId),
+        nombre = Value(nombre),
+        precio = Value(precio);
+  static Insertable<ExtrasServicioData> custom({
+    Expression<String>? id,
+    Expression<String>? servicioId,
+    Expression<String>? nombre,
+    Expression<double>? precio,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (servicioId != null) 'servicio_id': servicioId,
+      if (nombre != null) 'nombre': nombre,
+      if (precio != null) 'precio': precio,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ExtrasServicioCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? servicioId,
+      Value<String>? nombre,
+      Value<double>? precio,
+      Value<int>? rowid}) {
+    return ExtrasServicioCompanion(
+      id: id ?? this.id,
+      servicioId: servicioId ?? this.servicioId,
+      nombre: nombre ?? this.nombre,
+      precio: precio ?? this.precio,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (servicioId.present) {
+      map['servicio_id'] = Variable<String>(servicioId.value);
+    }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
+    if (precio.present) {
+      map['precio'] = Variable<double>(precio.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExtrasServicioCompanion(')
+          ..write('id: $id, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('nombre: $nombre, ')
+          ..write('precio: $precio, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ExtrasCitaTable extends ExtrasCita
+    with TableInfo<$ExtrasCitaTable, ExtrasCitaData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ExtrasCitaTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _citaIdMeta = const VerificationMeta('citaId');
+  @override
+  late final GeneratedColumn<String> citaId = GeneratedColumn<String>(
+      'cita_id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES citas (id)'));
+  static const VerificationMeta _extraIdMeta =
+      const VerificationMeta('extraId');
+  @override
+  late final GeneratedColumn<String> extraId = GeneratedColumn<String>(
+      'extra_id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES extras_servicio (id)'));
+  @override
+  List<GeneratedColumn> get $columns => [citaId, extraId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'extras_cita';
+  @override
+  VerificationContext validateIntegrity(Insertable<ExtrasCitaData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('cita_id')) {
+      context.handle(_citaIdMeta,
+          citaId.isAcceptableOrUnknown(data['cita_id']!, _citaIdMeta));
+    } else if (isInserting) {
+      context.missing(_citaIdMeta);
+    }
+    if (data.containsKey('extra_id')) {
+      context.handle(_extraIdMeta,
+          extraId.isAcceptableOrUnknown(data['extra_id']!, _extraIdMeta));
+    } else if (isInserting) {
+      context.missing(_extraIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {citaId, extraId};
+  @override
+  ExtrasCitaData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ExtrasCitaData(
+      citaId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}cita_id'])!,
+      extraId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}extra_id'])!,
+    );
+  }
+
+  @override
+  $ExtrasCitaTable createAlias(String alias) {
+    return $ExtrasCitaTable(attachedDatabase, alias);
+  }
+}
+
+class ExtrasCitaData extends DataClass implements Insertable<ExtrasCitaData> {
+  final String citaId;
+  final String extraId;
+  const ExtrasCitaData({required this.citaId, required this.extraId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['cita_id'] = Variable<String>(citaId);
+    map['extra_id'] = Variable<String>(extraId);
+    return map;
+  }
+
+  ExtrasCitaCompanion toCompanion(bool nullToAbsent) {
+    return ExtrasCitaCompanion(
+      citaId: Value(citaId),
+      extraId: Value(extraId),
+    );
+  }
+
+  factory ExtrasCitaData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ExtrasCitaData(
+      citaId: serializer.fromJson<String>(json['citaId']),
+      extraId: serializer.fromJson<String>(json['extraId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'citaId': serializer.toJson<String>(citaId),
+      'extraId': serializer.toJson<String>(extraId),
+    };
+  }
+
+  ExtrasCitaData copyWith({String? citaId, String? extraId}) => ExtrasCitaData(
+        citaId: citaId ?? this.citaId,
+        extraId: extraId ?? this.extraId,
+      );
+  ExtrasCitaData copyWithCompanion(ExtrasCitaCompanion data) {
+    return ExtrasCitaData(
+      citaId: data.citaId.present ? data.citaId.value : this.citaId,
+      extraId: data.extraId.present ? data.extraId.value : this.extraId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExtrasCitaData(')
+          ..write('citaId: $citaId, ')
+          ..write('extraId: $extraId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(citaId, extraId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ExtrasCitaData &&
+          other.citaId == this.citaId &&
+          other.extraId == this.extraId);
+}
+
+class ExtrasCitaCompanion extends UpdateCompanion<ExtrasCitaData> {
+  final Value<String> citaId;
+  final Value<String> extraId;
+  final Value<int> rowid;
+  const ExtrasCitaCompanion({
+    this.citaId = const Value.absent(),
+    this.extraId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ExtrasCitaCompanion.insert({
+    required String citaId,
+    required String extraId,
+    this.rowid = const Value.absent(),
+  })  : citaId = Value(citaId),
+        extraId = Value(extraId);
+  static Insertable<ExtrasCitaData> custom({
+    Expression<String>? citaId,
+    Expression<String>? extraId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (citaId != null) 'cita_id': citaId,
+      if (extraId != null) 'extra_id': extraId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ExtrasCitaCompanion copyWith(
+      {Value<String>? citaId, Value<String>? extraId, Value<int>? rowid}) {
+    return ExtrasCitaCompanion(
+      citaId: citaId ?? this.citaId,
+      extraId: extraId ?? this.extraId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (citaId.present) {
+      map['cita_id'] = Variable<String>(citaId.value);
+    }
+    if (extraId.present) {
+      map['extra_id'] = Variable<String>(extraId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ExtrasCitaCompanion(')
+          ..write('citaId: $citaId, ')
+          ..write('extraId: $extraId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1102,12 +1618,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ClientesTable clientes = $ClientesTable(this);
   late final $ServiciosTable servicios = $ServiciosTable(this);
   late final $CitasTable citas = $CitasTable(this);
+  late final $ExtrasServicioTable extrasServicio = $ExtrasServicioTable(this);
+  late final $ExtrasCitaTable extrasCita = $ExtrasCitaTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [clientes, servicios, citas];
+      [clientes, servicios, citas, extrasServicio, extrasCita];
 }
 
 typedef $$ClientesTableCreateCompanionBuilder = ClientesCompanion Function({
@@ -1408,6 +1926,21 @@ final class $$ServiciosTableReferences
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: cache));
   }
+
+  static MultiTypedResultKey<$ExtrasServicioTable, List<ExtrasServicioData>>
+      _extrasServicioRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.extrasServicio,
+              aliasName: $_aliasNameGenerator(
+                  db.servicios.id, db.extrasServicio.servicioId));
+
+  $$ExtrasServicioTableProcessedTableManager get extrasServicioRefs {
+    final manager = $$ExtrasServicioTableTableManager($_db, $_db.extrasServicio)
+        .filter((f) => f.servicioId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_extrasServicioRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
 }
 
 class $$ServiciosTableFilterComposer
@@ -1448,6 +1981,27 @@ class $$ServiciosTableFilterComposer
             $$CitasTableFilterComposer(
               $db: $db,
               $table: $db.citas,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+
+  Expression<bool> extrasServicioRefs(
+      Expression<bool> Function($$ExtrasServicioTableFilterComposer f) f) {
+    final $$ExtrasServicioTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.extrasServicio,
+        getReferencedColumn: (t) => t.servicioId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ExtrasServicioTableFilterComposer(
+              $db: $db,
+              $table: $db.extrasServicio,
               $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
               joinBuilder: joinBuilder,
               $removeJoinBuilderFromRootComposer:
@@ -1527,6 +2081,27 @@ class $$ServiciosTableAnnotationComposer
             ));
     return f(composer);
   }
+
+  Expression<T> extrasServicioRefs<T extends Object>(
+      Expression<T> Function($$ExtrasServicioTableAnnotationComposer a) f) {
+    final $$ExtrasServicioTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.extrasServicio,
+        getReferencedColumn: (t) => t.servicioId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ExtrasServicioTableAnnotationComposer(
+              $db: $db,
+              $table: $db.extrasServicio,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$ServiciosTableTableManager extends RootTableManager<
@@ -1540,7 +2115,7 @@ class $$ServiciosTableTableManager extends RootTableManager<
     $$ServiciosTableUpdateCompanionBuilder,
     (Servicio, $$ServiciosTableReferences),
     Servicio,
-    PrefetchHooks Function({bool citasRefs})> {
+    PrefetchHooks Function({bool citasRefs, bool extrasServicioRefs})> {
   $$ServiciosTableTableManager(_$AppDatabase db, $ServiciosTable table)
       : super(TableManagerState(
           db: db,
@@ -1589,10 +2164,14 @@ class $$ServiciosTableTableManager extends RootTableManager<
                     $$ServiciosTableReferences(db, table, e)
                   ))
               .toList(),
-          prefetchHooksCallback: ({citasRefs = false}) {
+          prefetchHooksCallback: (
+              {citasRefs = false, extrasServicioRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [if (citasRefs) db.citas],
+              explicitlyWatchedTables: [
+                if (citasRefs) db.citas,
+                if (extrasServicioRefs) db.extrasServicio
+              ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
                 return [
@@ -1603,6 +2182,19 @@ class $$ServiciosTableTableManager extends RootTableManager<
                             $$ServiciosTableReferences._citasRefsTable(db),
                         managerFromTypedResult: (p0) =>
                             $$ServiciosTableReferences(db, table, p0).citasRefs,
+                        referencedItemsForCurrentItem:
+                            (item, referencedItems) => referencedItems
+                                .where((e) => e.servicioId == item.id),
+                        typedResults: items),
+                  if (extrasServicioRefs)
+                    await $_getPrefetchedData<Servicio, $ServiciosTable,
+                            ExtrasServicioData>(
+                        currentTable: table,
+                        referencedTable: $$ServiciosTableReferences
+                            ._extrasServicioRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$ServiciosTableReferences(db, table, p0)
+                                .extrasServicioRefs,
                         referencedItemsForCurrentItem:
                             (item, referencedItems) => referencedItems
                                 .where((e) => e.servicioId == item.id),
@@ -1625,7 +2217,7 @@ typedef $$ServiciosTableProcessedTableManager = ProcessedTableManager<
     $$ServiciosTableUpdateCompanionBuilder,
     (Servicio, $$ServiciosTableReferences),
     Servicio,
-    PrefetchHooks Function({bool citasRefs})>;
+    PrefetchHooks Function({bool citasRefs, bool extrasServicioRefs})>;
 typedef $$CitasTableCreateCompanionBuilder = CitasCompanion Function({
   required String id,
   required String clienteId,
@@ -1633,6 +2225,7 @@ typedef $$CitasTableCreateCompanionBuilder = CitasCompanion Function({
   required DateTime inicio,
   required DateTime fin,
   required double precio,
+  Value<bool> pagada,
   Value<String?> metodoPago,
   Value<String?> notas,
   Value<int> rowid,
@@ -1644,6 +2237,7 @@ typedef $$CitasTableUpdateCompanionBuilder = CitasCompanion Function({
   Value<DateTime> inicio,
   Value<DateTime> fin,
   Value<double> precio,
+  Value<bool> pagada,
   Value<String?> metodoPago,
   Value<String?> notas,
   Value<int> rowid,
@@ -1680,6 +2274,20 @@ final class $$CitasTableReferences
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: [item]));
   }
+
+  static MultiTypedResultKey<$ExtrasCitaTable, List<ExtrasCitaData>>
+      _extrasCitaRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+          db.extrasCita,
+          aliasName: $_aliasNameGenerator(db.citas.id, db.extrasCita.citaId));
+
+  $$ExtrasCitaTableProcessedTableManager get extrasCitaRefs {
+    final manager = $$ExtrasCitaTableTableManager($_db, $_db.extrasCita)
+        .filter((f) => f.citaId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_extrasCitaRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
 }
 
 class $$CitasTableFilterComposer extends Composer<_$AppDatabase, $CitasTable> {
@@ -1701,6 +2309,9 @@ class $$CitasTableFilterComposer extends Composer<_$AppDatabase, $CitasTable> {
 
   ColumnFilters<double> get precio => $composableBuilder(
       column: $table.precio, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get pagada => $composableBuilder(
+      column: $table.pagada, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get metodoPago => $composableBuilder(
       column: $table.metodoPago, builder: (column) => ColumnFilters(column));
@@ -1747,6 +2358,27 @@ class $$CitasTableFilterComposer extends Composer<_$AppDatabase, $CitasTable> {
             ));
     return composer;
   }
+
+  Expression<bool> extrasCitaRefs(
+      Expression<bool> Function($$ExtrasCitaTableFilterComposer f) f) {
+    final $$ExtrasCitaTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.extrasCita,
+        getReferencedColumn: (t) => t.citaId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ExtrasCitaTableFilterComposer(
+              $db: $db,
+              $table: $db.extrasCita,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$CitasTableOrderingComposer
@@ -1769,6 +2401,9 @@ class $$CitasTableOrderingComposer
 
   ColumnOrderings<double> get precio => $composableBuilder(
       column: $table.precio, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get pagada => $composableBuilder(
+      column: $table.pagada, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get metodoPago => $composableBuilder(
       column: $table.metodoPago, builder: (column) => ColumnOrderings(column));
@@ -1838,6 +2473,9 @@ class $$CitasTableAnnotationComposer
   GeneratedColumn<double> get precio =>
       $composableBuilder(column: $table.precio, builder: (column) => column);
 
+  GeneratedColumn<bool> get pagada =>
+      $composableBuilder(column: $table.pagada, builder: (column) => column);
+
   GeneratedColumn<String> get metodoPago => $composableBuilder(
       column: $table.metodoPago, builder: (column) => column);
 
@@ -1883,6 +2521,27 @@ class $$CitasTableAnnotationComposer
             ));
     return composer;
   }
+
+  Expression<T> extrasCitaRefs<T extends Object>(
+      Expression<T> Function($$ExtrasCitaTableAnnotationComposer a) f) {
+    final $$ExtrasCitaTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.extrasCita,
+        getReferencedColumn: (t) => t.citaId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ExtrasCitaTableAnnotationComposer(
+              $db: $db,
+              $table: $db.extrasCita,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$CitasTableTableManager extends RootTableManager<
@@ -1896,7 +2555,8 @@ class $$CitasTableTableManager extends RootTableManager<
     $$CitasTableUpdateCompanionBuilder,
     (Cita, $$CitasTableReferences),
     Cita,
-    PrefetchHooks Function({bool clienteId, bool servicioId})> {
+    PrefetchHooks Function(
+        {bool clienteId, bool servicioId, bool extrasCitaRefs})> {
   $$CitasTableTableManager(_$AppDatabase db, $CitasTable table)
       : super(TableManagerState(
           db: db,
@@ -1914,6 +2574,7 @@ class $$CitasTableTableManager extends RootTableManager<
             Value<DateTime> inicio = const Value.absent(),
             Value<DateTime> fin = const Value.absent(),
             Value<double> precio = const Value.absent(),
+            Value<bool> pagada = const Value.absent(),
             Value<String?> metodoPago = const Value.absent(),
             Value<String?> notas = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -1925,6 +2586,7 @@ class $$CitasTableTableManager extends RootTableManager<
             inicio: inicio,
             fin: fin,
             precio: precio,
+            pagada: pagada,
             metodoPago: metodoPago,
             notas: notas,
             rowid: rowid,
@@ -1936,6 +2598,7 @@ class $$CitasTableTableManager extends RootTableManager<
             required DateTime inicio,
             required DateTime fin,
             required double precio,
+            Value<bool> pagada = const Value.absent(),
             Value<String?> metodoPago = const Value.absent(),
             Value<String?> notas = const Value.absent(),
             Value<int> rowid = const Value.absent(),
@@ -1947,6 +2610,7 @@ class $$CitasTableTableManager extends RootTableManager<
             inicio: inicio,
             fin: fin,
             precio: precio,
+            pagada: pagada,
             metodoPago: metodoPago,
             notas: notas,
             rowid: rowid,
@@ -1955,10 +2619,11 @@ class $$CitasTableTableManager extends RootTableManager<
               .map((e) =>
                   (e.readTable(table), $$CitasTableReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({clienteId = false, servicioId = false}) {
+          prefetchHooksCallback: (
+              {clienteId = false, servicioId = false, extrasCitaRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [],
+              explicitlyWatchedTables: [if (extrasCitaRefs) db.extrasCita],
               addJoins: <
                   T extends TableManagerState<
                       dynamic,
@@ -1995,7 +2660,21 @@ class $$CitasTableTableManager extends RootTableManager<
                 return state;
               },
               getPrefetchedDataCallback: (items) async {
-                return [];
+                return [
+                  if (extrasCitaRefs)
+                    await $_getPrefetchedData<Cita, $CitasTable,
+                            ExtrasCitaData>(
+                        currentTable: table,
+                        referencedTable:
+                            $$CitasTableReferences._extrasCitaRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$CitasTableReferences(db, table, p0)
+                                .extrasCitaRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.citaId == item.id),
+                        typedResults: items)
+                ];
               },
             );
           },
@@ -2013,7 +2692,645 @@ typedef $$CitasTableProcessedTableManager = ProcessedTableManager<
     $$CitasTableUpdateCompanionBuilder,
     (Cita, $$CitasTableReferences),
     Cita,
-    PrefetchHooks Function({bool clienteId, bool servicioId})>;
+    PrefetchHooks Function(
+        {bool clienteId, bool servicioId, bool extrasCitaRefs})>;
+typedef $$ExtrasServicioTableCreateCompanionBuilder = ExtrasServicioCompanion
+    Function({
+  required String id,
+  required String servicioId,
+  required String nombre,
+  required double precio,
+  Value<int> rowid,
+});
+typedef $$ExtrasServicioTableUpdateCompanionBuilder = ExtrasServicioCompanion
+    Function({
+  Value<String> id,
+  Value<String> servicioId,
+  Value<String> nombre,
+  Value<double> precio,
+  Value<int> rowid,
+});
+
+final class $$ExtrasServicioTableReferences extends BaseReferences<
+    _$AppDatabase, $ExtrasServicioTable, ExtrasServicioData> {
+  $$ExtrasServicioTableReferences(
+      super.$_db, super.$_table, super.$_typedResult);
+
+  static $ServiciosTable _servicioIdTable(_$AppDatabase db) =>
+      db.servicios.createAlias(
+          $_aliasNameGenerator(db.extrasServicio.servicioId, db.servicios.id));
+
+  $$ServiciosTableProcessedTableManager get servicioId {
+    final $_column = $_itemColumn<String>('servicio_id')!;
+
+    final manager = $$ServiciosTableTableManager($_db, $_db.servicios)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_servicioIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+
+  static MultiTypedResultKey<$ExtrasCitaTable, List<ExtrasCitaData>>
+      _extrasCitaRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.extrasCita,
+              aliasName: $_aliasNameGenerator(
+                  db.extrasServicio.id, db.extrasCita.extraId));
+
+  $$ExtrasCitaTableProcessedTableManager get extrasCitaRefs {
+    final manager = $$ExtrasCitaTableTableManager($_db, $_db.extrasCita)
+        .filter((f) => f.extraId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_extrasCitaRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+}
+
+class $$ExtrasServicioTableFilterComposer
+    extends Composer<_$AppDatabase, $ExtrasServicioTable> {
+  $$ExtrasServicioTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+      column: $table.nombre, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get precio => $composableBuilder(
+      column: $table.precio, builder: (column) => ColumnFilters(column));
+
+  $$ServiciosTableFilterComposer get servicioId {
+    final $$ServiciosTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.servicioId,
+        referencedTable: $db.servicios,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ServiciosTableFilterComposer(
+              $db: $db,
+              $table: $db.servicios,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  Expression<bool> extrasCitaRefs(
+      Expression<bool> Function($$ExtrasCitaTableFilterComposer f) f) {
+    final $$ExtrasCitaTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.extrasCita,
+        getReferencedColumn: (t) => t.extraId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ExtrasCitaTableFilterComposer(
+              $db: $db,
+              $table: $db.extrasCita,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+}
+
+class $$ExtrasServicioTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExtrasServicioTable> {
+  $$ExtrasServicioTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+      column: $table.nombre, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get precio => $composableBuilder(
+      column: $table.precio, builder: (column) => ColumnOrderings(column));
+
+  $$ServiciosTableOrderingComposer get servicioId {
+    final $$ServiciosTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.servicioId,
+        referencedTable: $db.servicios,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ServiciosTableOrderingComposer(
+              $db: $db,
+              $table: $db.servicios,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$ExtrasServicioTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExtrasServicioTable> {
+  $$ExtrasServicioTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<double> get precio =>
+      $composableBuilder(column: $table.precio, builder: (column) => column);
+
+  $$ServiciosTableAnnotationComposer get servicioId {
+    final $$ServiciosTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.servicioId,
+        referencedTable: $db.servicios,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ServiciosTableAnnotationComposer(
+              $db: $db,
+              $table: $db.servicios,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  Expression<T> extrasCitaRefs<T extends Object>(
+      Expression<T> Function($$ExtrasCitaTableAnnotationComposer a) f) {
+    final $$ExtrasCitaTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.extrasCita,
+        getReferencedColumn: (t) => t.extraId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ExtrasCitaTableAnnotationComposer(
+              $db: $db,
+              $table: $db.extrasCita,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+}
+
+class $$ExtrasServicioTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ExtrasServicioTable,
+    ExtrasServicioData,
+    $$ExtrasServicioTableFilterComposer,
+    $$ExtrasServicioTableOrderingComposer,
+    $$ExtrasServicioTableAnnotationComposer,
+    $$ExtrasServicioTableCreateCompanionBuilder,
+    $$ExtrasServicioTableUpdateCompanionBuilder,
+    (ExtrasServicioData, $$ExtrasServicioTableReferences),
+    ExtrasServicioData,
+    PrefetchHooks Function({bool servicioId, bool extrasCitaRefs})> {
+  $$ExtrasServicioTableTableManager(
+      _$AppDatabase db, $ExtrasServicioTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExtrasServicioTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ExtrasServicioTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ExtrasServicioTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> servicioId = const Value.absent(),
+            Value<String> nombre = const Value.absent(),
+            Value<double> precio = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ExtrasServicioCompanion(
+            id: id,
+            servicioId: servicioId,
+            nombre: nombre,
+            precio: precio,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String servicioId,
+            required String nombre,
+            required double precio,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ExtrasServicioCompanion.insert(
+            id: id,
+            servicioId: servicioId,
+            nombre: nombre,
+            precio: precio,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable(table),
+                    $$ExtrasServicioTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: (
+              {servicioId = false, extrasCitaRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (extrasCitaRefs) db.extrasCita],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (servicioId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.servicioId,
+                    referencedTable:
+                        $$ExtrasServicioTableReferences._servicioIdTable(db),
+                    referencedColumn:
+                        $$ExtrasServicioTableReferences._servicioIdTable(db).id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (extrasCitaRefs)
+                    await $_getPrefetchedData<ExtrasServicioData,
+                            $ExtrasServicioTable, ExtrasCitaData>(
+                        currentTable: table,
+                        referencedTable: $$ExtrasServicioTableReferences
+                            ._extrasCitaRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$ExtrasServicioTableReferences(db, table, p0)
+                                .extrasCitaRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.extraId == item.id),
+                        typedResults: items)
+                ];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$ExtrasServicioTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ExtrasServicioTable,
+    ExtrasServicioData,
+    $$ExtrasServicioTableFilterComposer,
+    $$ExtrasServicioTableOrderingComposer,
+    $$ExtrasServicioTableAnnotationComposer,
+    $$ExtrasServicioTableCreateCompanionBuilder,
+    $$ExtrasServicioTableUpdateCompanionBuilder,
+    (ExtrasServicioData, $$ExtrasServicioTableReferences),
+    ExtrasServicioData,
+    PrefetchHooks Function({bool servicioId, bool extrasCitaRefs})>;
+typedef $$ExtrasCitaTableCreateCompanionBuilder = ExtrasCitaCompanion Function({
+  required String citaId,
+  required String extraId,
+  Value<int> rowid,
+});
+typedef $$ExtrasCitaTableUpdateCompanionBuilder = ExtrasCitaCompanion Function({
+  Value<String> citaId,
+  Value<String> extraId,
+  Value<int> rowid,
+});
+
+final class $$ExtrasCitaTableReferences
+    extends BaseReferences<_$AppDatabase, $ExtrasCitaTable, ExtrasCitaData> {
+  $$ExtrasCitaTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $CitasTable _citaIdTable(_$AppDatabase db) => db.citas
+      .createAlias($_aliasNameGenerator(db.extrasCita.citaId, db.citas.id));
+
+  $$CitasTableProcessedTableManager get citaId {
+    final $_column = $_itemColumn<String>('cita_id')!;
+
+    final manager = $$CitasTableTableManager($_db, $_db.citas)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_citaIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+
+  static $ExtrasServicioTable _extraIdTable(_$AppDatabase db) =>
+      db.extrasServicio.createAlias(
+          $_aliasNameGenerator(db.extrasCita.extraId, db.extrasServicio.id));
+
+  $$ExtrasServicioTableProcessedTableManager get extraId {
+    final $_column = $_itemColumn<String>('extra_id')!;
+
+    final manager = $$ExtrasServicioTableTableManager($_db, $_db.extrasServicio)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_extraIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+}
+
+class $$ExtrasCitaTableFilterComposer
+    extends Composer<_$AppDatabase, $ExtrasCitaTable> {
+  $$ExtrasCitaTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$CitasTableFilterComposer get citaId {
+    final $$CitasTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.citaId,
+        referencedTable: $db.citas,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$CitasTableFilterComposer(
+              $db: $db,
+              $table: $db.citas,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$ExtrasServicioTableFilterComposer get extraId {
+    final $$ExtrasServicioTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.extraId,
+        referencedTable: $db.extrasServicio,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ExtrasServicioTableFilterComposer(
+              $db: $db,
+              $table: $db.extrasServicio,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$ExtrasCitaTableOrderingComposer
+    extends Composer<_$AppDatabase, $ExtrasCitaTable> {
+  $$ExtrasCitaTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$CitasTableOrderingComposer get citaId {
+    final $$CitasTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.citaId,
+        referencedTable: $db.citas,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$CitasTableOrderingComposer(
+              $db: $db,
+              $table: $db.citas,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$ExtrasServicioTableOrderingComposer get extraId {
+    final $$ExtrasServicioTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.extraId,
+        referencedTable: $db.extrasServicio,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ExtrasServicioTableOrderingComposer(
+              $db: $db,
+              $table: $db.extrasServicio,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$ExtrasCitaTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ExtrasCitaTable> {
+  $$ExtrasCitaTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$CitasTableAnnotationComposer get citaId {
+    final $$CitasTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.citaId,
+        referencedTable: $db.citas,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$CitasTableAnnotationComposer(
+              $db: $db,
+              $table: $db.citas,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$ExtrasServicioTableAnnotationComposer get extraId {
+    final $$ExtrasServicioTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.extraId,
+        referencedTable: $db.extrasServicio,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ExtrasServicioTableAnnotationComposer(
+              $db: $db,
+              $table: $db.extrasServicio,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$ExtrasCitaTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ExtrasCitaTable,
+    ExtrasCitaData,
+    $$ExtrasCitaTableFilterComposer,
+    $$ExtrasCitaTableOrderingComposer,
+    $$ExtrasCitaTableAnnotationComposer,
+    $$ExtrasCitaTableCreateCompanionBuilder,
+    $$ExtrasCitaTableUpdateCompanionBuilder,
+    (ExtrasCitaData, $$ExtrasCitaTableReferences),
+    ExtrasCitaData,
+    PrefetchHooks Function({bool citaId, bool extraId})> {
+  $$ExtrasCitaTableTableManager(_$AppDatabase db, $ExtrasCitaTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ExtrasCitaTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ExtrasCitaTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ExtrasCitaTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> citaId = const Value.absent(),
+            Value<String> extraId = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ExtrasCitaCompanion(
+            citaId: citaId,
+            extraId: extraId,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String citaId,
+            required String extraId,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              ExtrasCitaCompanion.insert(
+            citaId: citaId,
+            extraId: extraId,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable(table),
+                    $$ExtrasCitaTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: ({citaId = false, extraId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (citaId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.citaId,
+                    referencedTable:
+                        $$ExtrasCitaTableReferences._citaIdTable(db),
+                    referencedColumn:
+                        $$ExtrasCitaTableReferences._citaIdTable(db).id,
+                  ) as T;
+                }
+                if (extraId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.extraId,
+                    referencedTable:
+                        $$ExtrasCitaTableReferences._extraIdTable(db),
+                    referencedColumn:
+                        $$ExtrasCitaTableReferences._extraIdTable(db).id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$ExtrasCitaTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ExtrasCitaTable,
+    ExtrasCitaData,
+    $$ExtrasCitaTableFilterComposer,
+    $$ExtrasCitaTableOrderingComposer,
+    $$ExtrasCitaTableAnnotationComposer,
+    $$ExtrasCitaTableCreateCompanionBuilder,
+    $$ExtrasCitaTableUpdateCompanionBuilder,
+    (ExtrasCitaData, $$ExtrasCitaTableReferences),
+    ExtrasCitaData,
+    PrefetchHooks Function({bool citaId, bool extraId})>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2024,4 +3341,8 @@ class $AppDatabaseManager {
       $$ServiciosTableTableManager(_db, _db.servicios);
   $$CitasTableTableManager get citas =>
       $$CitasTableTableManager(_db, _db.citas);
+  $$ExtrasServicioTableTableManager get extrasServicio =>
+      $$ExtrasServicioTableTableManager(_db, _db.extrasServicio);
+  $$ExtrasCitaTableTableManager get extrasCita =>
+      $$ExtrasCitaTableTableManager(_db, _db.extrasCita);
 }
