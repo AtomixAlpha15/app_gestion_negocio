@@ -61,11 +61,22 @@ class ExtrasCita extends Table {
   Set<Column> get primaryKey => {citaId, extraId};
 }
 
+class Gastos extends Table {
+  TextColumn get id => text()();
+  TextColumn get concepto => text()();
+  RealColumn get precio => real()();
+  IntColumn get mes => integer()(); // 1-12
+  IntColumn get anio => integer()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+
 
 // Importa las tablas arriba definidas
 
 @DriftDatabase(
-  tables: [Clientes, Servicios, Citas, ExtrasServicio,ExtrasCita],
+  tables: [Clientes, Servicios, Citas, ExtrasServicio,ExtrasCita,Gastos],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());

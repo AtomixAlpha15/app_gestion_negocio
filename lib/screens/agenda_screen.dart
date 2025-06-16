@@ -7,6 +7,16 @@ import '../providers/extras_servicio_provider.dart';
 import '../services/app_database.dart';
 import 'package:drift/drift.dart' show Value;
 
+// Helper para Dart < 3
+extension FirstWhereOrNullExtension<E> on List<E> {
+  E? firstWhereOrNull(bool Function(E) test) {
+    for (final element in this) {
+      if (test(element)) return element;
+    }
+    return null;
+  }
+}
+
 class AgendaScreen extends StatefulWidget {
   const AgendaScreen({super.key});
 
@@ -20,20 +30,48 @@ class _AgendaScreenState extends State<AgendaScreen> {
   TimeOfDay horaFin = const TimeOfDay(hour: 20, minute: 0);
 
   List<Cita> citasDelDia = [];
+  Map<String, List<String>> _servicioYExtrasPorCita = {};
   bool cargandoCitas = false;
 
   @override
   void initState() {
     super.initState();
     cargarCitasDia();
+    context.read<ServiciosProvider>().cargarServicios();
+    context.read<ClientesProvider>().cargarClientes();
   }
 
   Future<void> cargarCitasDia() async {
     setState(() => cargandoCitas = true);
     final provider = context.read<CitasProvider>();
+    final serviciosProvider = context.read<ServiciosProvider>();
+    final extrasProvider = context.read<ExtrasServicioProvider>();
+
     final citas = await provider.obtenerCitasPorDia(fechaSeleccionada);
+
+    // Pre-carga de nombres de servicios para acceso rápido por ID
+    final serviciosMap = { for (var s in serviciosProvider.servicios) s.id : s.nombre };
+
+    // Pre-carga los extras de todas las citas del día
+    final Map<String, List<String>> servicioYExtrasPorCita = {};
+
+    final db = extrasProvider.db;
+
+    for (final cita in citas) {
+      // Nombre del servicio
+      final nombres = <String>[serviciosMap[cita.servicioId] ?? 'Servicio'];
+      // Extras asociados
+      final extrasCita = await (db.select(db.extrasCita)..where((e) => e.citaId.equals(cita.id))).get();
+      for (final ec in extrasCita) {
+        final extra = await (db.select(db.extrasServicio)..where((ex) => ex.id.equals(ec.extraId))).getSingle();
+        nombres.add(extra.nombre);
+      }
+      servicioYExtrasPorCita[cita.id] = nombres;
+    }
+
     setState(() {
       citasDelDia = citas;
+      _servicioYExtrasPorCita = servicioYExtrasPorCita;
       cargandoCitas = false;
     });
   }
@@ -121,15 +159,23 @@ class _AgendaScreenState extends State<AgendaScreen> {
       ),
       body: cargandoCitas
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-            padding: const EdgeInsets.all(20),
-            child: AgendaVisual(
-                fecha: fechaSeleccionada,
-                horaInicio: horaInicio,
-                horaFin: horaFin,
-                citas: citasDelDia,
-              ),
-          ),
+          : AgendaVisual(
+              fecha: fechaSeleccionada,
+              horaInicio: horaInicio,
+              horaFin: horaFin,
+              citas: citasDelDia,
+              servicioYExtrasPorCita: _servicioYExtrasPorCita,
+              onEditarCita: (cita) async {
+                final result = await showDialog(
+                  context: context,
+                  builder: (_) => NuevaCitaDialog(
+                    fecha: cita.inicio,
+                    cita: cita,
+                  ),
+                );
+                if (result == true) cargarCitasDia();
+              },
+            ),
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.add),
         onPressed: () async {
@@ -152,6 +198,8 @@ class AgendaVisual extends StatelessWidget {
   final TimeOfDay horaInicio;
   final TimeOfDay horaFin;
   final List<Cita> citas;
+  final Map<String, List<String>> servicioYExtrasPorCita;
+  final void Function(Cita cita)? onEditarCita;
 
   const AgendaVisual({
     Key? key,
@@ -159,16 +207,18 @@ class AgendaVisual extends StatelessWidget {
     required this.horaInicio,
     required this.horaFin,
     required this.citas,
+    required this.servicioYExtrasPorCita,
+    this.onEditarCita,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Total de minutos de la jornada
+    const double paddingInternoSuperior = 16.0;
+    const double paddingInternoInferior = 64.0;
     final minutosTotales = (horaFin.hour * 60 + horaFin.minute) -
         (horaInicio.hour * 60 + horaInicio.minute);
 
-    const double paddingInternoSuperior = 16.0;
-    const double paddingInternoInferior = 16.0;
+    final clientes = context.watch<ClientesProvider>().clientes;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -212,61 +262,42 @@ class AgendaVisual extends StatelessWidget {
                 ),
               );
             }),
-            // Bloques de citas (ajusta también el cálculo del top)
+            // Bloques de citas
             ...citas.map((cita) {
-              final minIni = (cita.inicio.hour * 60 + cita.inicio.minute) - (horaInicio.hour * 60 + horaInicio.minute);
+              final minIni = (cita.inicio.hour * 60 + cita.inicio.minute)+8 -
+                  (horaInicio.hour * 60 + horaInicio.minute);
               final duracion = cita.fin.difference(cita.inicio).inMinutes;
               final top = paddingInternoSuperior + minIni * alturaPorMinuto;
               final height = duracion * alturaPorMinuto;
 
-              return Positioned(
-                left: 88, // tras el texto de hora y separación
-                right: 16,
-                top: top,
-                height: height < 24 ? 24 : height,
-                child: Card(
-                  color: Colors.blue.shade100,
-                  elevation: 2,
-                  margin: EdgeInsets.zero,
-                  child: Padding(
-                    padding: const EdgeInsets.all(6.0),
-                    child: Text(
-                      'Cliente: ${cita.clienteId}\nServicio: ${cita.servicioId}\n'
-                      '${cita.inicio.hour.toString().padLeft(2, '0')}:${cita.inicio.minute.toString().padLeft(2, '0')}'
-                      ' - '
-                      '${cita.fin.hour.toString().padLeft(2, '0')}:${cita.fin.minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ),
-              );
-            }),
-            // Bloques de citas
-            ...citas.map((cita) {
-              final minIni = (cita.inicio.hour * 60 + cita.inicio.minute) -
-                  (horaInicio.hour * 60 + horaInicio.minute);
-              final duracion = cita.fin.difference(cita.inicio).inMinutes;
-              final top = minIni * alturaPorMinuto;
-              final height = duracion * alturaPorMinuto;
+              final cliente = clientes.firstWhereOrNull((c) => c.id == cita.clienteId);
+              final nombreCliente = cliente?.nombre ?? 'Cliente';
+              final nombreServicioYExtras =
+                  (servicioYExtrasPorCita[cita.id] ?? []).join(' + ');
 
               return Positioned(
-                left: 70, // después del texto de hora
+                left: 88,
                 right: 16,
                 top: top,
                 height: height < 24 ? 24 : height,
-                child: Card(
-                  color: Colors.blue.shade100,
-                  elevation: 2,
-                  margin: EdgeInsets.zero,
-                  child: Padding(
-                    padding: const EdgeInsets.all(6.0),
-                    child: Text(
-                      // Puedes sustituir los IDs por nombres reales buscando en providers
-                      'Cliente: ${cita.clienteId}\nServicio: ${cita.servicioId}\n'
-                      '${cita.inicio.hour.toString().padLeft(2, '0')}:${cita.inicio.minute.toString().padLeft(2, '0')}'
-                      ' - '
-                      '${cita.fin.hour.toString().padLeft(2, '0')}:${cita.fin.minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(fontSize: 12),
+                child: GestureDetector(
+                  onTap: () {
+                    if (onEditarCita != null) onEditarCita!(cita);
+                  },
+                  child: Card(
+                    color: Colors.blue.shade100,
+                    elevation: 2,
+                    margin: EdgeInsets.zero,
+                    child: Padding(
+                      padding: const EdgeInsets.all(6.0),
+                      child: Text(
+                        '$nombreCliente\n'
+                        '$nombreServicioYExtras\n'
+                        '${cita.inicio.hour.toString().padLeft(2, '0')}:${cita.inicio.minute.toString().padLeft(2, '0')}'
+                        ' - '
+                        '${cita.fin.hour.toString().padLeft(2, '0')}:${cita.fin.minute.toString().padLeft(2, '0')}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
                     ),
                   ),
                 ),
@@ -279,13 +310,12 @@ class AgendaVisual extends StatelessWidget {
   }
 }
 
-
-
 class NuevaCitaDialog extends StatefulWidget {
   final DateTime fecha;
   final TimeOfDay? horaInicial;
+  final Cita? cita;
 
-  const NuevaCitaDialog({super.key, required this.fecha, this.horaInicial});
+  const NuevaCitaDialog({super.key, required this.fecha, this.horaInicial, this.cita});
 
   @override
   State<NuevaCitaDialog> createState() => _NuevaCitaDialogState();
@@ -302,8 +332,17 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
   @override
   void initState() {
     super.initState();
-    horaInicio = widget.horaInicial ?? const TimeOfDay(hour: 9, minute: 0);
-    horaFin = TimeOfDay(hour: horaInicio!.hour + 1, minute: 0);
+    if (widget.cita != null) {
+      clienteId = widget.cita!.clienteId;
+      servicioId = widget.cita!.servicioId;
+      horaInicio = TimeOfDay(hour: widget.cita!.inicio.hour, minute: widget.cita!.inicio.minute);
+      horaFin = TimeOfDay(hour: widget.cita!.fin.hour, minute: widget.cita!.fin.minute);
+      notas = widget.cita!.notas;
+      // Si gestionas extras, carga aquí los extras seleccionados para la cita.
+    } else {
+      horaInicio = widget.horaInicial ?? const TimeOfDay(hour: 9, minute: 0);
+      horaFin = TimeOfDay(hour: horaInicio!.hour + 1, minute: 0);
+    }
   }
 
   @override
@@ -313,7 +352,7 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
     final extrasProvider = context.read<ExtrasServicioProvider>();
 
     return AlertDialog(
-      title: const Text('Nueva cita'),
+      title: Text(widget.cita == null ? 'Nueva cita' : 'Editar cita'),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -351,7 +390,7 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                       );
                       if (picked != null) setState(() => horaInicio = picked);
                     },
-                    child: Text('Inicio: ${horaInicio!.format(context)}', style: const TextStyle(color: Colors.black)),
+                    child: Text('Inicio: ${horaInicio?.format(context) ?? ''}', style: const TextStyle(color: Colors.black)),
                   ),
                 ),
                 Expanded(
@@ -363,7 +402,7 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                       );
                       if (picked != null) setState(() => horaFin = picked);
                     },
-                    child: Text('Fin: ${horaFin!.format(context)}', style: const TextStyle(color: Colors.black)),
+                    child: Text('Fin: ${horaFin?.format(context) ?? ''}', style: const TextStyle(color: Colors.black)),
                   ),
                 ),
               ],
@@ -396,6 +435,7 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                 },
               ),
             TextField(
+              controller: TextEditingController(text: notas ?? ''),
               onChanged: (v) => notas = v,
               decoration: const InputDecoration(labelText: 'Notas'),
             ),
@@ -403,6 +443,27 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
         ),
       ),
       actions: [
+        if (widget.cita != null)
+          TextButton(
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text('¿Eliminar cita?'),
+                  content: const Text('Esta acción no se puede deshacer.'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+                    TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Eliminar')),
+                  ],
+                ),
+              );
+              if (confirm == true) {
+                await context.read<CitasProvider>().eliminarCita(widget.cita!.id);
+                if (context.mounted) Navigator.pop(context, true);
+              }
+            },
+            child: const Text('Eliminar cita', style: TextStyle(color: Colors.red)),
+          ),
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
         ElevatedButton(
           onPressed: () async {
@@ -416,39 +477,61 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
             final fecha = DateTime(widget.fecha.year, widget.fecha.month, widget.fecha.day, horaInicio!.hour, horaInicio!.minute);
             final fechaFin = DateTime(widget.fecha.year, widget.fecha.month, widget.fecha.day, horaFin!.hour, horaFin!.minute);
             final precioBase = servicios.firstWhere((s) => s.id == servicioId).precio;
-            // Suma extras
             double totalExtras = 0.0;
             for (final extraId in extrasSeleccionados) {
-            final extra = await (extrasProvider.db.select(extrasProvider.db.extrasServicio)
-              ..where((e) => e.id.equals(extraId))
-            ).getSingle();
+              final extra = await (extrasProvider.db.select(extrasProvider.db.extrasServicio)
+                ..where((e) => e.id.equals(extraId))
+              ).getSingle();
               totalExtras += extra.precio;
             }
             final precioFinal = precioBase + totalExtras;
 
             final citasProvider = context.read<CitasProvider>();
-            final idCita = DateTime.now().millisecondsSinceEpoch.toString();
-            await citasProvider.insertarCita(
-              clienteId: clienteId!,
-              servicioId: servicioId!,
-              inicio: fecha,
-              fin: fechaFin,
-              precio: precioFinal,
-              notas: notas,
-            );
-            // Guarda los extras seleccionados en la tabla intermedia
-            for (final extraId in extrasSeleccionados) {
-              await extrasProvider.db.into(extrasProvider.db.extrasCita).insert(
-                ExtrasCitaCompanion(
-                  citaId: Value(idCita),
-                  extraId: Value(extraId),
-                ),
+            if (widget.cita == null) {
+              final idCita = DateTime.now().millisecondsSinceEpoch.toString();
+              await citasProvider.insertarCita(
+                clienteId: clienteId!,
+                servicioId: servicioId!,
+                inicio: fecha,
+                fin: fechaFin,
+                precio: precioFinal,
+                notas: notas,
               );
+              for (final extraId in extrasSeleccionados) {
+                await extrasProvider.db.into(extrasProvider.db.extrasCita).insert(
+                  ExtrasCitaCompanion(
+                    citaId: Value(idCita),
+                    extraId: Value(extraId),
+                  ),
+                );
+              }
+            } else {
+              // Actualizar cita
+              await citasProvider.actualizarCita(
+                id: widget.cita!.id,
+                clienteId: clienteId!,
+                servicioId: servicioId!,
+                inicio: fecha,
+                fin: fechaFin,
+                precio: precioFinal,
+                notas: notas,
+              );
+              // Elimina y vuelve a insertar los extras de la cita (simplificación)
+              await (extrasProvider.db.delete(extrasProvider.db.extrasCita)
+                ..where((e) => e.citaId.equals(widget.cita!.id))).go();
+              for (final extraId in extrasSeleccionados) {
+                await extrasProvider.db.into(extrasProvider.db.extrasCita).insert(
+                  ExtrasCitaCompanion(
+                    citaId: Value(widget.cita!.id),
+                    extraId: Value(extraId),
+                  ),
+                );
+              }
             }
 
             if (context.mounted) Navigator.pop(context, true);
           },
-          child: const Text('Guardar'),
+          child: Text(widget.cita == null ? 'Guardar' : 'Guardar cambios'),
         ),
       ],
     );

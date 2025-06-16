@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../providers/clientes_provider.dart';
 import '../providers/servicios_provider.dart';
 import '../providers/citas_provider.dart';
-import '../services/app_database.dart';
 
 class NuevaCitaDialog extends StatefulWidget {
   final DateTime fecha;

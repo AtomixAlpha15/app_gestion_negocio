@@ -1612,6 +1612,310 @@ class ExtrasCitaCompanion extends UpdateCompanion<ExtrasCitaData> {
   }
 }
 
+class $GastosTable extends Gastos with TableInfo<$GastosTable, Gasto> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GastosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _conceptoMeta =
+      const VerificationMeta('concepto');
+  @override
+  late final GeneratedColumn<String> concepto = GeneratedColumn<String>(
+      'concepto', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _precioMeta = const VerificationMeta('precio');
+  @override
+  late final GeneratedColumn<double> precio = GeneratedColumn<double>(
+      'precio', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _mesMeta = const VerificationMeta('mes');
+  @override
+  late final GeneratedColumn<int> mes = GeneratedColumn<int>(
+      'mes', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _anioMeta = const VerificationMeta('anio');
+  @override
+  late final GeneratedColumn<int> anio = GeneratedColumn<int>(
+      'anio', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  @override
+  List<GeneratedColumn> get $columns => [id, concepto, precio, mes, anio];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'gastos';
+  @override
+  VerificationContext validateIntegrity(Insertable<Gasto> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('concepto')) {
+      context.handle(_conceptoMeta,
+          concepto.isAcceptableOrUnknown(data['concepto']!, _conceptoMeta));
+    } else if (isInserting) {
+      context.missing(_conceptoMeta);
+    }
+    if (data.containsKey('precio')) {
+      context.handle(_precioMeta,
+          precio.isAcceptableOrUnknown(data['precio']!, _precioMeta));
+    } else if (isInserting) {
+      context.missing(_precioMeta);
+    }
+    if (data.containsKey('mes')) {
+      context.handle(
+          _mesMeta, mes.isAcceptableOrUnknown(data['mes']!, _mesMeta));
+    } else if (isInserting) {
+      context.missing(_mesMeta);
+    }
+    if (data.containsKey('anio')) {
+      context.handle(
+          _anioMeta, anio.isAcceptableOrUnknown(data['anio']!, _anioMeta));
+    } else if (isInserting) {
+      context.missing(_anioMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Gasto map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Gasto(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      concepto: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}concepto'])!,
+      precio: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}precio'])!,
+      mes: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}mes'])!,
+      anio: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}anio'])!,
+    );
+  }
+
+  @override
+  $GastosTable createAlias(String alias) {
+    return $GastosTable(attachedDatabase, alias);
+  }
+}
+
+class Gasto extends DataClass implements Insertable<Gasto> {
+  final String id;
+  final String concepto;
+  final double precio;
+  final int mes;
+  final int anio;
+  const Gasto(
+      {required this.id,
+      required this.concepto,
+      required this.precio,
+      required this.mes,
+      required this.anio});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['concepto'] = Variable<String>(concepto);
+    map['precio'] = Variable<double>(precio);
+    map['mes'] = Variable<int>(mes);
+    map['anio'] = Variable<int>(anio);
+    return map;
+  }
+
+  GastosCompanion toCompanion(bool nullToAbsent) {
+    return GastosCompanion(
+      id: Value(id),
+      concepto: Value(concepto),
+      precio: Value(precio),
+      mes: Value(mes),
+      anio: Value(anio),
+    );
+  }
+
+  factory Gasto.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Gasto(
+      id: serializer.fromJson<String>(json['id']),
+      concepto: serializer.fromJson<String>(json['concepto']),
+      precio: serializer.fromJson<double>(json['precio']),
+      mes: serializer.fromJson<int>(json['mes']),
+      anio: serializer.fromJson<int>(json['anio']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'concepto': serializer.toJson<String>(concepto),
+      'precio': serializer.toJson<double>(precio),
+      'mes': serializer.toJson<int>(mes),
+      'anio': serializer.toJson<int>(anio),
+    };
+  }
+
+  Gasto copyWith(
+          {String? id,
+          String? concepto,
+          double? precio,
+          int? mes,
+          int? anio}) =>
+      Gasto(
+        id: id ?? this.id,
+        concepto: concepto ?? this.concepto,
+        precio: precio ?? this.precio,
+        mes: mes ?? this.mes,
+        anio: anio ?? this.anio,
+      );
+  Gasto copyWithCompanion(GastosCompanion data) {
+    return Gasto(
+      id: data.id.present ? data.id.value : this.id,
+      concepto: data.concepto.present ? data.concepto.value : this.concepto,
+      precio: data.precio.present ? data.precio.value : this.precio,
+      mes: data.mes.present ? data.mes.value : this.mes,
+      anio: data.anio.present ? data.anio.value : this.anio,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Gasto(')
+          ..write('id: $id, ')
+          ..write('concepto: $concepto, ')
+          ..write('precio: $precio, ')
+          ..write('mes: $mes, ')
+          ..write('anio: $anio')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, concepto, precio, mes, anio);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Gasto &&
+          other.id == this.id &&
+          other.concepto == this.concepto &&
+          other.precio == this.precio &&
+          other.mes == this.mes &&
+          other.anio == this.anio);
+}
+
+class GastosCompanion extends UpdateCompanion<Gasto> {
+  final Value<String> id;
+  final Value<String> concepto;
+  final Value<double> precio;
+  final Value<int> mes;
+  final Value<int> anio;
+  final Value<int> rowid;
+  const GastosCompanion({
+    this.id = const Value.absent(),
+    this.concepto = const Value.absent(),
+    this.precio = const Value.absent(),
+    this.mes = const Value.absent(),
+    this.anio = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GastosCompanion.insert({
+    required String id,
+    required String concepto,
+    required double precio,
+    required int mes,
+    required int anio,
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        concepto = Value(concepto),
+        precio = Value(precio),
+        mes = Value(mes),
+        anio = Value(anio);
+  static Insertable<Gasto> custom({
+    Expression<String>? id,
+    Expression<String>? concepto,
+    Expression<double>? precio,
+    Expression<int>? mes,
+    Expression<int>? anio,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (concepto != null) 'concepto': concepto,
+      if (precio != null) 'precio': precio,
+      if (mes != null) 'mes': mes,
+      if (anio != null) 'anio': anio,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GastosCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? concepto,
+      Value<double>? precio,
+      Value<int>? mes,
+      Value<int>? anio,
+      Value<int>? rowid}) {
+    return GastosCompanion(
+      id: id ?? this.id,
+      concepto: concepto ?? this.concepto,
+      precio: precio ?? this.precio,
+      mes: mes ?? this.mes,
+      anio: anio ?? this.anio,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (concepto.present) {
+      map['concepto'] = Variable<String>(concepto.value);
+    }
+    if (precio.present) {
+      map['precio'] = Variable<double>(precio.value);
+    }
+    if (mes.present) {
+      map['mes'] = Variable<int>(mes.value);
+    }
+    if (anio.present) {
+      map['anio'] = Variable<int>(anio.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GastosCompanion(')
+          ..write('id: $id, ')
+          ..write('concepto: $concepto, ')
+          ..write('precio: $precio, ')
+          ..write('mes: $mes, ')
+          ..write('anio: $anio, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1620,12 +1924,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CitasTable citas = $CitasTable(this);
   late final $ExtrasServicioTable extrasServicio = $ExtrasServicioTable(this);
   late final $ExtrasCitaTable extrasCita = $ExtrasCitaTable(this);
+  late final $GastosTable gastos = $GastosTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [clientes, servicios, citas, extrasServicio, extrasCita];
+      [clientes, servicios, citas, extrasServicio, extrasCita, gastos];
 }
 
 typedef $$ClientesTableCreateCompanionBuilder = ClientesCompanion Function({
@@ -3331,6 +3636,171 @@ typedef $$ExtrasCitaTableProcessedTableManager = ProcessedTableManager<
     (ExtrasCitaData, $$ExtrasCitaTableReferences),
     ExtrasCitaData,
     PrefetchHooks Function({bool citaId, bool extraId})>;
+typedef $$GastosTableCreateCompanionBuilder = GastosCompanion Function({
+  required String id,
+  required String concepto,
+  required double precio,
+  required int mes,
+  required int anio,
+  Value<int> rowid,
+});
+typedef $$GastosTableUpdateCompanionBuilder = GastosCompanion Function({
+  Value<String> id,
+  Value<String> concepto,
+  Value<double> precio,
+  Value<int> mes,
+  Value<int> anio,
+  Value<int> rowid,
+});
+
+class $$GastosTableFilterComposer
+    extends Composer<_$AppDatabase, $GastosTable> {
+  $$GastosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get concepto => $composableBuilder(
+      column: $table.concepto, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get precio => $composableBuilder(
+      column: $table.precio, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get mes => $composableBuilder(
+      column: $table.mes, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get anio => $composableBuilder(
+      column: $table.anio, builder: (column) => ColumnFilters(column));
+}
+
+class $$GastosTableOrderingComposer
+    extends Composer<_$AppDatabase, $GastosTable> {
+  $$GastosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get concepto => $composableBuilder(
+      column: $table.concepto, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get precio => $composableBuilder(
+      column: $table.precio, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get mes => $composableBuilder(
+      column: $table.mes, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get anio => $composableBuilder(
+      column: $table.anio, builder: (column) => ColumnOrderings(column));
+}
+
+class $$GastosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GastosTable> {
+  $$GastosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get concepto =>
+      $composableBuilder(column: $table.concepto, builder: (column) => column);
+
+  GeneratedColumn<double> get precio =>
+      $composableBuilder(column: $table.precio, builder: (column) => column);
+
+  GeneratedColumn<int> get mes =>
+      $composableBuilder(column: $table.mes, builder: (column) => column);
+
+  GeneratedColumn<int> get anio =>
+      $composableBuilder(column: $table.anio, builder: (column) => column);
+}
+
+class $$GastosTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $GastosTable,
+    Gasto,
+    $$GastosTableFilterComposer,
+    $$GastosTableOrderingComposer,
+    $$GastosTableAnnotationComposer,
+    $$GastosTableCreateCompanionBuilder,
+    $$GastosTableUpdateCompanionBuilder,
+    (Gasto, BaseReferences<_$AppDatabase, $GastosTable, Gasto>),
+    Gasto,
+    PrefetchHooks Function()> {
+  $$GastosTableTableManager(_$AppDatabase db, $GastosTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$GastosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$GastosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$GastosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> concepto = const Value.absent(),
+            Value<double> precio = const Value.absent(),
+            Value<int> mes = const Value.absent(),
+            Value<int> anio = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GastosCompanion(
+            id: id,
+            concepto: concepto,
+            precio: precio,
+            mes: mes,
+            anio: anio,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String concepto,
+            required double precio,
+            required int mes,
+            required int anio,
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GastosCompanion.insert(
+            id: id,
+            concepto: concepto,
+            precio: precio,
+            mes: mes,
+            anio: anio,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$GastosTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $GastosTable,
+    Gasto,
+    $$GastosTableFilterComposer,
+    $$GastosTableOrderingComposer,
+    $$GastosTableAnnotationComposer,
+    $$GastosTableCreateCompanionBuilder,
+    $$GastosTableUpdateCompanionBuilder,
+    (Gasto, BaseReferences<_$AppDatabase, $GastosTable, Gasto>),
+    Gasto,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3345,4 +3815,6 @@ class $AppDatabaseManager {
       $$ExtrasServicioTableTableManager(_db, _db.extrasServicio);
   $$ExtrasCitaTableTableManager get extrasCita =>
       $$ExtrasCitaTableTableManager(_db, _db.extrasCita);
+  $$GastosTableTableManager get gastos =>
+      $$GastosTableTableManager(_db, _db.gastos);
 }

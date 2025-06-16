@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'clientes_screen.dart';
 import 'servicios_screen.dart';
 import 'agenda_screen.dart';
+import 'contabilidad_screen_v2.dart';
 // Importa aquí los otros screens cuando los vayas creando
 
 enum AppSection { clientes, servicios, agenda, contabilidad, ajustes }
@@ -24,8 +25,8 @@ class _MainShellState extends State<MainShell> {
          return const ServiciosScreen();
        case AppSection.agenda:
          return const AgendaScreen();
-      // case AppSection.contabilidad:
-      //   return const ContabilidadScreen();
+       case AppSection.contabilidad:
+         return const ContabilidadScreen();
       // case AppSection.ajustes:
       //   return const AjustesScreen();
       default:
