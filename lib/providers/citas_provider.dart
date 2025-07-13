@@ -41,11 +41,13 @@ class CitasProvider extends ChangeNotifier {
       pagada: Value(pagada),
     );
     await db.into(db.citas).insert(cita);
+    await cargarCitasAnio(inicio.year);
     notifyListeners();
   }
 
-  Future<void> eliminarCita(String id) async {
+  Future<void> eliminarCita(String id,{required int anio}) async {
     await (db.delete(db.citas)..where((c) => c.id.equals(id))).go();
+    await cargarCitasAnio(anio);
     notifyListeners();
   }
 
@@ -69,6 +71,7 @@ class CitasProvider extends ChangeNotifier {
     notas: Value(notas),
   );
   await (db.update(db.citas)..where((c) => c.id.equals(id))).write(companion);
+  await cargarCitasAnio(inicio.year);
   notifyListeners();
 }
   Future<void> cargarCitasAnio(int anio) async {

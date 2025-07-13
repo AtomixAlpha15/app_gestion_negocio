@@ -458,7 +458,7 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                 ),
               );
               if (confirm == true) {
-                await context.read<CitasProvider>().eliminarCita(widget.cita!.id);
+                await context.read<CitasProvider>().eliminarCita(widget.cita!.id, anio: widget.cita!.inicio.year);
                 if (context.mounted) Navigator.pop(context, true);
               }
             },

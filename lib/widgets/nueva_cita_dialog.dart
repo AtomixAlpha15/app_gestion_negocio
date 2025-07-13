@@ -133,6 +133,7 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
               notas: notas,
               pagada: pagada,
             );
+            await context.read<CitasProvider>().cargarCitasAnio(widget.fecha.year);
             if (context.mounted) Navigator.pop(context, true);
           },
           child: const Text('Guardar'),
