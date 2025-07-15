@@ -1,35 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-class SettingsProvider extends ChangeNotifier {
-  // Datos de ejemplo (añade setters/getters para la lógica real)
-  String fuente = "Roboto";
-  double tamanoFuente = 1.0;
-  bool oscuro = false;
-  Color colorPrimario = Colors.blue;
-  Color colorSecundario = Colors.green;
-  Color colorTerciario = Colors.orange;
-  String logoPath = "";
-  String nombreEmpresa = "Mi Empresa";
-  String direccion = "";
-  String telefono = "";
-  String email = "";
-  String idioma = "Español";
-  String formatoFecha = "DD/MM/YYYY";
-  String simboloMoneda = "€";
-  double anchoMenu = 240;
-  // ...otros ajustes
-  // Métodos y setters/future setters aquí
-  void setFuente(String nuevaFuente) {
-    fuente = nuevaFuente;
-    notifyListeners();
-  }
-  void setOscuro(bool value) {
-    oscuro = value;
-    notifyListeners();
-  }
-  // ...y así para cada ajuste
-}
+import '../providers/settings_provider.dart';
 
 class AjustesScreen extends StatelessWidget {
   const AjustesScreen({super.key});

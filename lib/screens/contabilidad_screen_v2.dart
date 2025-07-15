@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import '../providers/clientes_provider.dart';
 import '../providers/servicios_provider.dart';
 import '../providers/citas_provider.dart';
-import '../providers/gastos_provider.dart'; // Supón que tienes este provider
+import '../providers/gastos_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/app_database.dart';
 
 // Helper para Dart < 3
@@ -80,6 +81,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
     final clientes = context.watch<ClientesProvider>().clientes;
     final servicios = context.watch<ServiciosProvider>().servicios;
     final gastosProvider = context.watch<GastosProvider>();
+    final settings = context.watch<SettingsProvider>();
 
     // Ejemplo: aquí obtendrías todas las citas del mes para los totales (¡sin filtrar!)
     final citasMes = context.watch<CitasProvider>().citasPorMes(mesActual, anioActual); // Implementa este método

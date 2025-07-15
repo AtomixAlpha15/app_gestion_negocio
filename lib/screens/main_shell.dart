@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'clientes_screen.dart';
 import 'servicios_screen.dart';
 import 'agenda_screen.dart';
+import 'ajustes_screen.dart';
 import 'contabilidad_screen_v2.dart';
 // Importa aquí los otros screens cuando los vayas creando
 
@@ -27,10 +28,10 @@ class _MainShellState extends State<MainShell> {
          return const AgendaScreen();
        case AppSection.contabilidad:
          return const ContabilidadScreen();
-      // case AppSection.ajustes:
-      //   return const AjustesScreen();
-      default:
-        return const Center(child: Text('En desarrollo...'));
+       case AppSection.ajustes:
+         return const AjustesScreen();
+      //default:
+      //  return const Center(child: Text('En desarrollo...'));
     }
   }
 
