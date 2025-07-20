@@ -17,7 +17,7 @@ void main() async{
     MultiProvider(
       providers: [
         Provider<AppDatabase>(create: (_) => AppDatabase()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(create: (_) => settingsProvider),
         ChangeNotifierProvider(create: (context) => ClientesProvider(context.read<AppDatabase>()),),
         ChangeNotifierProvider(create: (context) => ServiciosProvider(context.read<AppDatabase>())),
         ChangeNotifierProvider(create: (context) => ExtrasServicioProvider(context.read<AppDatabase>())),

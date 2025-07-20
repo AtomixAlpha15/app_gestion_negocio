@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
 class AjustesScreen extends StatelessWidget {
   const AjustesScreen({super.key});
@@ -99,7 +102,18 @@ class AjustesScreen extends StatelessWidget {
                       ElevatedButton.icon(
                         icon: const Icon(Icons.upload),
                         label: const Text("Seleccionar logo"),
-                        onPressed: () {/* Lógica para seleccionar imagen */},
+                        onPressed: () async {        
+                          final picker = ImagePicker();
+                          final picked = await picker.pickImage(source: ImageSource.gallery);
+                          if (picked != null) {
+                            // Opcional: copia la imagen a la carpeta de la app para evitar problemas de permisos futuros
+                            final appDir = await getApplicationDocumentsDirectory();
+                            final newPath = '${appDir.path}/logo_empresa${picked.path.split('.').last}';
+                            final newLogo = await File(picked.path).copy(newPath);
+
+                            settings.setLogoPath(newLogo.path);
+                          }
+                        }
                       ),
                     ],
                   ),
@@ -109,25 +123,25 @@ class AjustesScreen extends StatelessWidget {
                   TextFormField(
                     initialValue: settings.nombreEmpresa,
                     decoration: const InputDecoration(labelText: "Nombre de la empresa"),
-                    onChanged: (v) {/* Guardar futuro */},
+                    onChanged: (v) => settings.setNombreEmpresa(v),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     initialValue: settings.direccion,
                     decoration: const InputDecoration(labelText: "Dirección"),
-                    onChanged: (v) {/* Guardar futuro */},
+                    onChanged: (v) => settings.setDireccion(v),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     initialValue: settings.telefono,
                     decoration: const InputDecoration(labelText: "Teléfono"),
-                    onChanged: (v) {/* Guardar futuro */},
+                    onChanged: (v) => settings.setTelefono(v),
                   ),
                   const SizedBox(height: 8),
                   TextFormField(
                     initialValue: settings.email,
                     decoration: const InputDecoration(labelText: "Email"),
-                    onChanged: (v) {/* Guardar futuro */},
+                    onChanged: (v) => settings.setEmail(v),
                   ),
                   const SizedBox(height: 24),
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'clientes_screen.dart';
 import 'servicios_screen.dart';
 import 'agenda_screen.dart';
+import '../widgets/custom_nav.dart';
 import 'ajustes_screen.dart';
 import 'contabilidad_screen_v2.dart';
 // Importa aquí los otros screens cuando los vayas creando
@@ -40,34 +41,11 @@ class _MainShellState extends State<MainShell> {
     return Scaffold(
       body: Row(
         children: [
-          NavigationRail(
+          CustomNavigationRail(
             selectedIndex: _selectedSection.index,
             onDestinationSelected: (idx) {
               setState(() => _selectedSection = AppSection.values[idx]);
             },
-            labelType: NavigationRailLabelType.all,
-            destinations: const [
-              NavigationRailDestination(
-                icon: Icon(Icons.people),
-                label: Text('Clientes'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.home_repair_service),
-                label: Text('Servicios'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.calendar_today),
-                label: Text('Agenda'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.account_balance_wallet),
-                label: Text('Contabilidad'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.settings),
-                label: Text('Ajustes'),
-              ),
-            ],
           ),
           const VerticalDivider(width: 1),
           // Zona de contenido principal

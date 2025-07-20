@@ -68,7 +68,6 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setString('simboloMoneda', simboloMoneda);
     await prefs.setDouble('anchoMenu', anchoMenu);
     await prefs.setBool('alertasImpagos', alertasImpagos);
-    print(prefs.getString('fuente'));
   }
 
   // --------- SETTERS REACTIVOS ---------

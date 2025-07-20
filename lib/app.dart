@@ -1,19 +1,11 @@
-
-import 'package:app_gestion_negocio/screens/main_shell.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'screens/main_shell.dart';
 import 'screens/login_screen.dart';
-
-
-
-void main() {
-  runApp(
-      const MyApp(),
-    );
-}
+import 'providers/settings_provider.dart';
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
-
   @override
   State<MyApp> createState() => _MyAppState();
 }
@@ -23,10 +15,32 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SettingsProvider>();
+
+    // Si quieres que el tipo y tamaño de letra sean realmente globales:
+    final fontFamily = settings.fuente;
+    final fontScale = settings.tamanoFuente;
+
     return MaterialApp(
-      // otros parámetros (title, theme, etc)
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        brightness: settings.oscuro ? Brightness.dark : Brightness.light,
+        primaryColor: settings.colorPrimario,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: settings.colorPrimario,
+          primary: settings.colorPrimario,
+          secondary: settings.colorSecundario,
+          tertiary: settings.colorTerciario,
+          brightness: settings.oscuro ? Brightness.dark : Brightness.light,
+        ),
+        textTheme: Theme.of(context).textTheme.apply(
+          fontFamily: fontFamily,
+          fontSizeFactor: fontScale,
+        ),
+        useMaterial3: true,
+      ),
       home: _logueado
-          ? MainShell() // Tu dashboard principal (contabilidad, agenda, etc)
+          ? MainShell()
           : LoginScreen(
               onLoginOk: () {
                 setState(() => _logueado = true);
