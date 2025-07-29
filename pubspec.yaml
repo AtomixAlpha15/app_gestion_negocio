@@ -16,6 +16,7 @@ dependencies:
   provider: ^6.1.1
   image_picker: ^1.0.7
   shared_preferences: ^2.2.2
+  flutter_colorpicker: ^1.0.3
 
 dev_dependencies:
   flutter_test:
@@ -26,3 +27,36 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/Montserrat-Regular.ttf
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+    - family: Bitter
+      fonts:
+        - asset: assets/fonts/Bitter-Regular.ttf
+    - family: DMSerifText
+      fonts:
+        - asset: assets/fonts/DMSerifText-Regular.ttf
+    - family: Faustina
+      fonts:
+        - asset: assets/fonts/Faustina-Regular.ttf
+    - family: GreatVibes
+      fonts:
+        - asset: assets/fonts/GreatVibes-Regular.ttf
+    - family: MeowScript
+      fonts:
+        - asset: assets/fonts/MeowScript-Regular.ttf
+    - family: SourGummy
+      fonts:
+        - asset: assets/fonts/SourGummy-Regular.ttf
+    - family: Tangerine
+      fonts:
+        - asset: assets/fonts/Tangerine-Regular.ttf
+  assets:
+    - assets/fonts/

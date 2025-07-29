@@ -15,17 +15,15 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    // SettingsProvider global, reactivo
     final settings = context.watch<SettingsProvider>();
-
-    // Si quieres que el tipo y tamaño de letra sean realmente globales:
-    final fontFamily = settings.fuente;
-    final fontScale = settings.tamanoFuente;
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      // El theme global depende en caliente de los ajustes del usuario
       theme: ThemeData(
+        useMaterial3: true,
         brightness: settings.oscuro ? Brightness.dark : Brightness.light,
-        primaryColor: settings.colorPrimario,
         colorScheme: ColorScheme.fromSeed(
           seedColor: settings.colorPrimario,
           primary: settings.colorPrimario,
@@ -33,11 +31,14 @@ class _MyAppState extends State<MyApp> {
           tertiary: settings.colorTerciario,
           brightness: settings.oscuro ? Brightness.dark : Brightness.light,
         ),
-        textTheme: Theme.of(context).textTheme.apply(
-          fontFamily: fontFamily,
-          fontSizeFactor: fontScale,
+        textTheme: ThemeData.light().textTheme.apply(
+          fontFamily: settings.fuente,
+          fontSizeFactor: settings.tamanoFuente,
         ),
-        useMaterial3: true,
+        // O si prefieres modo oscuro por defecto:
+        // textTheme: ThemeData(brightness: settings.oscuro ? Brightness.dark : Brightness.light)
+        //     .textTheme
+        //     .apply(fontFamily: settings.fuente, fontSizeFactor: settings.tamanoFuente),
       ),
       home: _logueado
           ? MainShell()

@@ -4,6 +4,7 @@ import '../providers/settings_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class AjustesScreen extends StatelessWidget {
   const AjustesScreen({super.key});
@@ -45,6 +46,13 @@ class AjustesScreen extends StatelessWidget {
                       DropdownMenuItem(value: "Arial", child: Text("Arial")),
                       DropdownMenuItem(value: "Montserrat", child: Text("Montserrat")),
                       DropdownMenuItem(value: "Inter", child: Text("Inter")),
+                      DropdownMenuItem(value: "Bitter", child: Text("Bitter")),
+                      DropdownMenuItem(value: "DMSerifText", child: Text("DMSerifText")),
+                      DropdownMenuItem(value: "Faustina", child: Text("Faustina")),
+                      DropdownMenuItem(value: "GreatVibes", child: Text("GreatVibes")),
+                      DropdownMenuItem(value: "MeowScript", child: Text("MeowScript")),
+                      DropdownMenuItem(value: "SourGummy", child: Text("SourGummy")),
+                      DropdownMenuItem(value: "Tangerine", child: Text("Tangerine")),
                     ],
                     onChanged: (val) => settings.setFuente(val ?? "Roboto"),
                     decoration: const InputDecoration(labelText: "Tipo de letra"),
@@ -76,19 +84,100 @@ class AjustesScreen extends StatelessWidget {
                   ListTile(
                     title: const Text("Color principal"),
                     trailing: CircleAvatar(backgroundColor: settings.colorPrimario),
-                    onTap: () {/* Color picker futuro */},
+                    onTap: () async {
+                      Color selectedColor = settings.colorPrimario;
+                      await showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text("Selecciona color principal"),
+                          content: SingleChildScrollView(
+                            child: ColorPicker(
+                              pickerColor: settings.colorPrimario,
+                              onColorChanged: (c) => selectedColor = c,
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              child: const Text("Cancelar"),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            ElevatedButton(
+                              child: const Text("OK"),
+                              onPressed: () {
+                                settings.setColorPrimario(selectedColor);
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                   // Color secundario
                   ListTile(
                     title: const Text("Color secundario"),
                     trailing: CircleAvatar(backgroundColor: settings.colorSecundario),
-                    onTap: () {/* Color picker futuro */},
+                    onTap: () async {
+                      Color selectedColor = settings.colorSecundario;
+                      await showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text("Selecciona color secundario"),
+                          content: SingleChildScrollView(
+                            child: ColorPicker(
+                              pickerColor: settings.colorSecundario,
+                              onColorChanged: (c) => selectedColor = c,
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              child: const Text("Cancelar"),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            ElevatedButton(
+                              child: const Text("OK"),
+                              onPressed: () {
+                                settings.setColorSecundario(selectedColor);
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                   // Color terciario
                   ListTile(
                     title: const Text("Color terciario"),
                     trailing: CircleAvatar(backgroundColor: settings.colorTerciario),
-                    onTap: () {/* Color picker futuro */},
+                    onTap: () async {
+                      Color selectedColor = settings.colorTerciario;
+                      await showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text("Selecciona color terciario"),
+                          content: SingleChildScrollView(
+                            child: ColorPicker(
+                              pickerColor: settings.colorTerciario,
+                              onColorChanged: (c) => selectedColor = c,
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              child: const Text("Cancelar"),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            ElevatedButton(
+                              child: const Text("OK"),
+                              onPressed: () {
+                                settings.setColorTerciario(selectedColor);
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
 
