@@ -6,9 +6,6 @@ class SettingsProvider extends ChangeNotifier {
   String fuente = "Roboto";
   double tamanoFuente = 1.0; // 0.85: pequeño, 1.0: mediano, 1.25: grande
   bool oscuro = false;
-  Color colorPrimario = Colors.blue;
-  Color colorSecundario = Colors.green;
-  Color colorTerciario = Colors.orange;
 
   // --- DATOS DE EMPRESA ---
   String logoPath = "";
@@ -26,56 +23,136 @@ class SettingsProvider extends ChangeNotifier {
   // --- NOTIFICACIONES Y CAMPOS EXTRA ---
   bool alertasImpagos = true;
 
-  // --- AVANZADO/MULTIEMPRESA/USUARIOS ---
-  // Puedes expandir aquí con arrays, maps o modelos
+  // --- NUEVO MODELO DE COLORES ---
+  Color _colorBase = const Color(0xFF6750A4); // por defecto agradable M3
+  bool _usarPaletaAuto = true;
 
-   Future<void> cargarAjustes() async {
+  // Colores manuales opcionales (modo avanzado)
+  Color _colorSecundarioManual = const Color(0xFF625B71);
+  Color _colorTerciarioManual = const Color(0xFF7D5260);
+
+  // Getters nuevos
+  Color get colorBase => _colorBase;
+  bool get usarPaletaAuto => _usarPaletaAuto;
+  Color get colorSecundarioManual => _colorSecundarioManual;
+  Color get colorTerciarioManual => _colorTerciarioManual;
+
+  // ---- Claves SharedPreferences ----
+  static const _kFuente                 = 'aj_fuente';
+  static const _kTamanoFuente           = 'aj_tamano_fuente';
+  static const _kOscuro                 = 'aj_oscuro';
+
+  static const _kNombreEmpresa          = 'aj_nombre_empresa';
+  static const _kLogoPath               = 'aj_logo_path';
+  static const _kTelefono               = 'aj_telefono';
+  static const _kEmail                  = 'aj_email';
+  static const _kDireccion              = 'aj_direccion';
+
+  static const _kIdioma                 = 'aj_idioma';
+  static const _kFormatoFecha           = 'aj_formato_fecha';
+  static const _kSimboloMoneda          = 'aj_simbolo_moneda';
+  static const _kAnchoMenu              = 'aj_ancho_menu';
+  static const _kAlertasImpagos         = 'aj_alertas_impagos';
+
+  // Nuevas
+  static const _kColorBase              = 'aj_color_base';
+  static const _kUsarPaletaAuto         = 'aj_usar_paleta_auto';
+  static const _kColorSecundarioManual  = 'aj_color_secundario_manual';
+  static const _kColorTerciarioManual   = 'aj_color_terciario_manual';
+
+  // ---------- CARGAR ----------
+  Future<void> cargarAjustes() async {
     final prefs = await SharedPreferences.getInstance();
-    fuente = prefs.getString('fuente') ?? "Roboto";
-    tamanoFuente = prefs.getDouble('tamanoFuente') ?? 1.0;
-    oscuro = prefs.getBool('oscuro') ?? false;
-    colorPrimario = Color(prefs.getInt('colorPrimario') ?? Colors.blue.value);
-    colorSecundario = Color(prefs.getInt('colorSecundario') ?? Colors.green.value);
-    colorTerciario = Color(prefs.getInt('colorTerciario') ?? Colors.orange.value);
-    logoPath = prefs.getString('logoPath') ?? "";
-    nombreEmpresa = prefs.getString('nombreEmpresa') ?? "Mi Empresa";
-    direccion = prefs.getString('direccion') ?? "";
-    telefono = prefs.getString('telefono') ?? "";
-    email = prefs.getString('email') ?? "";
-    idioma = prefs.getString('idioma') ?? "Español";
-    formatoFecha = prefs.getString('formatoFecha') ?? "DD/MM/YYYY";
-    simboloMoneda = prefs.getString('simboloMoneda') ?? "€";
-    anchoMenu = prefs.getDouble('anchoMenu') ?? 240.0;
-    alertasImpagos = prefs.getBool('alertasImpagos') ?? true;
+
+    fuente        = prefs.getString(_kFuente)        ?? "Roboto";
+    tamanoFuente  = prefs.getDouble(_kTamanoFuente)  ?? 1.0;
+    oscuro        = prefs.getBool(_kOscuro)          ?? false;
+
+    nombreEmpresa = prefs.getString(_kNombreEmpresa) ?? "Mi Empresa";
+    logoPath      = prefs.getString(_kLogoPath)      ?? "";
+    telefono      = prefs.getString(_kTelefono)      ?? "";
+    email         = prefs.getString(_kEmail)         ?? "";
+    direccion     = prefs.getString(_kDireccion)     ?? "";
+
+    idioma        = prefs.getString(_kIdioma)        ?? "Español";
+    formatoFecha  = prefs.getString(_kFormatoFecha)  ?? "DD/MM/YYYY";
+    simboloMoneda = prefs.getString(_kSimboloMoneda) ?? "€";
+    anchoMenu     = prefs.getDouble(_kAnchoMenu)     ?? 240.0;
+    alertasImpagos= prefs.getBool(_kAlertasImpagos)  ?? true;
+
+    // Nuevos colores
+    final baseInt = prefs.getInt(_kColorBase);
+    if (baseInt != null) _colorBase = Color(baseInt);
+
+    _usarPaletaAuto = prefs.getBool(_kUsarPaletaAuto) ?? true;
+
+    final secManInt = prefs.getInt(_kColorSecundarioManual);
+    if (secManInt != null) _colorSecundarioManual = Color(secManInt);
+
+    final terManInt = prefs.getInt(_kColorTerciarioManual);
+    if (terManInt != null) _colorTerciarioManual = Color(terManInt);
+
     notifyListeners();
   }
 
+  // ---------- GUARDAR ----------
   Future<void> guardarAjustes() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('fuente', fuente);
-    await prefs.setDouble('tamanoFuente', tamanoFuente);
-    await prefs.setBool('oscuro', oscuro);
-    await prefs.setInt('colorPrimario', colorPrimario.value);
-    await prefs.setInt('colorSecundario', colorSecundario.value);
-    await prefs.setInt('colorTerciario', colorTerciario.value);
-    await prefs.setString('logoPath', logoPath);
-    await prefs.setString('nombreEmpresa', nombreEmpresa);
-    await prefs.setString('direccion', direccion);
-    await prefs.setString('telefono', telefono);
-    await prefs.setString('email', email);
-    await prefs.setString('idioma', idioma);
-    await prefs.setString('formatoFecha', formatoFecha);
-    await prefs.setString('simboloMoneda', simboloMoneda);
-    await prefs.setDouble('anchoMenu', anchoMenu);
-    await prefs.setBool('alertasImpagos', alertasImpagos);
+
+    await prefs.setString(_kFuente, fuente);
+    await prefs.setDouble(_kTamanoFuente, tamanoFuente);
+    await prefs.setBool(_kOscuro, oscuro);
+
+    await prefs.setString(_kNombreEmpresa, nombreEmpresa);
+    await prefs.setString(_kLogoPath, logoPath);
+    await prefs.setString(_kTelefono, telefono);
+    await prefs.setString(_kEmail, email);
+    await prefs.setString(_kDireccion, direccion);
+
+    await prefs.setString(_kIdioma, idioma);
+    await prefs.setString(_kFormatoFecha, formatoFecha);
+    await prefs.setString(_kSimboloMoneda, simboloMoneda);
+    await prefs.setDouble(_kAnchoMenu, anchoMenu);
+    await prefs.setBool(_kAlertasImpagos, alertasImpagos);
+
+    // Nuevos colores
+    await prefs.setInt(_kColorBase, _colorBase.value);
+    await prefs.setBool(_kUsarPaletaAuto, _usarPaletaAuto);
+    await prefs.setInt(_kColorSecundarioManual, _colorSecundarioManual.value);
+    await prefs.setInt(_kColorTerciarioManual, _colorTerciarioManual.value);
+
   }
 
-  // --------- SETTERS REACTIVOS ---------
+  // --------- SETTERS REACTIVOS (nuevos) ---------
+  Future<void> setColorBase(Color c) async {
+    _colorBase = c;
+    await guardarAjustes();
+    notifyListeners();
+  }
+
+  Future<void> setUsarPaletaAuto(bool v) async {
+    _usarPaletaAuto = v;
+    await guardarAjustes();
+    notifyListeners();
+  }
+
+  Future<void> setColorSecundarioManual(Color c) async {
+    _colorSecundarioManual = c;
+    await guardarAjustes();
+    notifyListeners();
+  }
+
+  Future<void> setColorTerciarioManual(Color c) async {
+    _colorTerciarioManual = c;
+    await guardarAjustes();
+    notifyListeners();
+  }
+
+  // --------- SETTERS REACTIVOS (existentes) ---------
   void setFuente(String nuevaFuente) {
     fuente = nuevaFuente;
     guardarAjustes();
     notifyListeners();
-
   }
   void setTamanoFuente(double nuevoTamano) {
     tamanoFuente = nuevoTamano;
@@ -87,21 +164,7 @@ class SettingsProvider extends ChangeNotifier {
     guardarAjustes();
     notifyListeners();
   }
-  void setColorPrimario(Color c) {
-    colorPrimario = c;
-    guardarAjustes();
-    notifyListeners();
-  }
-  void setColorSecundario(Color c) {
-    colorSecundario = c;
-    guardarAjustes();
-    notifyListeners();
-  }
-  void setColorTerciario(Color c) {
-    colorTerciario = c;
-    guardarAjustes();
-    notifyListeners();
-  }
+
   void setLogoPath(String path) {
     logoPath = path;
     guardarAjustes();
@@ -158,9 +221,13 @@ class SettingsProvider extends ChangeNotifier {
     fuente = "Roboto";
     tamanoFuente = 1.0;
     oscuro = false;
-    colorPrimario = Colors.blue;
-    colorSecundario = Colors.green;
-    colorTerciario = Colors.orange;
+
+    // Reset nuevo modelo de colores
+    _colorBase = const Color(0xFF6750A4);
+    _usarPaletaAuto = true;
+    _colorSecundarioManual = const Color(0xFF625B71);
+    _colorTerciarioManual  = const Color(0xFF7D5260);
+
     logoPath = "";
     nombreEmpresa = "Mi Empresa";
     direccion = "";
@@ -171,11 +238,8 @@ class SettingsProvider extends ChangeNotifier {
     simboloMoneda = "€";
     anchoMenu = 240.0;
     alertasImpagos = true;
+
     guardarAjustes();
     notifyListeners();
   }
-
-  // Aquí puedes añadir métodos para importar/exportar, backup, etc.
-
-  // Métodos para guardar/cargar en shared_preferences o BD, según necesites
 }

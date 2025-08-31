@@ -9,8 +9,6 @@ class GastosProvider extends ChangeNotifier {
   GastosProvider(this.db);
 
   Future<void> cargarGastosAnio(int anio) async {
-    final inicio = DateTime(anio, 1, 1);
-    final fin = DateTime(anio, 12, 31, 23, 59, 59);
     todosLosGastos = await (db.select(db.gastos)
       ..where((g) =>
         g.anio.equals(anio) // si tienes campo anio
@@ -37,8 +35,8 @@ class GastosProvider extends ChangeNotifier {
     await cargarGastosAnio(anio);
   }
 
-  Future<void> eliminarGasto(String id) async {
+  Future<void> eliminarGasto(String id,{required int anio}) async {
     await (db.delete(db.gastos)..where((g) => g.id.equals(id))).go();
-    notifyListeners();
+    await cargarGastosAnio(anio);
   }
 }

@@ -4,7 +4,7 @@ import 'servicios_screen.dart';
 import 'agenda_screen.dart';
 import '../widgets/custom_nav.dart';
 import 'ajustes_screen.dart';
-import 'contabilidad_screen_v2.dart';
+import 'contabilidad_screen.dart';
 // Importa aquí los otros screens cuando los vayas creando
 
 enum AppSection { clientes, servicios, agenda, contabilidad, ajustes }

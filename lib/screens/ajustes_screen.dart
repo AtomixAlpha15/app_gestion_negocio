@@ -12,7 +12,6 @@ class AjustesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
-    final size = MediaQuery.of(context).size;
 
     return DefaultTabController(
       length: 3,
@@ -67,7 +66,7 @@ class AjustesScreen extends StatelessWidget {
                       DropdownMenuItem(value: 1.0, child: Text("Mediano")),
                       DropdownMenuItem(value: 1.25, child: Text("Grande")),
                     ],
-                    onChanged: (val) {/* Lógica futura */},
+                    onChanged: (val) => settings.setTamanoFuente(val ?? 1.0),
                     decoration: const InputDecoration(labelText: "Tamaño de fuente"),
                   ),
                   const SizedBox(height: 16),
@@ -80,105 +79,8 @@ class AjustesScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  // Color principal
-                  ListTile(
-                    title: const Text("Color principal"),
-                    trailing: CircleAvatar(backgroundColor: settings.colorPrimario),
-                    onTap: () async {
-                      Color selectedColor = settings.colorPrimario;
-                      await showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          title: const Text("Selecciona color principal"),
-                          content: SingleChildScrollView(
-                            child: ColorPicker(
-                              pickerColor: settings.colorPrimario,
-                              onColorChanged: (c) => selectedColor = c,
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              child: const Text("Cancelar"),
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                            ElevatedButton(
-                              child: const Text("OK"),
-                              onPressed: () {
-                                settings.setColorPrimario(selectedColor);
-                                Navigator.pop(context);
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  // Color secundario
-                  ListTile(
-                    title: const Text("Color secundario"),
-                    trailing: CircleAvatar(backgroundColor: settings.colorSecundario),
-                    onTap: () async {
-                      Color selectedColor = settings.colorSecundario;
-                      await showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          title: const Text("Selecciona color secundario"),
-                          content: SingleChildScrollView(
-                            child: ColorPicker(
-                              pickerColor: settings.colorSecundario,
-                              onColorChanged: (c) => selectedColor = c,
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              child: const Text("Cancelar"),
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                            ElevatedButton(
-                              child: const Text("OK"),
-                              onPressed: () {
-                                settings.setColorSecundario(selectedColor);
-                                Navigator.pop(context);
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  // Color terciario
-                  ListTile(
-                    title: const Text("Color terciario"),
-                    trailing: CircleAvatar(backgroundColor: settings.colorTerciario),
-                    onTap: () async {
-                      Color selectedColor = settings.colorTerciario;
-                      await showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          title: const Text("Selecciona color terciario"),
-                          content: SingleChildScrollView(
-                            child: ColorPicker(
-                              pickerColor: settings.colorTerciario,
-                              onColorChanged: (c) => selectedColor = c,
-                            ),
-                          ),
-                          actions: [
-                            TextButton(
-                              child: const Text("Cancelar"),
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                            ElevatedButton(
-                              child: const Text("OK"),
-                              onPressed: () {
-                                settings.setColorTerciario(selectedColor);
-                                Navigator.pop(context);
-                              },
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                  _panelColores(context),
+                  
                   const SizedBox(height: 16),
 
                   // Logo de empresa
@@ -374,4 +276,131 @@ class AjustesScreen extends StatelessWidget {
       ),
     );
   }
+  Widget _panelColores(BuildContext context) {
+  final settings = context.watch<SettingsProvider>();
+  final scheme   = Theme.of(context).colorScheme;
+  final text     = Theme.of(context).textTheme;
+
+  // Previsualización rápida de la paleta actual
+  Widget chipColor(Color bg, String label, Color fg) => Chip(
+    backgroundColor: bg,
+    label: Text(label, style: text.labelLarge?.copyWith(color: fg)),
+    side: BorderSide(color: scheme.outlineVariant),
+  );
+
+  return Card(
+    margin: const EdgeInsets.symmetric(vertical: 12),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Colores', style: text.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+
+          // Switch: Paleta automática
+          SwitchListTile(
+            title: const Text('Paleta automática (recomendado)'),
+            subtitle: const Text('Generar colores secundarios/terciarios a partir del color de marca'),
+            value: settings.usarPaletaAuto,
+            onChanged: (v) => settings.setUsarPaletaAuto(v),
+          ),
+
+          const SizedBox(height: 8),
+
+          // Color base (siempre visible)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Color de marca'),
+            subtitle: const Text('Base para todo el esquema de color'),
+            trailing: CircleAvatar(backgroundColor: settings.colorBase),
+            onTap: () => _pickColor(
+              context,
+              settings.colorBase,
+              (c) => settings.setColorBase(c),
+            ),
+          ),
+
+          // Avanzado (solo si desactivas paleta automática)
+          if (!settings.usarPaletaAuto) ...[
+            const SizedBox(height: 8),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Color secundario (avanzado)'),
+              trailing: CircleAvatar(backgroundColor: settings.colorSecundarioManual),
+              onTap: () => _pickColor(
+                context,
+                settings.colorSecundarioManual,
+                (c) => settings.setColorSecundarioManual(c),
+              ),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Color terciario (avanzado)'),
+              trailing: CircleAvatar(backgroundColor: settings.colorTerciarioManual),
+              onTap: () => _pickColor(
+                context,
+                settings.colorTerciarioManual,
+                (c) => settings.setColorTerciarioManual(c),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 12),
+          Text('Vista previa', style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+
+          // Chips de preview usando el esquema actual (ya derivado en app.dart)
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              chipColor(Theme.of(context).colorScheme.primaryContainer,     'Primario',
+                        Theme.of(context).colorScheme.onPrimaryContainer),
+              chipColor(Theme.of(context).colorScheme.secondaryContainer,   'Secundario',
+                        Theme.of(context).colorScheme.onSecondaryContainer),
+              chipColor(Theme.of(context).colorScheme.tertiaryContainer,    'Terciario',
+                        Theme.of(context).colorScheme.onTertiaryContainer),
+              chipColor(Theme.of(context).colorScheme.surfaceVariant,       'Surface',
+                        Theme.of(context).colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+  Future<void> _pickColor(
+    BuildContext context,
+    Color current,
+    ValueChanged<Color> onPicked,
+  ) async {
+    Color temp = current;
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Seleccionar color'),
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: temp,
+            onColorChanged: (c) => temp = c,
+            enableAlpha: false,
+            hexInputBar: true,
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () {
+              onPicked(temp);
+              Navigator.pop(context);
+            },
+            child: const Text('Aceptar'),
+          ),
+        ],
+      ),
+    );
+  }
+
 }

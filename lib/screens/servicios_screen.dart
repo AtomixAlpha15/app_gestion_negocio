@@ -15,8 +15,7 @@ class _ServiciosScreenState extends State<ServiciosScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() =>
-        context.read<ServiciosProvider>().cargarServicios());
+    Future.microtask(() => context.read<ServiciosProvider>().cargarServicios());
   }
 
   void _mostrarDialogoServicio({dynamic servicio}) {
@@ -36,29 +35,39 @@ class _ServiciosScreenState extends State<ServiciosScreen> {
         esNuevo: true,
         onTap: () => _mostrarDialogoServicio(),
       ),
-      ...servicios.map((s) => _ServicioCard(
-        servicio: s,
-        onTap: () => _mostrarDialogoServicio(servicio: s),
-        onDelete: () async {
-          final confirm = await showDialog<bool>(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: const Text('¿Eliminar servicio?'),
-              content: const Text('Esta acción no se puede deshacer.'),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-                TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Eliminar')),
-              ],
-            ),
-          );
-          if (confirm == true) {
-            await provider.eliminarServicio(s.id);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Servicio eliminado')),
+      ...servicios.map(
+        (s) => _ServicioCard(
+          servicio: s,
+          onTap: () => _mostrarDialogoServicio(servicio: s),
+          onDelete: () async {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: const Text('¿Eliminar servicio?'),
+                content: const Text('Esta acción no se puede deshacer.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancelar'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Eliminar'),
+                  ),
+                ],
+              ),
             );
-          }
-        },
-      )),
+            if (confirm == true) {
+              await provider.eliminarServicio(s.id);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Servicio eliminado')),
+                );
+              }
+            }
+          },
+        ),
+      ),
     ];
 
     return Scaffold(
@@ -97,51 +106,86 @@ class _ServicioCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+
     if (esNuevo) {
       return Card(
-        color: Colors.blueGrey.shade50,
+        color: scheme.secondaryContainer,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: scheme.outlineVariant),
+        ),
         child: InkWell(
           onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: const [
-                Icon(Icons.add_box, size: 48, color: Colors.blueGrey),
-                SizedBox(height: 12),
-                Text('Añadir servicio', style: TextStyle(fontSize: 16)),
+              children: [
+                Icon(Icons.add_box, size: 48, color: scheme.onSecondaryContainer),
+                const SizedBox(height: 12),
+                Text(
+                  'Añadir servicio',
+                  style: text.titleMedium?.copyWith(
+                    color: scheme.onSecondaryContainer,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
         ),
       );
     }
+
     return Card(
+      color: scheme.secondaryContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: scheme.outlineVariant),
+      ),
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Nombre
               Text(
                 servicio.nombre,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: text.titleMedium?.copyWith(
+                  color: scheme.onSecondaryContainer,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 12),
+
+              // Precio
               Text(
                 'Precio: ${servicio.precio.toStringAsFixed(2)} €',
-                style: const TextStyle(fontSize: 15),
+                style: text.bodyMedium?.copyWith(
+                  color: scheme.onSecondaryContainer.withOpacity(0.95),
+                ),
               ),
               const SizedBox(height: 8),
+
+              // Duración
               Text(
                 'Duración: ${servicio.duracionMinutos} min',
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                style: text.bodySmall?.copyWith(
+                  color: scheme.onSecondaryContainer.withOpacity(0.75),
+                ),
               ),
+
+              // Botón eliminar
               if (onDelete != null)
                 IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
+                  icon: Icon(Icons.delete, color: scheme.error),
                   tooltip: 'Eliminar',
                   onPressed: onDelete,
                 ),
@@ -155,7 +199,7 @@ class _ServicioCard extends StatelessWidget {
 
 class _ServicioDialogo extends StatefulWidget {
   final dynamic servicio;
-  const _ServicioDialogo({ this.servicio});
+  const _ServicioDialogo({this.servicio});
 
   @override
   State<_ServicioDialogo> createState() => _ServicioDialogoState();
@@ -221,9 +265,11 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
         duracionMinutos: duracion,
         descripcion: descripcion.isEmpty ? null : descripcion,
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Servicio creado')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Servicio creado')),
+        );
+      }
     } else {
       await provider.actualizarServicio(
         id: widget.servicio.id,
@@ -232,126 +278,147 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
         duracionMinutos: duracion,
         descripcion: descripcion.isEmpty ? null : descripcion,
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cambios guardados')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cambios guardados')),
+        );
+      }
     }
     if (mounted) Navigator.pop(context);
   }
 
   Widget _extrasSection(String servicioId) {
-  return Consumer<ExtrasServicioProvider>(
-    builder: (context, extrasProvider, child) {
-      return FutureBuilder<List<ExtrasServicioData>>(
-        future: extrasProvider.obtenerExtrasPorServicio(servicioId),
-        builder: (context, snapshot) {
-          final extras = snapshot.data ?? [];
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 16),
-              const Text('Extras para este servicio:', style: TextStyle(fontWeight: FontWeight.bold)),
-              ...extras.map((extra) => ListTile(
-                    title: Text('${extra.nombre}'),
-                    subtitle: Text('+${extra.precio.toStringAsFixed(2)} €'),
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+
+    return Consumer<ExtrasServicioProvider>(
+      builder: (context, extrasProvider, child) {
+        return FutureBuilder<List<ExtrasServicioData>>(
+          future: extrasProvider.obtenerExtrasPorServicio(servicioId),
+          builder: (context, snapshot) {
+            final extras = snapshot.data ?? [];
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                Text(
+                  'Extras para este servicio:',
+                  style: text.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                ...extras.map(
+                  (extra) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      extra.nombre,
+                      style: text.bodyMedium,
+                    ),
+                    subtitle: Text(
+                      '+${extra.precio.toStringAsFixed(2)} €',
+                      style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blueGrey),
+                          icon: Icon(Icons.edit, color: scheme.primary),
                           onPressed: () {
                             _mostrarDialogoExtra(context, servicioId, extra: extra);
                           },
                         ),
                         IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
+                          icon: Icon(Icons.delete, color: scheme.error),
                           onPressed: () async {
                             await extrasProvider.eliminarExtra(extra.id);
-                            setState(() {}); // refresca el futurebuilder
+                            if (mounted) setState(() {}); // refresca el futurebuilder
                           },
                         ),
                       ],
                     ),
-                  )),
-              const SizedBox(height: 8),
-              ElevatedButton.icon(
-                onPressed: () {
-                  _mostrarDialogoExtra(context, servicioId);
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Añadir extra'),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
-}
+                  ),
+                ),
+                const SizedBox(height: 8),
+                FilledButton.icon(
+                  onPressed: () {
+                    _mostrarDialogoExtra(context, servicioId);
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Añadir extra'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   void _mostrarDialogoExtra(BuildContext context, String servicioId, {ExtrasServicioData? extra}) {
-  final nombreController = TextEditingController(text: extra?.nombre ?? '');
-  final precioController = TextEditingController(text: extra?.precio?.toString() ?? '');
+    final nombreController = TextEditingController(text: extra?.nombre ?? '');
+    final precioController = TextEditingController(text: extra?.precio.toString() ?? '');
+    final text = Theme.of(context).textTheme;
 
-  showDialog(
-    context: context,
-    builder: (_) => AlertDialog(
-      title: Text(extra == null ? 'Nuevo Extra' : 'Editar Extra'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: nombreController,
-            decoration: const InputDecoration(labelText: 'Nombre del extra'),
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(extra == null ? 'Nuevo Extra' : 'Editar Extra'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nombreController,
+              decoration: const InputDecoration(labelText: 'Nombre del extra'),
+            ),
+            TextField(
+              controller: precioController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Precio (€)'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
           ),
-          TextField(
-            controller: precioController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Precio (€)'),
+          FilledButton(
+            onPressed: () async {
+              final nombre = nombreController.text.trim();
+              final precio = double.tryParse(precioController.text.trim().replaceAll(',', '.')) ?? 0.0;
+              if (nombre.isEmpty || precio <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Datos inválidos')),
+                );
+                return;
+              }
+              final provider = context.read<ExtrasServicioProvider>();
+              if (extra == null) {
+                await provider.insertarExtra(
+                  servicioId: servicioId,
+                  nombre: nombre,
+                  precio: precio,
+                );
+              } else {
+                await provider.actualizarExtra(
+                  id: extra.id,
+                  nombre: nombre,
+                  precio: precio,
+                );
+              }
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: Text(extra == null ? 'Crear' : 'Guardar', style: text.labelLarge),
           ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            final nombre = nombreController.text.trim();
-            final precio = double.tryParse(precioController.text.trim().replaceAll(',', '.')) ?? 0.0;
-            if (nombre.isEmpty || precio <= 0) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Datos inválidos')),
-              );
-              return;
-            }
-            final provider = context.read<ExtrasServicioProvider>();
-            if (extra == null) {
-              await provider.insertarExtra(
-                servicioId: servicioId,
-                nombre: nombre,
-                precio: precio,
-              );
-            } else {
-              await provider.actualizarExtra(
-                id: extra.id,
-                nombre: nombre,
-                precio: precio,
-              );
-            }
-            if (context.mounted) Navigator.pop(context);
-          },
-          child: Text(extra == null ? 'Crear' : 'Guardar'),
-        ),
-      ],
-    ),
-  );
-}
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final esNuevo = widget.servicio == null;
+    final s = widget.servicio;
+    final esNuevo = s == null;
+    final text = Theme.of(context).textTheme;
+
     return AlertDialog(
       title: Text(esNuevo ? 'Nuevo Servicio' : 'Editar Servicio'),
       content: SingleChildScrollView(
@@ -380,8 +447,7 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
               decoration: const InputDecoration(labelText: 'Descripción'),
               maxLines: 2,
             ),
-            if (!esNuevo)
-              _extrasSection(widget.servicio.id),
+            if (!esNuevo) _extrasSection(s.id),
           ],
         ),
       ),
@@ -390,9 +456,9 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancelar'),
         ),
-        ElevatedButton(
+        FilledButton(
           onPressed: _guardar,
-          child: Text(esNuevo ? 'Crear' : 'Guardar'),
+          child: Text(esNuevo ? 'Crear' : 'Guardar', style: text.labelLarge),
         ),
       ],
     );

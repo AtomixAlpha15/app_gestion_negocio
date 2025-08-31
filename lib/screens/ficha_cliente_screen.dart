@@ -1,12 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../providers/clientes_provider.dart';
+import '../services/app_database.dart';
 
 class FichaClienteScreen extends StatefulWidget {
-  final dynamic cliente; // Cambia el tipo si tienes modelo fuerte
-
+  final dynamic cliente; // ClienteData o null (crear)
   const FichaClienteScreen({super.key, this.cliente});
 
   @override
@@ -14,166 +13,264 @@ class FichaClienteScreen extends StatefulWidget {
 }
 
 class _FichaClienteScreenState extends State<FichaClienteScreen> {
-  late TextEditingController nombreController;
-  late TextEditingController telefonoController;
-  late TextEditingController emailController;
-  late TextEditingController notasController;
+  late TextEditingController nombreCtrl;
+  late TextEditingController telefonoCtrl;
+  late TextEditingController emailCtrl;
+  late TextEditingController notasCtrl;
   String? imagenPath;
-  String? imagenOriginal; // para comparar si ha cambiado
-  String? _validarEmail(String email) {
-    if (email.isEmpty) return null;
-    final regex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-    return regex.hasMatch(email) ? null : 'Email inválido';
-  }
+
+  bool get esNuevo => widget.cliente == null;
 
   @override
   void initState() {
     super.initState();
     final c = widget.cliente;
-    nombreController = TextEditingController(text: c?.nombre ?? '');
-    telefonoController = TextEditingController(text: c?.telefono ?? '');
-    emailController = TextEditingController(text: c?.email ?? '');
-    notasController = TextEditingController(text: c?.notas ?? '');
-    imagenPath = c?.imagenPath;
-    imagenOriginal = c?.imagenPath;
-    
+    nombreCtrl   = TextEditingController(text: c?.nombre ?? '');
+    telefonoCtrl = TextEditingController(text: c?.telefono ?? '');
+    emailCtrl    = TextEditingController(text: c?.email ?? '');
+    notasCtrl    = TextEditingController(text: c?.notas ?? '');
+    imagenPath   = c?.imagenPath;
   }
 
   @override
   void dispose() {
-    nombreController.dispose();
-    telefonoController.dispose();
-    emailController.dispose();
-    notasController.dispose();
+    nombreCtrl.dispose();
+    telefonoCtrl.dispose();
+    emailCtrl.dispose();
+    notasCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _seleccionarImagen() async {
-    final picker = ImagePicker();
-    final XFile? imagen = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
+  Future<void> _guardar() async {
+    final nombre = nombreCtrl.text.trim();
+    if (nombre.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('El nombre es obligatorio', style: TextStyle(color: Theme.of(context).colorScheme.onTertiaryContainer)),
+          backgroundColor: Theme.of(context).colorScheme.tertiaryContainer),
+      );
+      return;
+    }
+
+    final provider = context.read<ClientesProvider>();
+    if (esNuevo) {
+      await provider.insertarCliente(
+        nombre: nombre,
+        telefono: telefonoCtrl.text.trim().isEmpty ? null : telefonoCtrl.text.trim(),
+        email:    emailCtrl.text.trim().isEmpty ? null : emailCtrl.text.trim(),
+        notas:    notasCtrl.text.trim().isEmpty ? null : notasCtrl.text.trim(),
+        imagenSeleccionada: imagenPath,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Cliente creado', style: TextStyle(color: Theme.of(context).colorScheme.onSecondaryContainer)),
+            backgroundColor: Theme.of(context).colorScheme.secondaryContainer),
+        );
+        Navigator.pop(context, true);
+      }
+    } else {
+      await provider.actualizarCliente(
+        id: widget.cliente.id,
+        nombre: nombre,
+        telefono: telefonoCtrl.text.trim().isEmpty ? null : telefonoCtrl.text.trim(),
+        email:    emailCtrl.text.trim().isEmpty ? null : emailCtrl.text.trim(),
+        notas:    notasCtrl.text.trim().isEmpty ? null : notasCtrl.text.trim(),
+        nuevaImagenSeleccionada: imagenPath,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Cambios guardados', style: TextStyle(color: Theme.of(context).colorScheme.onSecondaryContainer)),
+            backgroundColor: Theme.of(context).colorScheme.secondaryContainer),
+        );
+        Navigator.pop(context, true);
+      }
+    }
+  }
+
+  Future<void> _eliminar() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('¿Eliminar cliente?'),
+        content: const Text('Esta acción no se puede deshacer.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          FilledButton.tonal(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
     );
-    if (imagen != null) {
-      setState(() {
-        imagenPath = imagen.path;
-      });
+    if (ok == true) {
+      final provider = context.read<ClientesProvider>();
+      await provider.eliminarCliente(widget.cliente.id, imagenPath: widget.cliente.imagenPath);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Cliente eliminado', style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer)),
+            backgroundColor: Theme.of(context).colorScheme.errorContainer),
+        );
+        Navigator.pop(context, true);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final esNuevo = widget.cliente == null;
+    final scheme = Theme.of(context).colorScheme;
+    final text   = Theme.of(context).textTheme;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(esNuevo ? 'Nuevo Cliente' : 'Ficha de Cliente'),
+        title: Text(esNuevo ? 'Nuevo cliente' : 'Ficha de cliente'),
+        actions: [
+          if (!esNuevo)
+            IconButton(
+              tooltip: 'Eliminar',
+              icon: Icon(Icons.delete, color: scheme.error),
+              onPressed: _eliminar,
+            ),
+          const SizedBox(width: 4),
+          FilledButton(
+            onPressed: _guardar,
+            child: const Text('Guardar'),
+          ),
+          const SizedBox(width: 12),
+        ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: ListView(
-          children: [
-            Center(
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 56,
-                    backgroundImage: imagenPath != null
-                        ? Image.file(File(imagenPath!)).image
-                        : null,
-                    child: imagenPath == null
-                        ? const Icon(Icons.person, size: 56)
-                        : null,
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 4,
-                    child: GestureDetector(
-                      onTap: _seleccionarImagen,
-                      child: CircleAvatar(
-                        backgroundColor: Colors.blueGrey,
-                        radius: 20,
-                        child: const Icon(Icons.edit, color: Colors.white),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 980),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Columna izquierda: avatar + acciones
+                SizedBox(
+                  width: 280,
+                  child: Card(
+                    color: scheme.secondaryContainer,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          // Avatar / Logo cliente
+                          CircleAvatar(
+                            radius: 64,
+                            backgroundImage: (imagenPath != null && imagenPath!.isNotEmpty)
+                                ? Image.file(File(imagenPath!)).image
+                                : null,
+                            child: (imagenPath == null || imagenPath!.isEmpty)
+                                ? Icon(Icons.person, size: 64, color: scheme.onSecondaryContainer.withOpacity(0.6))
+                                : null,
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              OutlinedButton.icon(
+                                onPressed: () async {
+                                  // Aquí puedes abrir file picker y copiar a carpeta app.
+                                  // Por ahora dejamos un TODO para no romper tu flujo.
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Selector de imagen pendiente', style: TextStyle(color: scheme.onSecondaryContainer)),
+                                      backgroundColor: scheme.secondaryContainer,
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.image),
+                                label: const Text('Cambiar imagen'),
+                              ),
+                              if (imagenPath != null && imagenPath!.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  tooltip: 'Quitar imagen',
+                                  onPressed: () => setState(() => imagenPath = null),
+                                  icon: const Icon(Icons.close),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: nombreController,
-              decoration: const InputDecoration(labelText: 'Nombre'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: telefonoController,
-              decoration: const InputDecoration(labelText: 'Teléfono'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: notasController,
-              minLines: 3,
-              maxLines: 6,
-              decoration: const InputDecoration(labelText: 'Notas'),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () async {
-                final nombre = nombreController.text.trim();
-                final telefono = telefonoController.text.trim();
-                final email = emailController.text.trim();
-                final notas = notasController.text.trim();
-                final imagenSeleccionada = (imagenPath != imagenOriginal) ? imagenPath : null;
+                ),
 
-                // Validación
-                if (nombre.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('El nombre es obligatorio')),
-                  );
-                  return;
-                }
-                final emailError = _validarEmail(email);
-                if (emailError != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(emailError)),
-                  );
-                  return;
-                }
+                const SizedBox(width: 20),
 
-                if (esNuevo) {
-                  await context.read<ClientesProvider>().insertarCliente(
-                    nombre: nombre,
-                    telefono: telefono.isEmpty ? null : telefono,
-                    email: email.isEmpty ? null : email,
-                    notas: notas.isEmpty ? null : notas,
-                    imagenSeleccionada: imagenSeleccionada,
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Cliente creado')),
-                  );
-                } else {
-                  await context.read<ClientesProvider>().actualizarCliente(
-                    id: widget.cliente.id,
-                    nombre: nombre,
-                    telefono: telefono.isEmpty ? null : telefono,
-                    email: email.isEmpty ? null : email,
-                    notas: notas.isEmpty ? null : notas,
-                    nuevaImagenSeleccionada: imagenSeleccionada,
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Cambios guardados')),
-                  );
-                }
-                if (mounted) Navigator.pop(context);
-              },
-              child: Text(esNuevo ? 'Crear cliente' : 'Guardar cambios'),
+                // Columna derecha: datos
+                Expanded(
+                  child: Card(
+                    color: scheme.surface,
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Datos del cliente', style: text.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: nombreCtrl,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Nombre',
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: TextField(
+                                  controller: telefonoCtrl,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Teléfono',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: emailCtrl,
+                            decoration: const InputDecoration(
+                              labelText: 'Email',
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: notasCtrl,
+                            maxLines: 4,
+                            decoration: const InputDecoration(
+                              labelText: 'Notas',
+                              alignLabelWithHint: true,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          // Placeholder de alertas (impagos, histórico, etc. se añadirá en fases posteriores)
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: scheme.tertiaryContainer.withOpacity(0.25),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: scheme.outlineVariant),
+                            ),
+                            child: Text(
+                              'Historial, totales gastados y avisos de impagos llegarán aquí más adelante.',
+                              style: text.bodyMedium?.copyWith(color: scheme.onSurface),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

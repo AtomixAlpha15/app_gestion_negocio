@@ -18,8 +18,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() =>
-        context.read<ClientesProvider>().cargarClientes());
+    Future.microtask(() => context.read<ClientesProvider>().cargarClientes());
   }
 
   @override
@@ -30,15 +29,15 @@ class _ClientesScreenState extends State<ClientesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     final provider = context.watch<ClientesProvider>();
     final clientes = provider.clientes;
 
     // Filtra clientes por el texto del buscador
     final clientesFiltrados = filtro.isEmpty
         ? clientes
-        : clientes
-            .where((c) => c.nombre.toLowerCase().contains(filtro))
-            .toList();
+        : clientes.where((c) => c.nombre.toLowerCase().contains(filtro)).toList();
 
     // El primer elemento es siempre el botón "añadir"
     final items = [
@@ -54,37 +53,47 @@ class _ClientesScreenState extends State<ClientesScreen> {
           provider.cargarClientes(); // Recarga al volver
         },
       ),
-      ...clientesFiltrados.map((c) => _ClienteCard(
-        cliente: c,
-        onTap: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => FichaClienteScreen(cliente: c),
-            ),
-          );
-          provider.cargarClientes(); // Recarga al volver
-        },
-        onDelete: () async {
-          final confirm = await showDialog<bool>(
-            context: context,
-            builder: (_) => AlertDialog(
-              title: const Text('¿Eliminar cliente?'),
-              content: const Text('Esta acción no se puede deshacer.'),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-                TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Eliminar')),
-              ],
-            ),
-          );
-          if (confirm == true) {
-            await provider.eliminarCliente(c.id, imagenPath: c.imagenPath);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Cliente eliminado')),
+      ...clientesFiltrados.map(
+        (c) => _ClienteCard(
+          cliente: c,
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => FichaClienteScreen(cliente: c),
+              ),
             );
-          }
-        },
-      )),
+            provider.cargarClientes(); // Recarga al volver
+          },
+          onDelete: () async {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: const Text('¿Eliminar cliente?'),
+                content: const Text('Esta acción no se puede deshacer.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancelar'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Eliminar'),
+                  ),
+                ],
+              ),
+            );
+            if (confirm == true) {
+              await provider.eliminarCliente(c.id, imagenPath: c.imagenPath);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Cliente eliminado')),
+                );
+              }
+            }
+          },
+        ),
+      ),
     ];
 
     return Scaffold(
@@ -106,7 +115,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
               },
             ),
           ),
-          const Divider(),
+          Divider(color: scheme.outlineVariant),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
@@ -145,52 +154,84 @@ class _ClienteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+
     if (esNuevo) {
       return Card(
-        color: Colors.blueGrey.shade50,
+        color: scheme.secondaryContainer,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: scheme.outlineVariant),
+        ),
         child: InkWell(
           onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: const [
-                Icon(Icons.person_add, size: 48, color: Colors.blueGrey),
-                SizedBox(height: 12),
-                Text('Añadir cliente', style: TextStyle(fontSize: 16)),
+              children: [
+                Icon(Icons.person_add, size: 48, color: scheme.onSecondaryContainer),
+                const SizedBox(height: 12),
+                Text(
+                  'Añadir cliente',
+                  style: text.titleMedium?.copyWith(
+                    color: scheme.onSecondaryContainer,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
           ),
         ),
       );
     }
-    return Card(
+
+    return Card
+    (
+      color: scheme.secondaryContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: scheme.outlineVariant),
+      ),
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Avatar
               CircleAvatar(
                 radius: 36,
-                backgroundImage: cliente.imagenPath != null
-                  ? Image.file(File(cliente.imagenPath!)).image
-                  : null,
-                child: cliente.imagenPath == null
-                  ? const Icon(Icons.person, size: 36)
-                  : null,
+                backgroundColor: scheme.surfaceVariant,
+                backgroundImage: cliente?.imagenPath != null
+                    ? Image.file(File(cliente.imagenPath!)).image
+                    : null,
+                child: (cliente?.imagenPath == null)
+                    ? Icon(Icons.person, size: 36, color: scheme.onSurfaceVariant)
+                    : null,
               ),
               const SizedBox(height: 16),
+
+              // Nombre
               Text(
                 cliente.nombre,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: text.titleMedium?.copyWith(
+                  color: scheme.onSecondaryContainer,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
+                maxLines: 2,
               ),
               const SizedBox(height: 8),
+
+              // Eliminar
               if (onDelete != null)
                 IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
+                  icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
                   tooltip: 'Eliminar',
                   onPressed: onDelete,
                 ),
