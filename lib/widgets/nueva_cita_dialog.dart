@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/clientes_provider.dart';
 import '../providers/servicios_provider.dart';
 import '../providers/citas_provider.dart';
+import '../providers/bonos_provider.dart';
 
 class NuevaCitaDialog extends StatefulWidget {
   final DateTime fecha;
@@ -119,11 +120,11 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
             }
             final fecha = DateTime(widget.fecha.year, widget.fecha.month, widget.fecha.day, horaInicio!.hour, horaInicio!.minute);
             final fechaFin = DateTime(widget.fecha.year, widget.fecha.month, widget.fecha.day, horaFin!.hour, horaFin!.minute);
-            // Precio: busca el del servicio
             final precioBase = servicios.firstWhere((s) => s.id == servicioId).precio;
-            // TODO: suma extras si quieres después
 
-            await context.read<CitasProvider>().insertarCita(
+            // 1) Inserta la cita y obtén su ID
+            final citasProv = context.read<CitasProvider>();
+            final citaId = await citasProv.insertarCitaYDevolverId(
               clienteId: clienteId!,
               servicioId: servicioId!,
               inicio: fecha,
@@ -133,6 +134,16 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
               notas: notas,
               pagada: pagada,
             );
+
+            // 2) Intenta aplicar un bono automáticamente (si existe para ese servicio)
+            final bonosProv = context.read<BonosProvider>();
+            await bonosProv.aplicarBonoSiDisponiblePorId(
+              clienteId: clienteId!,
+              servicioId: servicioId!,
+              citaId: citaId,
+            );
+
+            // 3) Refresca y cierra
             await context.read<CitasProvider>().cargarCitasAnio(widget.fecha.year);
             if (context.mounted) Navigator.pop(context, true);
           },

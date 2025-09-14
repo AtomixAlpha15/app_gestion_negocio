@@ -1916,6 +1916,874 @@ class GastosCompanion extends UpdateCompanion<Gasto> {
   }
 }
 
+class $BonosTable extends Bonos with TableInfo<$BonosTable, Bono> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BonosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _clienteIdMeta =
+      const VerificationMeta('clienteId');
+  @override
+  late final GeneratedColumn<String> clienteId = GeneratedColumn<String>(
+      'cliente_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _servicioIdMeta =
+      const VerificationMeta('servicioId');
+  @override
+  late final GeneratedColumn<String> servicioId = GeneratedColumn<String>(
+      'servicio_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+      'nombre', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('Bono'));
+  static const VerificationMeta _sesionesTotalesMeta =
+      const VerificationMeta('sesionesTotales');
+  @override
+  late final GeneratedColumn<int> sesionesTotales = GeneratedColumn<int>(
+      'sesiones_totales', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _sesionesUsadasMeta =
+      const VerificationMeta('sesionesUsadas');
+  @override
+  late final GeneratedColumn<int> sesionesUsadas = GeneratedColumn<int>(
+      'sesiones_usadas', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _precioBonoMeta =
+      const VerificationMeta('precioBono');
+  @override
+  late final GeneratedColumn<double> precioBono = GeneratedColumn<double>(
+      'precio_bono', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _compradoElMeta =
+      const VerificationMeta('compradoEl');
+  @override
+  late final GeneratedColumn<DateTime> compradoEl = GeneratedColumn<DateTime>(
+      'comprado_el', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _caducaElMeta =
+      const VerificationMeta('caducaEl');
+  @override
+  late final GeneratedColumn<DateTime> caducaEl = GeneratedColumn<DateTime>(
+      'caduca_el', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _activoMeta = const VerificationMeta('activo');
+  @override
+  late final GeneratedColumn<bool> activo = GeneratedColumn<bool>(
+      'activo', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("activo" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _creadoElMeta =
+      const VerificationMeta('creadoEl');
+  @override
+  late final GeneratedColumn<DateTime> creadoEl = GeneratedColumn<DateTime>(
+      'creado_el', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        clienteId,
+        servicioId,
+        nombre,
+        sesionesTotales,
+        sesionesUsadas,
+        precioBono,
+        compradoEl,
+        caducaEl,
+        activo,
+        creadoEl
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bonos';
+  @override
+  VerificationContext validateIntegrity(Insertable<Bono> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('cliente_id')) {
+      context.handle(_clienteIdMeta,
+          clienteId.isAcceptableOrUnknown(data['cliente_id']!, _clienteIdMeta));
+    } else if (isInserting) {
+      context.missing(_clienteIdMeta);
+    }
+    if (data.containsKey('servicio_id')) {
+      context.handle(
+          _servicioIdMeta,
+          servicioId.isAcceptableOrUnknown(
+              data['servicio_id']!, _servicioIdMeta));
+    } else if (isInserting) {
+      context.missing(_servicioIdMeta);
+    }
+    if (data.containsKey('nombre')) {
+      context.handle(_nombreMeta,
+          nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta));
+    }
+    if (data.containsKey('sesiones_totales')) {
+      context.handle(
+          _sesionesTotalesMeta,
+          sesionesTotales.isAcceptableOrUnknown(
+              data['sesiones_totales']!, _sesionesTotalesMeta));
+    } else if (isInserting) {
+      context.missing(_sesionesTotalesMeta);
+    }
+    if (data.containsKey('sesiones_usadas')) {
+      context.handle(
+          _sesionesUsadasMeta,
+          sesionesUsadas.isAcceptableOrUnknown(
+              data['sesiones_usadas']!, _sesionesUsadasMeta));
+    }
+    if (data.containsKey('precio_bono')) {
+      context.handle(
+          _precioBonoMeta,
+          precioBono.isAcceptableOrUnknown(
+              data['precio_bono']!, _precioBonoMeta));
+    }
+    if (data.containsKey('comprado_el')) {
+      context.handle(
+          _compradoElMeta,
+          compradoEl.isAcceptableOrUnknown(
+              data['comprado_el']!, _compradoElMeta));
+    }
+    if (data.containsKey('caduca_el')) {
+      context.handle(_caducaElMeta,
+          caducaEl.isAcceptableOrUnknown(data['caduca_el']!, _caducaElMeta));
+    }
+    if (data.containsKey('activo')) {
+      context.handle(_activoMeta,
+          activo.isAcceptableOrUnknown(data['activo']!, _activoMeta));
+    }
+    if (data.containsKey('creado_el')) {
+      context.handle(_creadoElMeta,
+          creadoEl.isAcceptableOrUnknown(data['creado_el']!, _creadoElMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Bono map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Bono(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      clienteId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}cliente_id'])!,
+      servicioId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}servicio_id'])!,
+      nombre: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}nombre'])!,
+      sesionesTotales: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sesiones_totales'])!,
+      sesionesUsadas: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sesiones_usadas'])!,
+      precioBono: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}precio_bono']),
+      compradoEl: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}comprado_el'])!,
+      caducaEl: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}caduca_el']),
+      activo: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}activo'])!,
+      creadoEl: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}creado_el'])!,
+    );
+  }
+
+  @override
+  $BonosTable createAlias(String alias) {
+    return $BonosTable(attachedDatabase, alias);
+  }
+}
+
+class Bono extends DataClass implements Insertable<Bono> {
+  final String id;
+  final String clienteId;
+  final String servicioId;
+  final String nombre;
+  final int sesionesTotales;
+  final int sesionesUsadas;
+  final double? precioBono;
+  final DateTime compradoEl;
+  final DateTime? caducaEl;
+  final bool activo;
+  final DateTime creadoEl;
+  const Bono(
+      {required this.id,
+      required this.clienteId,
+      required this.servicioId,
+      required this.nombre,
+      required this.sesionesTotales,
+      required this.sesionesUsadas,
+      this.precioBono,
+      required this.compradoEl,
+      this.caducaEl,
+      required this.activo,
+      required this.creadoEl});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['cliente_id'] = Variable<String>(clienteId);
+    map['servicio_id'] = Variable<String>(servicioId);
+    map['nombre'] = Variable<String>(nombre);
+    map['sesiones_totales'] = Variable<int>(sesionesTotales);
+    map['sesiones_usadas'] = Variable<int>(sesionesUsadas);
+    if (!nullToAbsent || precioBono != null) {
+      map['precio_bono'] = Variable<double>(precioBono);
+    }
+    map['comprado_el'] = Variable<DateTime>(compradoEl);
+    if (!nullToAbsent || caducaEl != null) {
+      map['caduca_el'] = Variable<DateTime>(caducaEl);
+    }
+    map['activo'] = Variable<bool>(activo);
+    map['creado_el'] = Variable<DateTime>(creadoEl);
+    return map;
+  }
+
+  BonosCompanion toCompanion(bool nullToAbsent) {
+    return BonosCompanion(
+      id: Value(id),
+      clienteId: Value(clienteId),
+      servicioId: Value(servicioId),
+      nombre: Value(nombre),
+      sesionesTotales: Value(sesionesTotales),
+      sesionesUsadas: Value(sesionesUsadas),
+      precioBono: precioBono == null && nullToAbsent
+          ? const Value.absent()
+          : Value(precioBono),
+      compradoEl: Value(compradoEl),
+      caducaEl: caducaEl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(caducaEl),
+      activo: Value(activo),
+      creadoEl: Value(creadoEl),
+    );
+  }
+
+  factory Bono.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Bono(
+      id: serializer.fromJson<String>(json['id']),
+      clienteId: serializer.fromJson<String>(json['clienteId']),
+      servicioId: serializer.fromJson<String>(json['servicioId']),
+      nombre: serializer.fromJson<String>(json['nombre']),
+      sesionesTotales: serializer.fromJson<int>(json['sesionesTotales']),
+      sesionesUsadas: serializer.fromJson<int>(json['sesionesUsadas']),
+      precioBono: serializer.fromJson<double?>(json['precioBono']),
+      compradoEl: serializer.fromJson<DateTime>(json['compradoEl']),
+      caducaEl: serializer.fromJson<DateTime?>(json['caducaEl']),
+      activo: serializer.fromJson<bool>(json['activo']),
+      creadoEl: serializer.fromJson<DateTime>(json['creadoEl']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'clienteId': serializer.toJson<String>(clienteId),
+      'servicioId': serializer.toJson<String>(servicioId),
+      'nombre': serializer.toJson<String>(nombre),
+      'sesionesTotales': serializer.toJson<int>(sesionesTotales),
+      'sesionesUsadas': serializer.toJson<int>(sesionesUsadas),
+      'precioBono': serializer.toJson<double?>(precioBono),
+      'compradoEl': serializer.toJson<DateTime>(compradoEl),
+      'caducaEl': serializer.toJson<DateTime?>(caducaEl),
+      'activo': serializer.toJson<bool>(activo),
+      'creadoEl': serializer.toJson<DateTime>(creadoEl),
+    };
+  }
+
+  Bono copyWith(
+          {String? id,
+          String? clienteId,
+          String? servicioId,
+          String? nombre,
+          int? sesionesTotales,
+          int? sesionesUsadas,
+          Value<double?> precioBono = const Value.absent(),
+          DateTime? compradoEl,
+          Value<DateTime?> caducaEl = const Value.absent(),
+          bool? activo,
+          DateTime? creadoEl}) =>
+      Bono(
+        id: id ?? this.id,
+        clienteId: clienteId ?? this.clienteId,
+        servicioId: servicioId ?? this.servicioId,
+        nombre: nombre ?? this.nombre,
+        sesionesTotales: sesionesTotales ?? this.sesionesTotales,
+        sesionesUsadas: sesionesUsadas ?? this.sesionesUsadas,
+        precioBono: precioBono.present ? precioBono.value : this.precioBono,
+        compradoEl: compradoEl ?? this.compradoEl,
+        caducaEl: caducaEl.present ? caducaEl.value : this.caducaEl,
+        activo: activo ?? this.activo,
+        creadoEl: creadoEl ?? this.creadoEl,
+      );
+  Bono copyWithCompanion(BonosCompanion data) {
+    return Bono(
+      id: data.id.present ? data.id.value : this.id,
+      clienteId: data.clienteId.present ? data.clienteId.value : this.clienteId,
+      servicioId:
+          data.servicioId.present ? data.servicioId.value : this.servicioId,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      sesionesTotales: data.sesionesTotales.present
+          ? data.sesionesTotales.value
+          : this.sesionesTotales,
+      sesionesUsadas: data.sesionesUsadas.present
+          ? data.sesionesUsadas.value
+          : this.sesionesUsadas,
+      precioBono:
+          data.precioBono.present ? data.precioBono.value : this.precioBono,
+      compradoEl:
+          data.compradoEl.present ? data.compradoEl.value : this.compradoEl,
+      caducaEl: data.caducaEl.present ? data.caducaEl.value : this.caducaEl,
+      activo: data.activo.present ? data.activo.value : this.activo,
+      creadoEl: data.creadoEl.present ? data.creadoEl.value : this.creadoEl,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Bono(')
+          ..write('id: $id, ')
+          ..write('clienteId: $clienteId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('nombre: $nombre, ')
+          ..write('sesionesTotales: $sesionesTotales, ')
+          ..write('sesionesUsadas: $sesionesUsadas, ')
+          ..write('precioBono: $precioBono, ')
+          ..write('compradoEl: $compradoEl, ')
+          ..write('caducaEl: $caducaEl, ')
+          ..write('activo: $activo, ')
+          ..write('creadoEl: $creadoEl')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      clienteId,
+      servicioId,
+      nombre,
+      sesionesTotales,
+      sesionesUsadas,
+      precioBono,
+      compradoEl,
+      caducaEl,
+      activo,
+      creadoEl);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Bono &&
+          other.id == this.id &&
+          other.clienteId == this.clienteId &&
+          other.servicioId == this.servicioId &&
+          other.nombre == this.nombre &&
+          other.sesionesTotales == this.sesionesTotales &&
+          other.sesionesUsadas == this.sesionesUsadas &&
+          other.precioBono == this.precioBono &&
+          other.compradoEl == this.compradoEl &&
+          other.caducaEl == this.caducaEl &&
+          other.activo == this.activo &&
+          other.creadoEl == this.creadoEl);
+}
+
+class BonosCompanion extends UpdateCompanion<Bono> {
+  final Value<String> id;
+  final Value<String> clienteId;
+  final Value<String> servicioId;
+  final Value<String> nombre;
+  final Value<int> sesionesTotales;
+  final Value<int> sesionesUsadas;
+  final Value<double?> precioBono;
+  final Value<DateTime> compradoEl;
+  final Value<DateTime?> caducaEl;
+  final Value<bool> activo;
+  final Value<DateTime> creadoEl;
+  final Value<int> rowid;
+  const BonosCompanion({
+    this.id = const Value.absent(),
+    this.clienteId = const Value.absent(),
+    this.servicioId = const Value.absent(),
+    this.nombre = const Value.absent(),
+    this.sesionesTotales = const Value.absent(),
+    this.sesionesUsadas = const Value.absent(),
+    this.precioBono = const Value.absent(),
+    this.compradoEl = const Value.absent(),
+    this.caducaEl = const Value.absent(),
+    this.activo = const Value.absent(),
+    this.creadoEl = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BonosCompanion.insert({
+    required String id,
+    required String clienteId,
+    required String servicioId,
+    this.nombre = const Value.absent(),
+    required int sesionesTotales,
+    this.sesionesUsadas = const Value.absent(),
+    this.precioBono = const Value.absent(),
+    this.compradoEl = const Value.absent(),
+    this.caducaEl = const Value.absent(),
+    this.activo = const Value.absent(),
+    this.creadoEl = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        clienteId = Value(clienteId),
+        servicioId = Value(servicioId),
+        sesionesTotales = Value(sesionesTotales);
+  static Insertable<Bono> custom({
+    Expression<String>? id,
+    Expression<String>? clienteId,
+    Expression<String>? servicioId,
+    Expression<String>? nombre,
+    Expression<int>? sesionesTotales,
+    Expression<int>? sesionesUsadas,
+    Expression<double>? precioBono,
+    Expression<DateTime>? compradoEl,
+    Expression<DateTime>? caducaEl,
+    Expression<bool>? activo,
+    Expression<DateTime>? creadoEl,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (clienteId != null) 'cliente_id': clienteId,
+      if (servicioId != null) 'servicio_id': servicioId,
+      if (nombre != null) 'nombre': nombre,
+      if (sesionesTotales != null) 'sesiones_totales': sesionesTotales,
+      if (sesionesUsadas != null) 'sesiones_usadas': sesionesUsadas,
+      if (precioBono != null) 'precio_bono': precioBono,
+      if (compradoEl != null) 'comprado_el': compradoEl,
+      if (caducaEl != null) 'caduca_el': caducaEl,
+      if (activo != null) 'activo': activo,
+      if (creadoEl != null) 'creado_el': creadoEl,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BonosCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? clienteId,
+      Value<String>? servicioId,
+      Value<String>? nombre,
+      Value<int>? sesionesTotales,
+      Value<int>? sesionesUsadas,
+      Value<double?>? precioBono,
+      Value<DateTime>? compradoEl,
+      Value<DateTime?>? caducaEl,
+      Value<bool>? activo,
+      Value<DateTime>? creadoEl,
+      Value<int>? rowid}) {
+    return BonosCompanion(
+      id: id ?? this.id,
+      clienteId: clienteId ?? this.clienteId,
+      servicioId: servicioId ?? this.servicioId,
+      nombre: nombre ?? this.nombre,
+      sesionesTotales: sesionesTotales ?? this.sesionesTotales,
+      sesionesUsadas: sesionesUsadas ?? this.sesionesUsadas,
+      precioBono: precioBono ?? this.precioBono,
+      compradoEl: compradoEl ?? this.compradoEl,
+      caducaEl: caducaEl ?? this.caducaEl,
+      activo: activo ?? this.activo,
+      creadoEl: creadoEl ?? this.creadoEl,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (clienteId.present) {
+      map['cliente_id'] = Variable<String>(clienteId.value);
+    }
+    if (servicioId.present) {
+      map['servicio_id'] = Variable<String>(servicioId.value);
+    }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
+    if (sesionesTotales.present) {
+      map['sesiones_totales'] = Variable<int>(sesionesTotales.value);
+    }
+    if (sesionesUsadas.present) {
+      map['sesiones_usadas'] = Variable<int>(sesionesUsadas.value);
+    }
+    if (precioBono.present) {
+      map['precio_bono'] = Variable<double>(precioBono.value);
+    }
+    if (compradoEl.present) {
+      map['comprado_el'] = Variable<DateTime>(compradoEl.value);
+    }
+    if (caducaEl.present) {
+      map['caduca_el'] = Variable<DateTime>(caducaEl.value);
+    }
+    if (activo.present) {
+      map['activo'] = Variable<bool>(activo.value);
+    }
+    if (creadoEl.present) {
+      map['creado_el'] = Variable<DateTime>(creadoEl.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BonosCompanion(')
+          ..write('id: $id, ')
+          ..write('clienteId: $clienteId, ')
+          ..write('servicioId: $servicioId, ')
+          ..write('nombre: $nombre, ')
+          ..write('sesionesTotales: $sesionesTotales, ')
+          ..write('sesionesUsadas: $sesionesUsadas, ')
+          ..write('precioBono: $precioBono, ')
+          ..write('compradoEl: $compradoEl, ')
+          ..write('caducaEl: $caducaEl, ')
+          ..write('activo: $activo, ')
+          ..write('creadoEl: $creadoEl, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $BonoConsumosTable extends BonoConsumos
+    with TableInfo<$BonoConsumosTable, BonoConsumo> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BonoConsumosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _bonoIdMeta = const VerificationMeta('bonoId');
+  @override
+  late final GeneratedColumn<String> bonoId = GeneratedColumn<String>(
+      'bono_id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _citaIdMeta = const VerificationMeta('citaId');
+  @override
+  late final GeneratedColumn<String> citaId = GeneratedColumn<String>(
+      'cita_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _fechaMeta = const VerificationMeta('fecha');
+  @override
+  late final GeneratedColumn<DateTime> fecha = GeneratedColumn<DateTime>(
+      'fecha', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _notaMeta = const VerificationMeta('nota');
+  @override
+  late final GeneratedColumn<String> nota = GeneratedColumn<String>(
+      'nota', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [id, bonoId, citaId, fecha, nota];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bono_consumos';
+  @override
+  VerificationContext validateIntegrity(Insertable<BonoConsumo> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('bono_id')) {
+      context.handle(_bonoIdMeta,
+          bonoId.isAcceptableOrUnknown(data['bono_id']!, _bonoIdMeta));
+    } else if (isInserting) {
+      context.missing(_bonoIdMeta);
+    }
+    if (data.containsKey('cita_id')) {
+      context.handle(_citaIdMeta,
+          citaId.isAcceptableOrUnknown(data['cita_id']!, _citaIdMeta));
+    }
+    if (data.containsKey('fecha')) {
+      context.handle(
+          _fechaMeta, fecha.isAcceptableOrUnknown(data['fecha']!, _fechaMeta));
+    }
+    if (data.containsKey('nota')) {
+      context.handle(
+          _notaMeta, nota.isAcceptableOrUnknown(data['nota']!, _notaMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BonoConsumo map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BonoConsumo(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      bonoId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}bono_id'])!,
+      citaId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}cita_id']),
+      fecha: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}fecha'])!,
+      nota: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}nota']),
+    );
+  }
+
+  @override
+  $BonoConsumosTable createAlias(String alias) {
+    return $BonoConsumosTable(attachedDatabase, alias);
+  }
+}
+
+class BonoConsumo extends DataClass implements Insertable<BonoConsumo> {
+  final String id;
+  final String bonoId;
+  final String? citaId;
+  final DateTime fecha;
+  final String? nota;
+  const BonoConsumo(
+      {required this.id,
+      required this.bonoId,
+      this.citaId,
+      required this.fecha,
+      this.nota});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['bono_id'] = Variable<String>(bonoId);
+    if (!nullToAbsent || citaId != null) {
+      map['cita_id'] = Variable<String>(citaId);
+    }
+    map['fecha'] = Variable<DateTime>(fecha);
+    if (!nullToAbsent || nota != null) {
+      map['nota'] = Variable<String>(nota);
+    }
+    return map;
+  }
+
+  BonoConsumosCompanion toCompanion(bool nullToAbsent) {
+    return BonoConsumosCompanion(
+      id: Value(id),
+      bonoId: Value(bonoId),
+      citaId:
+          citaId == null && nullToAbsent ? const Value.absent() : Value(citaId),
+      fecha: Value(fecha),
+      nota: nota == null && nullToAbsent ? const Value.absent() : Value(nota),
+    );
+  }
+
+  factory BonoConsumo.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BonoConsumo(
+      id: serializer.fromJson<String>(json['id']),
+      bonoId: serializer.fromJson<String>(json['bonoId']),
+      citaId: serializer.fromJson<String?>(json['citaId']),
+      fecha: serializer.fromJson<DateTime>(json['fecha']),
+      nota: serializer.fromJson<String?>(json['nota']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'bonoId': serializer.toJson<String>(bonoId),
+      'citaId': serializer.toJson<String?>(citaId),
+      'fecha': serializer.toJson<DateTime>(fecha),
+      'nota': serializer.toJson<String?>(nota),
+    };
+  }
+
+  BonoConsumo copyWith(
+          {String? id,
+          String? bonoId,
+          Value<String?> citaId = const Value.absent(),
+          DateTime? fecha,
+          Value<String?> nota = const Value.absent()}) =>
+      BonoConsumo(
+        id: id ?? this.id,
+        bonoId: bonoId ?? this.bonoId,
+        citaId: citaId.present ? citaId.value : this.citaId,
+        fecha: fecha ?? this.fecha,
+        nota: nota.present ? nota.value : this.nota,
+      );
+  BonoConsumo copyWithCompanion(BonoConsumosCompanion data) {
+    return BonoConsumo(
+      id: data.id.present ? data.id.value : this.id,
+      bonoId: data.bonoId.present ? data.bonoId.value : this.bonoId,
+      citaId: data.citaId.present ? data.citaId.value : this.citaId,
+      fecha: data.fecha.present ? data.fecha.value : this.fecha,
+      nota: data.nota.present ? data.nota.value : this.nota,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BonoConsumo(')
+          ..write('id: $id, ')
+          ..write('bonoId: $bonoId, ')
+          ..write('citaId: $citaId, ')
+          ..write('fecha: $fecha, ')
+          ..write('nota: $nota')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, bonoId, citaId, fecha, nota);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BonoConsumo &&
+          other.id == this.id &&
+          other.bonoId == this.bonoId &&
+          other.citaId == this.citaId &&
+          other.fecha == this.fecha &&
+          other.nota == this.nota);
+}
+
+class BonoConsumosCompanion extends UpdateCompanion<BonoConsumo> {
+  final Value<String> id;
+  final Value<String> bonoId;
+  final Value<String?> citaId;
+  final Value<DateTime> fecha;
+  final Value<String?> nota;
+  final Value<int> rowid;
+  const BonoConsumosCompanion({
+    this.id = const Value.absent(),
+    this.bonoId = const Value.absent(),
+    this.citaId = const Value.absent(),
+    this.fecha = const Value.absent(),
+    this.nota = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BonoConsumosCompanion.insert({
+    required String id,
+    required String bonoId,
+    this.citaId = const Value.absent(),
+    this.fecha = const Value.absent(),
+    this.nota = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        bonoId = Value(bonoId);
+  static Insertable<BonoConsumo> custom({
+    Expression<String>? id,
+    Expression<String>? bonoId,
+    Expression<String>? citaId,
+    Expression<DateTime>? fecha,
+    Expression<String>? nota,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (bonoId != null) 'bono_id': bonoId,
+      if (citaId != null) 'cita_id': citaId,
+      if (fecha != null) 'fecha': fecha,
+      if (nota != null) 'nota': nota,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BonoConsumosCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? bonoId,
+      Value<String?>? citaId,
+      Value<DateTime>? fecha,
+      Value<String?>? nota,
+      Value<int>? rowid}) {
+    return BonoConsumosCompanion(
+      id: id ?? this.id,
+      bonoId: bonoId ?? this.bonoId,
+      citaId: citaId ?? this.citaId,
+      fecha: fecha ?? this.fecha,
+      nota: nota ?? this.nota,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (bonoId.present) {
+      map['bono_id'] = Variable<String>(bonoId.value);
+    }
+    if (citaId.present) {
+      map['cita_id'] = Variable<String>(citaId.value);
+    }
+    if (fecha.present) {
+      map['fecha'] = Variable<DateTime>(fecha.value);
+    }
+    if (nota.present) {
+      map['nota'] = Variable<String>(nota.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BonoConsumosCompanion(')
+          ..write('id: $id, ')
+          ..write('bonoId: $bonoId, ')
+          ..write('citaId: $citaId, ')
+          ..write('fecha: $fecha, ')
+          ..write('nota: $nota, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1925,12 +2793,22 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ExtrasServicioTable extrasServicio = $ExtrasServicioTable(this);
   late final $ExtrasCitaTable extrasCita = $ExtrasCitaTable(this);
   late final $GastosTable gastos = $GastosTable(this);
+  late final $BonosTable bonos = $BonosTable(this);
+  late final $BonoConsumosTable bonoConsumos = $BonoConsumosTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities =>
-      [clientes, servicios, citas, extrasServicio, extrasCita, gastos];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+        clientes,
+        servicios,
+        citas,
+        extrasServicio,
+        extrasCita,
+        gastos,
+        bonos,
+        bonoConsumos
+      ];
 }
 
 typedef $$ClientesTableCreateCompanionBuilder = ClientesCompanion Function({
@@ -3801,6 +4679,437 @@ typedef $$GastosTableProcessedTableManager = ProcessedTableManager<
     (Gasto, BaseReferences<_$AppDatabase, $GastosTable, Gasto>),
     Gasto,
     PrefetchHooks Function()>;
+typedef $$BonosTableCreateCompanionBuilder = BonosCompanion Function({
+  required String id,
+  required String clienteId,
+  required String servicioId,
+  Value<String> nombre,
+  required int sesionesTotales,
+  Value<int> sesionesUsadas,
+  Value<double?> precioBono,
+  Value<DateTime> compradoEl,
+  Value<DateTime?> caducaEl,
+  Value<bool> activo,
+  Value<DateTime> creadoEl,
+  Value<int> rowid,
+});
+typedef $$BonosTableUpdateCompanionBuilder = BonosCompanion Function({
+  Value<String> id,
+  Value<String> clienteId,
+  Value<String> servicioId,
+  Value<String> nombre,
+  Value<int> sesionesTotales,
+  Value<int> sesionesUsadas,
+  Value<double?> precioBono,
+  Value<DateTime> compradoEl,
+  Value<DateTime?> caducaEl,
+  Value<bool> activo,
+  Value<DateTime> creadoEl,
+  Value<int> rowid,
+});
+
+class $$BonosTableFilterComposer extends Composer<_$AppDatabase, $BonosTable> {
+  $$BonosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get clienteId => $composableBuilder(
+      column: $table.clienteId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get servicioId => $composableBuilder(
+      column: $table.servicioId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+      column: $table.nombre, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get sesionesTotales => $composableBuilder(
+      column: $table.sesionesTotales,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get sesionesUsadas => $composableBuilder(
+      column: $table.sesionesUsadas,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get precioBono => $composableBuilder(
+      column: $table.precioBono, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get compradoEl => $composableBuilder(
+      column: $table.compradoEl, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get caducaEl => $composableBuilder(
+      column: $table.caducaEl, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get activo => $composableBuilder(
+      column: $table.activo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get creadoEl => $composableBuilder(
+      column: $table.creadoEl, builder: (column) => ColumnFilters(column));
+}
+
+class $$BonosTableOrderingComposer
+    extends Composer<_$AppDatabase, $BonosTable> {
+  $$BonosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get clienteId => $composableBuilder(
+      column: $table.clienteId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get servicioId => $composableBuilder(
+      column: $table.servicioId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+      column: $table.nombre, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get sesionesTotales => $composableBuilder(
+      column: $table.sesionesTotales,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get sesionesUsadas => $composableBuilder(
+      column: $table.sesionesUsadas,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get precioBono => $composableBuilder(
+      column: $table.precioBono, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get compradoEl => $composableBuilder(
+      column: $table.compradoEl, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get caducaEl => $composableBuilder(
+      column: $table.caducaEl, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get activo => $composableBuilder(
+      column: $table.activo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get creadoEl => $composableBuilder(
+      column: $table.creadoEl, builder: (column) => ColumnOrderings(column));
+}
+
+class $$BonosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BonosTable> {
+  $$BonosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get clienteId =>
+      $composableBuilder(column: $table.clienteId, builder: (column) => column);
+
+  GeneratedColumn<String> get servicioId => $composableBuilder(
+      column: $table.servicioId, builder: (column) => column);
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<int> get sesionesTotales => $composableBuilder(
+      column: $table.sesionesTotales, builder: (column) => column);
+
+  GeneratedColumn<int> get sesionesUsadas => $composableBuilder(
+      column: $table.sesionesUsadas, builder: (column) => column);
+
+  GeneratedColumn<double> get precioBono => $composableBuilder(
+      column: $table.precioBono, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get compradoEl => $composableBuilder(
+      column: $table.compradoEl, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get caducaEl =>
+      $composableBuilder(column: $table.caducaEl, builder: (column) => column);
+
+  GeneratedColumn<bool> get activo =>
+      $composableBuilder(column: $table.activo, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get creadoEl =>
+      $composableBuilder(column: $table.creadoEl, builder: (column) => column);
+}
+
+class $$BonosTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $BonosTable,
+    Bono,
+    $$BonosTableFilterComposer,
+    $$BonosTableOrderingComposer,
+    $$BonosTableAnnotationComposer,
+    $$BonosTableCreateCompanionBuilder,
+    $$BonosTableUpdateCompanionBuilder,
+    (Bono, BaseReferences<_$AppDatabase, $BonosTable, Bono>),
+    Bono,
+    PrefetchHooks Function()> {
+  $$BonosTableTableManager(_$AppDatabase db, $BonosTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BonosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BonosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BonosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> clienteId = const Value.absent(),
+            Value<String> servicioId = const Value.absent(),
+            Value<String> nombre = const Value.absent(),
+            Value<int> sesionesTotales = const Value.absent(),
+            Value<int> sesionesUsadas = const Value.absent(),
+            Value<double?> precioBono = const Value.absent(),
+            Value<DateTime> compradoEl = const Value.absent(),
+            Value<DateTime?> caducaEl = const Value.absent(),
+            Value<bool> activo = const Value.absent(),
+            Value<DateTime> creadoEl = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BonosCompanion(
+            id: id,
+            clienteId: clienteId,
+            servicioId: servicioId,
+            nombre: nombre,
+            sesionesTotales: sesionesTotales,
+            sesionesUsadas: sesionesUsadas,
+            precioBono: precioBono,
+            compradoEl: compradoEl,
+            caducaEl: caducaEl,
+            activo: activo,
+            creadoEl: creadoEl,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String clienteId,
+            required String servicioId,
+            Value<String> nombre = const Value.absent(),
+            required int sesionesTotales,
+            Value<int> sesionesUsadas = const Value.absent(),
+            Value<double?> precioBono = const Value.absent(),
+            Value<DateTime> compradoEl = const Value.absent(),
+            Value<DateTime?> caducaEl = const Value.absent(),
+            Value<bool> activo = const Value.absent(),
+            Value<DateTime> creadoEl = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BonosCompanion.insert(
+            id: id,
+            clienteId: clienteId,
+            servicioId: servicioId,
+            nombre: nombre,
+            sesionesTotales: sesionesTotales,
+            sesionesUsadas: sesionesUsadas,
+            precioBono: precioBono,
+            compradoEl: compradoEl,
+            caducaEl: caducaEl,
+            activo: activo,
+            creadoEl: creadoEl,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$BonosTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $BonosTable,
+    Bono,
+    $$BonosTableFilterComposer,
+    $$BonosTableOrderingComposer,
+    $$BonosTableAnnotationComposer,
+    $$BonosTableCreateCompanionBuilder,
+    $$BonosTableUpdateCompanionBuilder,
+    (Bono, BaseReferences<_$AppDatabase, $BonosTable, Bono>),
+    Bono,
+    PrefetchHooks Function()>;
+typedef $$BonoConsumosTableCreateCompanionBuilder = BonoConsumosCompanion
+    Function({
+  required String id,
+  required String bonoId,
+  Value<String?> citaId,
+  Value<DateTime> fecha,
+  Value<String?> nota,
+  Value<int> rowid,
+});
+typedef $$BonoConsumosTableUpdateCompanionBuilder = BonoConsumosCompanion
+    Function({
+  Value<String> id,
+  Value<String> bonoId,
+  Value<String?> citaId,
+  Value<DateTime> fecha,
+  Value<String?> nota,
+  Value<int> rowid,
+});
+
+class $$BonoConsumosTableFilterComposer
+    extends Composer<_$AppDatabase, $BonoConsumosTable> {
+  $$BonoConsumosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get bonoId => $composableBuilder(
+      column: $table.bonoId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get citaId => $composableBuilder(
+      column: $table.citaId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get fecha => $composableBuilder(
+      column: $table.fecha, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get nota => $composableBuilder(
+      column: $table.nota, builder: (column) => ColumnFilters(column));
+}
+
+class $$BonoConsumosTableOrderingComposer
+    extends Composer<_$AppDatabase, $BonoConsumosTable> {
+  $$BonoConsumosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get bonoId => $composableBuilder(
+      column: $table.bonoId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get citaId => $composableBuilder(
+      column: $table.citaId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get fecha => $composableBuilder(
+      column: $table.fecha, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get nota => $composableBuilder(
+      column: $table.nota, builder: (column) => ColumnOrderings(column));
+}
+
+class $$BonoConsumosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BonoConsumosTable> {
+  $$BonoConsumosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get bonoId =>
+      $composableBuilder(column: $table.bonoId, builder: (column) => column);
+
+  GeneratedColumn<String> get citaId =>
+      $composableBuilder(column: $table.citaId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fecha =>
+      $composableBuilder(column: $table.fecha, builder: (column) => column);
+
+  GeneratedColumn<String> get nota =>
+      $composableBuilder(column: $table.nota, builder: (column) => column);
+}
+
+class $$BonoConsumosTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $BonoConsumosTable,
+    BonoConsumo,
+    $$BonoConsumosTableFilterComposer,
+    $$BonoConsumosTableOrderingComposer,
+    $$BonoConsumosTableAnnotationComposer,
+    $$BonoConsumosTableCreateCompanionBuilder,
+    $$BonoConsumosTableUpdateCompanionBuilder,
+    (
+      BonoConsumo,
+      BaseReferences<_$AppDatabase, $BonoConsumosTable, BonoConsumo>
+    ),
+    BonoConsumo,
+    PrefetchHooks Function()> {
+  $$BonoConsumosTableTableManager(_$AppDatabase db, $BonoConsumosTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BonoConsumosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BonoConsumosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BonoConsumosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> bonoId = const Value.absent(),
+            Value<String?> citaId = const Value.absent(),
+            Value<DateTime> fecha = const Value.absent(),
+            Value<String?> nota = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BonoConsumosCompanion(
+            id: id,
+            bonoId: bonoId,
+            citaId: citaId,
+            fecha: fecha,
+            nota: nota,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String bonoId,
+            Value<String?> citaId = const Value.absent(),
+            Value<DateTime> fecha = const Value.absent(),
+            Value<String?> nota = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BonoConsumosCompanion.insert(
+            id: id,
+            bonoId: bonoId,
+            citaId: citaId,
+            fecha: fecha,
+            nota: nota,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$BonoConsumosTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $BonoConsumosTable,
+    BonoConsumo,
+    $$BonoConsumosTableFilterComposer,
+    $$BonoConsumosTableOrderingComposer,
+    $$BonoConsumosTableAnnotationComposer,
+    $$BonoConsumosTableCreateCompanionBuilder,
+    $$BonoConsumosTableUpdateCompanionBuilder,
+    (
+      BonoConsumo,
+      BaseReferences<_$AppDatabase, $BonoConsumosTable, BonoConsumo>
+    ),
+    BonoConsumo,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3817,4 +5126,8 @@ class $AppDatabaseManager {
       $$ExtrasCitaTableTableManager(_db, _db.extrasCita);
   $$GastosTableTableManager get gastos =>
       $$GastosTableTableManager(_db, _db.gastos);
+  $$BonosTableTableManager get bonos =>
+      $$BonosTableTableManager(_db, _db.bonos);
+  $$BonoConsumosTableTableManager get bonoConsumos =>
+      $$BonoConsumosTableTableManager(_db, _db.bonoConsumos);
 }

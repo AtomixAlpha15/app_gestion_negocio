@@ -70,13 +70,43 @@ class Gastos extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+// BONOS (por sesiones)
+class Bonos extends Table {
+  TextColumn get id => text()();                   // uuid
+  TextColumn get clienteId => text()();            // cliente dueño del bono
+  TextColumn get servicioId => text()();           // servicio al que aplica
+  TextColumn get nombre => text().withDefault(const Constant('Bono'))();
+  IntColumn get sesionesTotales => integer()();    // p.ej. 10
+  IntColumn get sesionesUsadas => integer().withDefault(const Constant(0))();
+  RealColumn get precioBono => real().nullable()(); // opcional (ventas futuras)
+  DateTimeColumn get compradoEl => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get caducaEl => dateTime().nullable()();
+  BoolColumn get activo => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get creadoEl => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// CONSUMOS DE BONO (1 fila = 1 sesión usada)
+class BonoConsumos extends Table {
+  TextColumn get id => text()();              // uuid
+  TextColumn get bonoId => text()();          // FK -> bonos.id
+  TextColumn get citaId => text().nullable()();  // cita donde se consumió (opcional)
+  DateTimeColumn get fecha => dateTime().withDefault(currentDateAndTime)();
+  TextColumn get nota => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 
 
 
 // Importa las tablas arriba definidas
 
 @DriftDatabase(
-  tables: [Clientes, Servicios, Citas, ExtrasServicio,ExtrasCita,Gastos],
+  tables: [Clientes, Servicios, Citas, ExtrasServicio,ExtrasCita,Gastos,Bonos,BonoConsumos],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());

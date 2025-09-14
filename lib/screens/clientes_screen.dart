@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/clientes_provider.dart';
+import '../providers/citas_provider.dart';
 import 'ficha_cliente_screen.dart';
 
 class ClientesScreen extends StatefulWidget {
@@ -144,42 +145,32 @@ class _ClienteCard extends StatelessWidget {
   final bool esNuevo;
   final VoidCallback onTap;
   final VoidCallback? onDelete;
+  final bool tieneImpagos; // NEW
 
   const _ClienteCard({
     this.cliente,
     this.esNuevo = false,
     required this.onTap,
     this.onDelete,
+    this.tieneImpagos = false, // NEW
   });
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
 
     if (esNuevo) {
       return Card(
-        color: scheme.secondaryContainer,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: scheme.outlineVariant),
-        ),
+        clipBehavior: Clip.antiAlias, // importante para overlays
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.person_add, size: 48, color: scheme.onSecondaryContainer),
-                const SizedBox(height: 12),
-                Text(
-                  'Añadir cliente',
-                  style: text.titleMedium?.copyWith(
-                    color: scheme.onSecondaryContainer,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+              children: const [
+                Icon(Icons.person_add, size: 48),
+                SizedBox(height: 12),
+                Text('Añadir cliente'),
               ],
             ),
           ),
@@ -187,58 +178,89 @@ class _ClienteCard extends StatelessWidget {
       );
     }
 
-    return Card
-    (
-      color: scheme.secondaryContainer,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: scheme.outlineVariant),
-      ),
+    return Card(
+      clipBehavior: Clip.antiAlias, // para que el triángulo no se salga
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Avatar
-              CircleAvatar(
-                radius: 36,
-                backgroundColor: scheme.surfaceVariant,
-                backgroundImage: cliente?.imagenPath != null
-                    ? Image.file(File(cliente.imagenPath!)).image
-                    : null,
-                child: (cliente?.imagenPath == null)
-                    ? Icon(Icons.person, size: 36, color: scheme.onSurfaceVariant)
-                    : null,
+        child: Stack(
+          children: [
+            // Contenido
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 36,
+                    backgroundImage: cliente.imagenPath != null
+                      ? Image.file(File(cliente.imagenPath!)).image
+                      : null,
+                    child: cliente.imagenPath == null
+                      ? const Icon(Icons.person, size: 36)
+                      : null,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    cliente.nombre,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  if (onDelete != null)
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      color: Theme.of(context).colorScheme.error,
+                      tooltip: 'Eliminar',
+                      onPressed: onDelete,
+                    ),
+                ],
               ),
-              const SizedBox(height: 16),
+            ),
 
-              // Nombre
-              Text(
-                cliente.nombre,
-                style: text.titleMedium?.copyWith(
-                  color: scheme.onSecondaryContainer,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 2,
+            // Badge triangular SOLO si hay impagos, sin texto
+            if (tieneImpagos)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: _TriangleBadge(color: scheme.tertiary),
               ),
-              const SizedBox(height: 8),
-
-              // Eliminar
-              if (onDelete != null)
-                IconButton(
-                  icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
-                  tooltip: 'Eliminar',
-                  onPressed: onDelete,
-                ),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
+}
+
+/// Pequeño triángulo para la esquina superior derecha
+class _TriangleBadge extends StatelessWidget {
+  final Color color;
+  const _TriangleBadge({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 22,
+      height: 22,
+      child: ClipPath(
+        clipper: _CornerTriangleClipper(),
+        child: Container(color: color),
+      ),
+    );
+  }
+}
+
+class _CornerTriangleClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    // Triángulo en esquina superior derecha
+    final p = Path()
+      ..moveTo(size.width, 0)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, 0)
+      ..close();
+    return p;
+  }
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
