@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
 class SettingsProvider extends ChangeNotifier {
   // --- PERSONALIZACIÓN VISUAL ---
@@ -13,6 +15,7 @@ class SettingsProvider extends ChangeNotifier {
   String direccion = "";
   String telefono = "";
   String email = "";
+  int numeroEmpleados = 1; // nuevo (mínimo 1)
 
   // --- PREFERENCIAS DE INTERFAZ ---
   String idioma = "Español";
@@ -36,6 +39,10 @@ class SettingsProvider extends ChangeNotifier {
   bool get usarPaletaAuto => _usarPaletaAuto;
   Color get colorSecundarioManual => _colorSecundarioManual;
   Color get colorTerciarioManual => _colorTerciarioManual;
+
+  // ====== AUTO BACKUP LOCAL ======
+  int intervaloBackupDias = 7;      // cada cuántos días hacer copia
+  DateTime? ultimaFechaBackup;      // cuándo se hizo la última copia
 
   // ---- Claves SharedPreferences ----
   static const _kFuente                 = 'aj_fuente';
@@ -73,6 +80,7 @@ class SettingsProvider extends ChangeNotifier {
     telefono      = prefs.getString(_kTelefono)      ?? "";
     email         = prefs.getString(_kEmail)         ?? "";
     direccion     = prefs.getString(_kDireccion)     ?? "";
+    numeroEmpleados = prefs.getInt('numeroEmpleados') ?? 1;
 
     idioma        = prefs.getString(_kIdioma)        ?? "Español";
     formatoFecha  = prefs.getString(_kFormatoFecha)  ?? "DD/MM/YYYY";
@@ -92,6 +100,11 @@ class SettingsProvider extends ChangeNotifier {
     final terManInt = prefs.getInt(_kColorTerciarioManual);
     if (terManInt != null) _colorTerciarioManual = Color(terManInt);
 
+    //Auto Backup
+    intervaloBackupDias = prefs.getInt('intervaloBackupDias') ?? 7;
+    final lastIso = prefs.getString('ultimaFechaBackup');
+    ultimaFechaBackup = lastIso != null ? DateTime.tryParse(lastIso) : null;
+
     notifyListeners();
   }
 
@@ -108,6 +121,7 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setString(_kTelefono, telefono);
     await prefs.setString(_kEmail, email);
     await prefs.setString(_kDireccion, direccion);
+    await prefs.setInt('numeroEmpleados', numeroEmpleados);
 
     await prefs.setString(_kIdioma, idioma);
     await prefs.setString(_kFormatoFecha, formatoFecha);
@@ -120,6 +134,11 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setBool(_kUsarPaletaAuto, _usarPaletaAuto);
     await prefs.setInt(_kColorSecundarioManual, _colorSecundarioManual.value);
     await prefs.setInt(_kColorTerciarioManual, _colorTerciarioManual.value);
+
+    //Auto Backup
+
+    await prefs.setInt('intervaloBackupDias', intervaloBackupDias);
+    await prefs.setString('ultimaFechaBackup', ultimaFechaBackup?.toIso8601String() ?? '');
 
   }
 
@@ -170,6 +189,12 @@ class SettingsProvider extends ChangeNotifier {
     guardarAjustes();
     notifyListeners();
   }
+
+  void deleteLogoPath(String path) {
+    logoPath = '';
+    guardarAjustes();
+    notifyListeners();
+  }
   void setNombreEmpresa(String nombre) {
     nombreEmpresa = nombre;
     guardarAjustes();
@@ -187,6 +212,12 @@ class SettingsProvider extends ChangeNotifier {
   }
   void setEmail(String mail) {
     email = mail;
+    guardarAjustes();
+    notifyListeners();
+  }
+  void setNumeroEmpleados(int n) {
+    if (n < 1) n = 1;
+    numeroEmpleados = n;
     guardarAjustes();
     notifyListeners();
   }
@@ -213,6 +244,90 @@ class SettingsProvider extends ChangeNotifier {
   void setAlertasImpagos(bool v) {
     alertasImpagos = v;
     guardarAjustes();
+    notifyListeners();
+  }
+  void setIntervaloBackupDias(int d) {
+    intervaloBackupDias = d.clamp(1, 365);
+    guardarAjustes();
+    notifyListeners();
+  }
+  void setUltimaFechaBackup(DateTime dt) {
+    ultimaFechaBackup = dt;
+    guardarAjustes();
+    notifyListeners();
+  }
+
+  // ---------- SNAPSHOT A/B DEL PROVIDER (para backup) ----------
+
+  // -> Exporta todos los valores “duraderos” a un Map sencillo
+  Map<String, dynamic> toBackupMap() {
+    return {
+      // Visual
+      'fuente': fuente,
+      'tamanoFuente': tamanoFuente,
+      'oscuro': oscuro,
+      // Paleta
+      'usarPaletaAuto': usarPaletaAuto,
+      'colorBase': colorBase.value,
+      'colorSecundarioManual': colorSecundarioManual.value,
+      'colorTerciarioManual': colorTerciarioManual.value,
+
+      // Empresa
+      // IMPORTANTE: guardamos SOLO el nombre de archivo del logo (lo mapearemos al path real al restaurar)
+      'logoFile': logoPath.isEmpty ? '' : logoPath.split(Platform.pathSeparator).last,
+      'nombreEmpresa': nombreEmpresa,
+      'direccion': direccion,
+      'telefono': telefono,
+      'email': email,
+      'numeroEmpleados': numeroEmpleados,
+
+      // Interfaz
+      'idioma': idioma,
+      'formatoFecha': formatoFecha,
+      'simboloMoneda': simboloMoneda,
+      'anchoMenu': anchoMenu,
+      'alertasImpagos': alertasImpagos,
+    };
+  }
+
+  // -> Aplica un Map (normalmente el settings.json del backup)
+  //    Si ya has copiado los assets y conoces el path real del logo,
+  //    pásalo en overrideLogoPath para almacenarlo tal cual.
+  Future<void> applyBackupMap(Map<String, dynamic> m, {String? overrideLogoPath}) async {
+    // Visual
+    fuente = (m['fuente'] ?? fuente) as String;
+    tamanoFuente = (m['tamanoFuente'] ?? tamanoFuente) as double;
+    oscuro = (m['oscuro'] ?? oscuro) as bool;
+
+    // Paleta
+    await setUsarPaletaAuto(m['usarPaletaAuto'] ?? usarPaletaAuto);
+    await setColorBase(Color((m['colorBase'] ?? colorBase.value) as int));
+    await setColorSecundarioManual(Color((m['colorSecundarioManual'] ?? colorSecundarioManual.value) as int));
+    await setColorTerciarioManual(Color((m['colorTerciarioManual'] ?? colorTerciarioManual.value) as int));
+
+    // Empresa
+    final logoFileInJson = (m['logoFile'] ?? '') as String;
+    if (overrideLogoPath != null && overrideLogoPath.isNotEmpty) {
+      logoPath = overrideLogoPath; // ya mapeado a ruta absoluta restaurada
+    } else if (logoFileInJson.isNotEmpty) {
+      // Si no nos pasaron override, intentamos resolverlo en Documentos
+      final docs = await getApplicationDocumentsDirectory();
+      logoPath = '${docs.path}${Platform.pathSeparator}$logoFileInJson';
+    }
+    nombreEmpresa = (m['nombreEmpresa'] ?? nombreEmpresa) as String;
+    direccion = (m['direccion'] ?? direccion) as String;
+    telefono = (m['telefono'] ?? telefono) as String;
+    email = (m['email'] ?? email) as String;
+    numeroEmpleados = (m['numeroEmpleados'] ?? numeroEmpleados) as int;
+
+    // Interfaz
+    idioma = (m['idioma'] ?? idioma) as String;
+    formatoFecha = (m['formatoFecha'] ?? formatoFecha) as String;
+    simboloMoneda = (m['simboloMoneda'] ?? simboloMoneda) as String;
+    anchoMenu = (m['anchoMenu'] ?? anchoMenu) as double;
+    alertasImpagos = (m['alertasImpagos'] ?? alertasImpagos) as bool;
+
+    await guardarAjustes();
     notifyListeners();
   }
 

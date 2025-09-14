@@ -81,9 +81,19 @@ class Gastos extends Table {
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  Future<File> getDatabaseFile() async {
+    final dir = await getApplicationDocumentsDirectory();
+    return File(p.join(dir.path, 'negocio_app.sqlite'));
+  }
+  
+  Future<void> closeDatabase() async {
+    await close();
+  }
+
   @override
   int get schemaVersion => 1;
 }
+
 
 // Abre la base de datos en la ruta local adecuada
 LazyDatabase _openConnection() {

@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'screens/main_shell.dart';
 import 'screens/login_screen.dart';
 import 'providers/settings_provider.dart';
+import 'services/app_database.dart';
+import 'services/backup_services.dart';
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -12,6 +14,18 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool _logueado = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Lanza el auto-backup cuando ya está montada la app
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final db = context.read<AppDatabase>();
+      final s  = context.read<SettingsProvider>();
+      final backup = BackupService(db: db, settings: s);
+      await backup.autoBackupIfDue();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
