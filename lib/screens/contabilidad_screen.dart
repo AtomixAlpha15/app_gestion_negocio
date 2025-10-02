@@ -16,7 +16,7 @@ extension FirstWhereOrNullExtension<E> on List<E> {
   }
 }
 
-const double anchoFiltros = 280;
+const double anchoFiltros = 240;
 const double anchoTotales = 260;
 
 class ContabilidadScreen extends StatefulWidget {
@@ -200,7 +200,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
                           if (val != null) setState(() => mesActual = val);
                         },
                       ),
-                      const SizedBox(width: 24),
+                      const SizedBox(width: 12),
                       Text('Año:', style: text.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
                       const SizedBox(width: 8),
                       DropdownButton<int>(
@@ -333,7 +333,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
                 Expanded(
                   child: GridView.count(
                     crossAxisCount: 3,
-                    childAspectRatio: 2.2,
+                    childAspectRatio: 1.0,
                     children: List.generate(12, (i) {
                       final meses = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
                       final selected = (i + 1) == mesActual;
@@ -346,17 +346,17 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
                         child: Card(
                           color: cardColor,
                           child: Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(meses[i], style: text.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: titleColor)),
-                                const SizedBox(height: 2),
-                                Text('${beneficiosPorMes[i].toStringAsFixed(2)} €',
-                                    style: text.bodySmall?.copyWith(color: titleColor)),
-                              ],
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(meses[i], style: text.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: titleColor)),
+                                  const SizedBox(height: 2),
+                                  Text('${beneficiosPorMes[i].toStringAsFixed(2)} €',
+                                      style: text.bodySmall?.copyWith(color: titleColor)),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
                       );
                     }),
                   ),
@@ -425,7 +425,7 @@ class IngresosTab extends StatelessWidget {
           // Cabecera
           return Container(
             color: scheme.secondaryContainer,
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: 8,horizontal: 8),
             child: Row(
               children: [
                 Expanded(flex: 2, child: Text('Fecha', style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: scheme.onSecondaryContainer))),
@@ -444,7 +444,10 @@ class IngresosTab extends StatelessWidget {
         final cliente = clientes.firstWhereOrNull((c) => c.id == cita.clienteId);
         final servicio = servicios.firstWhereOrNull((s) => s.id == cita.servicioId);
 
-        final esPasada = cita.inicio.isBefore(DateTime.now());
+        final inicioHoy = DateTime.now();
+        final hoy = DateTime(inicioHoy.year, inicioHoy.month, inicioHoy.day);
+
+        final esPasada = cita.inicio.isBefore(hoy);
         final impagada = (cita.metodoPago == null || cita.metodoPago!.isEmpty) && esPasada;
 
         final bg = impagada ? scheme.tertiaryContainer : Colors.transparent;
@@ -454,7 +457,9 @@ class IngresosTab extends StatelessWidget {
 
         return Container(
           color: bg,
-          child: Row(
+          child: Padding( 
+            padding:EdgeInsetsGeometry.only(left: 8),
+            child: Row(
             children: [
               Expanded(
                 flex: 2,
@@ -498,6 +503,7 @@ class IngresosTab extends StatelessWidget {
               ),
             ],
           ),
+          ),
         );
       },
     );
@@ -533,18 +539,21 @@ class GastosTab extends StatelessWidget {
 
     return Column(
       children: [
-        Align(
-          alignment: Alignment.centerRight,
-          child: FilledButton.icon(
-            icon: const Icon(Icons.add),
-            label: const Text('Añadir gasto'),
-            onPressed: () async {
-              await showDialog(
-                context: context,
-                builder: (_) => DialogNuevoGasto(mes: mes, anio: anio),
-              );
-              gastosProvider.gastosPorMes(mes, anio); // refresca tras añadir
-            },
+        Padding(
+        padding: EdgeInsetsGeometry.only(top:10),
+          child: Align(
+            alignment: Alignment.centerRight, 
+            child: FilledButton.icon(
+              icon: const Icon(Icons.add),
+              label: const Text('Añadir gasto'),
+              onPressed: () async {
+                await showDialog(
+                  context: context,
+                  builder: (_) => DialogNuevoGasto(mes: mes, anio: anio),
+                );
+                gastosProvider.gastosPorMes(mes, anio); // refresca tras añadir
+              },
+            ),
           ),
         ),
         const SizedBox(height: 8),
@@ -558,7 +567,7 @@ class GastosTab extends StatelessWidget {
                       // Cabecera
                       return Container(
                         color: scheme.secondaryContainer,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(vertical: 8,horizontal: 8),
                         child: Row(
                           children: [
                             Expanded(flex: 4, child: Text('Concepto', style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: scheme.onSecondaryContainer))),
@@ -569,7 +578,9 @@ class GastosTab extends StatelessWidget {
                       );
                     }
                     final gasto = gastos[index - 1];
-                    return Row(
+                    return Padding(
+                      padding: EdgeInsetsGeometry.only(left: 8), 
+                      child:Row(
                       children: [
                         Expanded(flex: 4, child: Text(gasto.concepto)),
                         Expanded(flex: 2, child: Text('${gasto.precio.toStringAsFixed(2)} €')),
@@ -583,6 +594,7 @@ class GastosTab extends StatelessWidget {
                           ),
                         ),
                       ],
+                      ),
                     );
                   },
                 ),

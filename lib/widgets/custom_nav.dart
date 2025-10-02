@@ -56,7 +56,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
 
   @override
   Widget build(BuildContext context) {
-    WidgetsBinding.instance.addPostFrameCallback((_) => _updateResponsiveMenu());
+    //WidgetsBinding.instance.addPostFrameCallback((_) => _updateResponsiveMenu());
 
     final settings = context.watch<SettingsProvider>();
     final theme = Theme.of(context);
@@ -72,15 +72,18 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
     final selectedBg = _blend(scheme.secondary, railBg, isDark ? 0.35 : 0.18);
     final selectedFg = _onColor(selectedBg);
 
-    return AnimatedContainer(
+    return SizedBox(                   // 👈 asegura altura finita
+    height: double.infinity,
+    child:  AnimatedContainer(
       duration: const Duration(milliseconds: 250),
-      width: _extended ? 220 : 72,
+      width: _extended ? 220 : 80,
       onEnd: () => setState(() {}), // fuerza un repintado al terminar la animación
       child: Material(
         color: railBg,
         elevation: 3,
         surfaceTintColor: Colors.transparent, // evita tinte M3
       child: Column(
+        mainAxisSize: MainAxisSize.max,
         children: [
           // Botón hamburguesa
           Padding(
@@ -132,8 +135,8 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
               }
               return Image.file(
                 File(settings.logoPath),
-                width: _extended ? 200 : 36,
-                height: _extended ? 200 : 36,
+                width: _extended ? 200 : 48,
+                height: _extended ? 200 : 48,
                 fit: BoxFit.contain,
               );
             })(),
@@ -142,7 +145,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
           // Botones de navegación
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.only(left: 8),
+              padding: const EdgeInsets.only(left: 8,right: 8),
               children: [
                 _NavButton(
                   icon: Icons.people,
@@ -226,7 +229,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
           ),
         ],
       ),
-    ));
+    )));
   }
 }
 

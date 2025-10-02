@@ -24,7 +24,7 @@ class CitasProvider extends ChangeNotifier {
   }
 
   /// Inserta y **devuelve** la Cita creada (útil para aplicar bono, etc).
-  Future<Cita> insertarCita({
+  Future<String> insertarCita({
     required String clienteId,
     required String servicioId,
     required DateTime inicio,
@@ -34,10 +34,10 @@ class CitasProvider extends ChangeNotifier {
     String? notas,
     bool pagada = false,
   }) async {
-    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    final citaId = DateTime.now().millisecondsSinceEpoch.toString();
 
     final companion = CitasCompanion(
-      id:          d.Value(id),
+      id:          d.Value(citaId),
       clienteId:   d.Value(clienteId),
       servicioId:  d.Value(servicioId),
       inicio:      d.Value(inicio),
@@ -51,13 +51,13 @@ class CitasProvider extends ChangeNotifier {
     await db.into(db.citas).insert(companion);
 
     // Devuelve la cita insertada
-    final cita = await (db.select(db.citas)..where((c) => c.id.equals(id))).getSingle();
+    final cita = await (db.select(db.citas)..where((c) => c.id.equals(citaId))).getSingle();
 
     // Refresca caché del año de la cita (si la estás usando)
     await cargarCitasAnio(inicio.year);
 
     notifyListeners();
-    return cita;
+    return citaId;
   }
   Future<String> insertarCitaYDevolverId({
     required String clienteId,
@@ -175,17 +175,22 @@ class CitasProvider extends ChangeNotifier {
     return (total is num) ? total.toDouble() : 0.0;
   }
 
-  /// Citas impagadas: pasadas en el tiempo y sin método de pago
-  Future<List<Cita>> impagosCliente(String clienteId) async {
-    final now = DateTime.now();
-    final q = db.select(db.citas)
-      ..where((c) =>
-        (c.clienteId.equals(clienteId)) &
-        (c.inicio.isSmallerThanValue(now)) &
-        (c.metodoPago.isNull() | c.metodoPago.equals(''))
-      );
-    return q.get();
-  }
+/// Citas impagadas: SOLO las anteriores a hoy 00:00 y sin método de pago
+Future<List<Cita>> impagosCliente(String clienteId) async {
+  final now = DateTime.now();
+  final hoy = DateTime(now.year, now.month, now.day); // corte: inicio del día local
+
+  final q = db.select(db.citas)
+    ..where((c) =>
+      c.clienteId.equals(clienteId) &
+      c.inicio.isSmallerThanValue(hoy) &                     // <-- antes de hoy 00:00
+      (c.metodoPago.isNull() | c.metodoPago.equals(''))      // <-- sin pago
+      // Si tienes un campo booleano c.pagada, puedes reforzarlo:
+      // & c.pagada.equals(false)
+    )
+  ..orderBy([(c) => d.OrderingTerm.asc(c.inicio)]);
+  return q.get();
+}
 
   /// Total impagado por cliente
   Future<double> totalImpagosCliente(String clienteId) async {

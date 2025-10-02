@@ -8,7 +8,7 @@ import '../providers/bonos_provider.dart';
 import '../providers/servicios_provider.dart';
 import 'package:drift/drift.dart' show OrderingTerm, OrderingMode;
 import 'package:image_picker/image_picker.dart';
-import 'package:drift/drift.dart' as d;
+import '../widgets/bonos_panel.dart';
 
 extension _LetExt<T> on T {
   R let<R>(R Function(T it) op) => op(this);
@@ -431,120 +431,16 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                             ),
                                           ),
                                         ),
-                                      ),
-                                      
-                                          // --- Bonos del cliente ---
-                                      const SizedBox(height: 20),
-                                      Text('Bonos', style: text.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                                      const SizedBox(height: 8),
-                                      Card(
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(12),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Align(
-                                                alignment: Alignment.centerRight,
-                                                child: FilledButton.icon(
-                                                  icon: const Icon(Icons.card_membership),
-                                                  label: const Text('Crear bono'),
-                                                  onPressed: () async {
-                                                    await showDialog(
-                                                      context: context,
-                                                      builder: (_) => _DialogCrearBono(clienteId: widget.cliente.id),
-                                                    );
-                                                    if (context.mounted) setState(() {});
-                                                  },
-                                                ),
-                                              ),
-                                              const SizedBox(height: 12),
-                                              FutureBuilder<List<Bono>>(
-                                                future: context.read<BonosProvider>().bonosCliente(widget.cliente.id),
-                                                builder: (ctx, snapB) {
-                                                  if (!snapB.hasData) {
-                                                    return Padding(
-                                                      padding: const EdgeInsets.symmetric(vertical: 12),
-                                                      child: LinearProgressIndicator(color: scheme.primary),
-                                                    );
-                                                  }
-                                                  final bonos = snapB.data!;
-                                                  if (bonos.isEmpty) {
-                                                    return Text('Sin bonos todavía.', style: text.bodyMedium);
-                                                  }
-                                                  return Column(
-                                                    children: bonos.map((b) {
-                                                      final usadas = b.sesionesUsadas;
-                                                      final total  = b.sesionesTotales;
-                                                      final resto  = (total - usadas).clamp(0, total);
-                                                      final pct    = total == 0 ? 0.0 : usadas / total;
-                                                      final cad    = b.caducaEl?.let((d) =>
-                                                          '${d.day.toString().padLeft(2,'0')}/${d.month.toString().padLeft(2,'0')}/${d.year}') ?? '—';
-
-                                                      return Container(
-                                                        margin: const EdgeInsets.only(bottom: 10),
-                                                        padding: const EdgeInsets.all(12),
-                                                        decoration: BoxDecoration(
-                                                          color: scheme.surfaceVariant,
-                                                          borderRadius: BorderRadius.circular(10),
-                                                          border: Border.all(color: scheme.outlineVariant),
-                                                        ),
-                                                        child: Row(
-                                                          children: [
-                                                            Expanded(
-                                                              child: Column(
-                                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                                children: [
-                                                                  Text(b.nombre ?? 'Bono', style: text.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-                                                                  const SizedBox(height: 6),
-                                                                  LinearProgressIndicator(value: pct),
-                                                                  const SizedBox(height: 6),
-                                                                  Text('Usadas: $usadas / $total  ·  Restantes: $resto  ·  Caduca: $cad',
-                                                                    style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                            const SizedBox(width: 12),
-                                                            if (b.activo)
-                                                              OutlinedButton(
-                                                                onPressed: () async {
-                                                                  // Desactivar manualmente
-                                                                  await (context.read<BonosProvider>().db.update(
-                                                                    context.read<BonosProvider>().db.bonos,
-                                                                  )..where((x) => x.id.equals(b.id))).write(
-                                                                    const BonosCompanion(activo: d.Value(false)),
-                                                                  );
-                                                                  if (context.mounted) setState(() {});
-                                                                },
-                                                                child: const Text('Desactivar'),
-                                                              )
-                                                            else
-                                                              OutlinedButton(
-                                                                onPressed: () async {
-                                                                  await (context.read<BonosProvider>().db.update(
-                                                                    context.read<BonosProvider>().db.bonos,
-                                                                  )..where((x) => x.id.equals(b.id))).write(
-                                                                    const BonosCompanion(activo: d.Value(true)),
-                                                                  );
-                                                                  if (context.mounted) setState(() {});
-                                                                },
-                                                                child: const Text('Activar'),
-                                                              ),
-                                                          ],
-                                                        ),
-                                                      );
-                                                    }).toList(),
-                                                  );
-                                                },
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-
+                                      ), 
                                     ],
                                   );
                                 },
                               ),
+                            if (!esNuevo)...[
+                              // --- Bonos del cliente --
+                              const SizedBox(height: 20),
+                              BonosPanel(clienteId: widget.cliente.id),
+                          ],  
                           ],
                         ),
                       ),

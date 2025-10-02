@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/clientes_provider.dart';
 import '../providers/servicios_provider.dart';
 import '../providers/citas_provider.dart';
+import '../providers/bonos_provider.dart';
 import '../providers/extras_servicio_provider.dart';
 import '../services/app_database.dart';
 import 'package:drift/drift.dart' show Value;
@@ -331,7 +332,7 @@ class AgendaVisual extends StatelessWidget {
 class NuevaCitaDialog extends StatefulWidget {
   final DateTime fecha;
   final TimeOfDay? horaInicial;
-  final Cita? cita;
+  final Cita? cita; 
 
   const NuevaCitaDialog({super.key, required this.fecha, this.horaInicial, this.cita});
 
@@ -346,6 +347,8 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
   TimeOfDay? horaFin;
   String? notas;
   List<String> extrasSeleccionados = [];
+  bool pagada = false;
+  String? metodoPago;
 
   @override
   void initState() {
@@ -385,6 +388,7 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
               onChanged: (val) => setState(() => clienteId = val),
               decoration: const InputDecoration(labelText: 'Cliente'),
             ),
+            const SizedBox(height: 10),
             DropdownButtonFormField<String>(
               value: servicioId,
               items: servicios
@@ -485,70 +489,67 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
         FilledButton(
           onPressed: () async {
-            final servicios = context.read<ServiciosProvider>().servicios;
-            if (clienteId == null || servicioId == null || horaInicio == null || horaFin == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Faltan datos')),
-              );
-              return;
-            }
-            final fecha = DateTime(widget.fecha.year, widget.fecha.month, widget.fecha.day, horaInicio!.hour, horaInicio!.minute);
-            final fechaFin = DateTime(widget.fecha.year, widget.fecha.month, widget.fecha.day, horaFin!.hour, horaFin!.minute);
-            final precioBase = servicios.firstWhere((s) => s.id == servicioId).precio;
-            double totalExtras = 0.0;
-            for (final extraId in extrasSeleccionados) {
-              final extra = await (extrasProvider.db.select(extrasProvider.db.extrasServicio)
-                    ..where((e) => e.id.equals(extraId)))
-                  .getSingle();
-              totalExtras += extra.precio;
-            }
-            final precioFinal = precioBase + totalExtras;
+      if (clienteId == null || servicioId == null || horaInicio == null || horaFin == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Faltan datos')),
+        );
+        return;
+      }
 
-            final citasProvider = context.read<CitasProvider>();
-            if (widget.cita == null) {
-              final idCita = DateTime.now().millisecondsSinceEpoch.toString();
-              await citasProvider.insertarCita(
-                clienteId: clienteId!,
-                servicioId: servicioId!,
-                inicio: fecha,
-                fin: fechaFin,
-                precio: precioFinal,
-                notas: notas,
-              );
-              for (final extraId in extrasSeleccionados) {
-                await extrasProvider.db.into(extrasProvider.db.extrasCita).insert(
-                  ExtrasCitaCompanion(
-                    citaId: Value(idCita),
-                    extraId: Value(extraId),
-                  ),
-                );
-              }
-            } else {
-              await citasProvider.actualizarCita(
-                id: widget.cita!.id,
-                clienteId: clienteId!,
-                servicioId: servicioId!,
-                inicio: fecha,
-                fin: fechaFin,
-                precio: precioFinal,
-                notas: notas,
-              );
-              await (extrasProvider.db.delete(extrasProvider.db.extrasCita)
-                    ..where((e) => e.citaId.equals(widget.cita!.id)))
-                  .go();
-              for (final extraId in extrasSeleccionados) {
-                await extrasProvider.db.into(extrasProvider.db.extrasCita).insert(
-                  ExtrasCitaCompanion(
-                    citaId: Value(widget.cita!.id),
-                    extraId: Value(extraId),
-                  ),
-                );
-              }
-            }
+      final fecha = DateTime(
+        widget.fecha.year, widget.fecha.month, widget.fecha.day,
+        horaInicio!.hour, horaInicio!.minute,
+      );
+      final fechaFin = DateTime(
+        widget.fecha.year, widget.fecha.month, widget.fecha.day,
+        horaFin!.hour, horaFin!.minute,
+      );
 
-            if (context.mounted) Navigator.pop(context, true);
-          },
-          child: Text(widget.cita == null ? 'Guardar' : 'Guardar cambios'),
+      // Precio base del servicio
+      final servicios = context.read<ServiciosProvider>().servicios;
+      final precioBase = servicios.firstWhere((s) => s.id == servicioId).precio;
+
+      // Providers
+      final citasProv  = context.read<CitasProvider>();
+      final bonosProv  = context.read<BonosProvider>();
+
+      // --- Lógica Bono (si hay bono activo, la cita va "pagada por bono") ---
+      double precioFinal = precioBase;
+      String? metodoPagoFinal = metodoPago;
+
+      final bonoActivo = await bonosProv.bonoActivoPara(clienteId!, servicioId!);
+      final hayBonoDisponible = bonoActivo != null &&
+                                bonoActivo.sesionesUsadas < bonoActivo.sesionesTotales;
+
+      if (hayBonoDisponible) {
+        metodoPagoFinal = 'Bono';
+        precioFinal = 0.0;
+      }
+
+      // Inserta SOLO UNA vez. 'insertarCita' te devuelve el id de la cita
+      final citaId = await citasProv.insertarCita(
+        clienteId: clienteId!,
+        servicioId: servicioId!,
+        inicio: fecha,
+        fin: fechaFin,
+        precio: precioFinal,
+        metodoPago: metodoPagoFinal,
+        notas: notas,
+        // Marcamos pagada si tiene método de pago, o si es Bono
+        pagada: (metodoPagoFinal != null && metodoPagoFinal.isNotEmpty),
+      );
+
+      // Si ha usado Bono, registra el consumo y avanza el contador
+      if (hayBonoDisponible && bonoActivo != null) {
+        await bonosProv.consumirSesion(bonoActivo.id, citaId: citaId);
+      }
+
+      // Refresca cache del año actual
+      await citasProv.cargarCitasAnio(widget.fecha.year);
+
+      if (context.mounted) Navigator.pop(context, true);
+    },
+    child: Text(widget.cita == null ? 'Guardar' : 'Guardar cambios'),
         ),
       ],
     );

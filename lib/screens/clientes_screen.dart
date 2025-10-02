@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:app_gestion_negocio/models/cita.dart';
+import 'package:app_gestion_negocio/services/app_database.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/clientes_provider.dart';
@@ -55,43 +57,51 @@ class _ClientesScreenState extends State<ClientesScreen> {
         },
       ),
       ...clientesFiltrados.map(
-        (c) => _ClienteCard(
-          cliente: c,
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => FichaClienteScreen(cliente: c),
-              ),
-            );
-            provider.cargarClientes(); // Recarga al volver
-          },
-          onDelete: () async {
-            final confirm = await showDialog<bool>(
-              context: context,
-              builder: (_) => AlertDialog(
-                title: const Text('¿Eliminar cliente?'),
-                content: const Text('Esta acción no se puede deshacer.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Cancelar'),
+        (c) => FutureBuilder(
+          future: context.read<CitasProvider>().impagosCliente(c.id),
+          builder: (context, snapshot) {
+            final hayImpagos = (snapshot.data?.isNotEmpty ?? false);
+
+            return _ClienteCard(
+              cliente: c,
+              tieneImpagos: hayImpagos, // <— ¡clave!
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FichaClienteScreen(cliente: c),
                   ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Eliminar'),
-                  ),
-                ],
-              ),
-            );
-            if (confirm == true) {
-              await provider.eliminarCliente(c.id, imagenPath: c.imagenPath);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Cliente eliminado')),
                 );
-              }
-            }
+                provider.cargarClientes(); // Recarga al volver
+              },
+              onDelete: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: const Text('¿Eliminar cliente?'),
+                    content: const Text('Esta acción no se puede deshacer.'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancelar'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Eliminar'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  await provider.eliminarCliente(c.id, imagenPath: c.imagenPath);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Cliente eliminado')),
+                    );
+                  }
+                }
+              },
+            );
           },
         ),
       ),
@@ -179,51 +189,57 @@ class _ClienteCard extends StatelessWidget {
     }
 
     return Card(
+      color: scheme.secondaryContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: scheme.outlineVariant),
+      ),
       clipBehavior: Clip.antiAlias, // para que el triángulo no se salga
       child: InkWell(
         onTap: onTap,
         child: Stack(
           children: [
             // Contenido
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircleAvatar(
-                    radius: 36,
-                    backgroundImage: cliente.imagenPath != null
-                      ? Image.file(File(cliente.imagenPath!)).image
-                      : null,
-                    child: cliente.imagenPath == null
-                      ? const Icon(Icons.person, size: 36)
-                      : null,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    cliente.nombre,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  if (onDelete != null)
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      color: Theme.of(context).colorScheme.error,
-                      tooltip: 'Eliminar',
-                      onPressed: onDelete,
+            Center(
+              child:Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: 36,
+                      backgroundImage: cliente.imagenPath != null
+                        ? Image.file(File(cliente.imagenPath!)).image
+                        : null,
+                      child: cliente.imagenPath == null
+                        ? const Icon(Icons.person, size: 36)
+                        : null,
                     ),
-                ],
+                    const SizedBox(height: 16),
+                    Text(
+                      cliente.nombre,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    if (onDelete != null)
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        color: Theme.of(context).colorScheme.error,
+                        tooltip: 'Eliminar',
+                        onPressed: onDelete,
+                      ),
+                  ],
+                ),
               ),
             ),
-
             // Badge triangular SOLO si hay impagos, sin texto
             if (tieneImpagos)
               Positioned(
-                top: 0,
-                right: 0,
-                child: _TriangleBadge(color: scheme.tertiary),
+                top: 6,
+                right: 6,
+                child: ImpagoWarning(),
               ),
           ],
         ),
@@ -233,34 +249,17 @@ class _ClienteCard extends StatelessWidget {
 }
 
 /// Pequeño triángulo para la esquina superior derecha
-class _TriangleBadge extends StatelessWidget {
-  final Color color;
-  const _TriangleBadge({required this.color});
+class ImpagoWarning extends StatelessWidget {
+  const ImpagoWarning({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 22,
-      height: 22,
-      child: ClipPath(
-        clipper: _CornerTriangleClipper(),
-        child: Container(color: color),
-      ),
+    final scheme = Theme.of(context).colorScheme;
+
+    return Icon(
+      Icons.warning,
+      color: scheme.tertiary,
+      size: 28,
     );
   }
-}
-
-class _CornerTriangleClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    // Triángulo en esquina superior derecha
-    final p = Path()
-      ..moveTo(size.width, 0)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, 0)
-      ..close();
-    return p;
-  }
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }

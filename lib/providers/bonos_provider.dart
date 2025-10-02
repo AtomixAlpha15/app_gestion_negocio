@@ -197,6 +197,20 @@ class BonosProvider extends ChangeNotifier {
     return true;
   }
 
+Future<void> eliminarBono(String bonoId) async {
+  await (db.delete(db.bonoConsumos)..where((t) => t.bonoId.equals(bonoId))).go();
+  await (db.delete(db.bonos)..where((t) => t.id.equals(bonoId))).go();
+  // Nada de recargas si la UI escucha a watch*
+  notifyListeners();
+}
+
+Future<void> actualizarActivo(String bonoId, bool activo) async {
+  await (db.update(db.bonos)..where((t) => t.id.equals(bonoId)))
+      .write(BonosCompanion(activo: Value(activo)));
+  // No llames a cargarBonos* si usas streams
+  notifyListeners(); // por si hay otros dependientes
+}
+
 
 }
 

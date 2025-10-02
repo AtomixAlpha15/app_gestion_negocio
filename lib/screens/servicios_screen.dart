@@ -368,6 +368,7 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
               controller: nombreController,
               decoration: const InputDecoration(labelText: 'Nombre del extra'),
             ),
+            const SizedBox(height: 16),
             TextField(
               controller: precioController,
               keyboardType: TextInputType.number,

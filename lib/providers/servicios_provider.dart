@@ -53,4 +53,10 @@ class ServiciosProvider extends ChangeNotifier {
     await (db.delete(db.servicios)..where((s) => s.id.equals(id))).go();
     await cargarServicios();
   }
+
+String? nombreServicioPorId(String id) {
+  final idx = _servicios.indexWhere((e) => e.id == id);
+  if (idx == -1) return null;
+  return _servicios[idx].nombre;
+}
 }
