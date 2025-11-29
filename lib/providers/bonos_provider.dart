@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart';
 import '../services/app_database.dart';
+import 'package:drift/drift.dart' as d;
+import 'package:uuid/uuid.dart';
 import 'dart:math';
 
 class BonosProvider extends ChangeNotifier {
@@ -97,10 +99,58 @@ class BonosProvider extends ChangeNotifier {
     return true;
   }
 
-  /// ⬇️ NUEVO: Consumir una sesión de un bono concreto (sin necesidad de cita)
-  /// Útil para tu caso actual en NuevaCitaDialog:
-  /// - Puedes llamarlo inmediatamente tras crear/guardar la cita (o incluso antes, sin citaId).
-  Future<void> consumirSesion(String bonoId, {String? citaId, DateTime? fecha}) async {
+  /// Bonos activos (cualquier servicio) del cliente
+  Future<List<Bono>> bonosActivosCliente(String clienteId) async {
+    final now = DateTime.now();
+    final q = db.select(db.bonos)
+      ..where((b) =>
+        b.clienteId.equals(clienteId) &
+        b.activo.equals(true) &
+        (b.caducaEl.isNull() | b.caducaEl.isBiggerOrEqualValue(now)) &
+        (b.sesionesUsadas.isSmallerThan(b.sesionesTotales)));
+    return q.get();
+  }
+
+  Future<List<Bono>> bonosCliente(String clienteId) {
+    return (db.select(db.bonos)..where((b) => b.clienteId.equals(clienteId))).get();
+  }
+
+  Future<List<BonoConsumo>> consumosDeBono(String bonoId) {
+    return (db.select(db.bonoConsumos)..where((c) => c.bonoId.equals(bonoId))).get();
+  }
+
+/// Selecciona bono activo con hueco (en base a sesiones ASIGNADAS)
+Future<Bono?> bonoActivoPara(String clienteId, String servicioId) async {
+  // Trae bonos activos del cliente/servicio, orden preferente por más antiguo
+  final bonos = await (db.select(db.bonos)
+        ..where((b) => b.clienteId.equals(clienteId) & b.servicioId.equals(servicioId) & b.activo.equals(true))
+        ..orderBy([(b) => d.OrderingTerm.asc(b.creadoEl)]))
+      .get();
+
+  for (final bono in bonos) {
+    final asignadas = await sesionesAsignadasBono(bono.id);
+    if (asignadas < bono.sesionesTotales) return bono;
+  }
+  return null;
+}
+
+Future<void> eliminarBono(String bonoId) async {
+  await (db.delete(db.bonoConsumos)..where((t) => t.bonoId.equals(bonoId))).go();
+  await (db.delete(db.bonos)..where((t) => t.id.equals(bonoId))).go();
+  // Nada de recargas si la UI escucha a watch*
+  notifyListeners();
+}
+
+Future<void> actualizarActivo(String bonoId, bool activo) async {
+  await (db.update(db.bonos)..where((t) => t.id.equals(bonoId)))
+      .write(BonosCompanion(activo: Value(activo)));
+  // No llames a cargarBonos* si usas streams
+  notifyListeners(); // por si hay otros dependientes
+}
+
+/////////////////////////////////// CONSUMOS DE BONO ////////////////////////////////////
+
+  Future<void> consumirSesion( String bonoId, String? citaId, DateTime? fecha) async {
     await db.transaction(() async {
       final bono = await (db.select(db.bonos)..where((b) => b.id.equals(bonoId))).getSingle();
 
@@ -127,89 +177,89 @@ class BonosProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Bonos activos (cualquier servicio) del cliente
-  Future<List<Bono>> bonosActivosCliente(String clienteId) async {
-    final now = DateTime.now();
-    final q = db.select(db.bonos)
-      ..where((b) =>
-        b.clienteId.equals(clienteId) &
-        b.activo.equals(true) &
-        (b.caducaEl.isNull() | b.caducaEl.isBiggerOrEqualValue(now)) &
-        (b.sesionesUsadas.isSmallerThan(b.sesionesTotales)));
-    return q.get();
-  }
+Future<bool> existeConsumoParaCita(String citaId) async {
+  final q = db.selectOnly(db.bonoConsumos)
+    ..addColumns([db.bonoConsumos.id.count()])
+    ..where(db.bonoConsumos.citaId.equals(citaId));
+  final row = await q.getSingleOrNull();
+  final count = row?.read(db.bonoConsumos.id.count()) ?? 0;
+  return count > 0;
+}
 
-  Future<List<Bono>> bonosCliente(String clienteId) {
-    return (db.select(db.bonos)..where((b) => b.clienteId.equals(clienteId))).get();
-  }
-
-  Future<List<BonoConsumo>> consumosDeBono(String bonoId) {
-    return (db.select(db.bonoConsumos)..where((c) => c.bonoId.equals(bonoId))).get();
-  }
-
-  // Bono activo (no caducado, no agotado) prioritario para un cliente+servicio
-  Future<Bono?> bonoActivoPara(String clienteId, String servicioId) async {
-    final activos = await bonosActivosClienteServicio(clienteId, servicioId);
-    if (activos.isEmpty) return null;
-    // estrategia simple: el más antiguo primero
-    activos.sort((a,b) => a.creadoEl.compareTo(b.creadoEl));
-    return activos.first;
-  }
-
-  // Consume 1 sesión de un bono concreto y enlaza la cita consumida
-  Future<void> consumirSesionDeBono({required String bonoId, required String citaId}) async {
-    final bono = await (db.select(db.bonos)..where((b) => b.id.equals(bonoId))).getSingle();
-
-    // registra consumo
-    await db.into(db.bonoConsumos).insert(BonoConsumosCompanion(
-      id: Value(_id()),
-      bonoId: Value(bono.id),
-      citaId: Value(citaId),
-    ));
-
-    // incrementa contador
-    final usadas = bono.sesionesUsadas + 1;
-    final agotado = usadas >= bono.sesionesTotales;
-    await (db.update(db.bonos)..where((b) => b.id.equals(bono.id))).write(
-      BonosCompanion(
-        sesionesUsadas: Value(usadas),
-        activo: Value(!agotado),
-      ),
-    );
-  }
-
-  // Variante: aplica bono si hay disponible, recibiendo solo IDs
-  Future<bool> aplicarBonoSiDisponiblePorId({
-    required String clienteId,
-    required String servicioId,
-    required String citaId,
-  }) async {
-    final bono = await bonoActivoPara(clienteId, servicioId);
-    if (bono == null) return false;
-
-    // marca la cita como pagada con bono
-    await (db.update(db.citas)..where((c) => c.id.equals(citaId))).write(
-      const CitasCompanion(metodoPago: Value('Bono')),
-    );
-
-    await consumirSesionDeBono(bonoId: bono.id, citaId: citaId);
-    notifyListeners();
-    return true;
-  }
-
-Future<void> eliminarBono(String bonoId) async {
-  await (db.delete(db.bonoConsumos)..where((t) => t.bonoId.equals(bonoId))).go();
-  await (db.delete(db.bonos)..where((t) => t.id.equals(bonoId))).go();
-  // Nada de recargas si la UI escucha a watch*
+Future<void> eliminarConsumoPorCita(String citaId, String bonoId) async {
+  final bono = await (db.select(db.bonos)..where((b) => b.id.equals(bonoId))).getSingle();
+  final usadas = bono.sesionesUsadas - 1;
+  await (db.delete(db.bonoConsumos)..where((t) => t.citaId.equals(citaId))).go();
+  await (db.update(db.bonos)..where((b) => b.id.equals(bonoId))).write(
+          BonosCompanion(
+          sesionesUsadas: Value(usadas),
+        ),
+  );
   notifyListeners();
 }
 
-Future<void> actualizarActivo(String bonoId, bool activo) async {
-  await (db.update(db.bonos)..where((t) => t.id.equals(bonoId)))
-      .write(BonosCompanion(activo: Value(activo)));
-  // No llames a cargarBonos* si usas streams
-  notifyListeners(); // por si hay otros dependientes
+/// Sesiones asignadas actualmente (chips que muestras como usadas)
+Future<int> sesionesAsignadasBono(String bonoId) async {
+  final q = db.selectOnly(db.bonoConsumos)
+    ..addColumns([db.bonoConsumos.id.count()])
+    ..where(db.bonoConsumos.bonoId.equals(bonoId));
+  final row = await q.getSingleOrNull();
+  return row?.read(db.bonoConsumos.id.count()) ?? 0;
 }
+
+////////////////////////////////// SECCION DE PAGO DE BONOS ////////////////////////////
+
+Future<void> insertarPagoBono({
+  required String bonoId,
+  required double importe,
+  String? metodo,            // 'efectivo' | 'bizum' | 'tarjeta'...
+  DateTime? fecha,           // si null -> now
+  String? nota,
+}) async {
+  final id = const Uuid().v4();
+  await db.into(db.bonoPagos).insert(BonoPagosCompanion(
+    id:        d.Value(id),
+    bonoId:    d.Value(bonoId),
+    importe:   d.Value(importe),
+    metodo:    d.Value(metodo),
+    fecha:     fecha != null ? d.Value(fecha) : const d.Value.absent(),
+    nota:      d.Value(nota),
+  ));
+}
+
+Future<List<BonoPago>> pagosDeBono(String bonoId) {
+  final q = db.select(db.bonoPagos)
+    ..where((t) => t.bonoId.equals(bonoId))
+    ..orderBy([(t) => d.OrderingTerm.asc(t.fecha)]);
+  return q.get();
+}
+
+Future<double> totalCobradoBono(String bonoId) async {
+  final q = db.selectOnly(db.bonoPagos)
+    ..addColumns([db.bonoPagos.importe.sum()])
+    ..where(db.bonoPagos.bonoId.equals(bonoId));
+  final row = await q.getSingleOrNull();
+  return row?.read(db.bonoPagos.importe.sum()) ?? 0.0;
+}
+
+Future<int> sesionesConsumidasBono(String bonoId) async {
+  final q = db.selectOnly(db.bonoConsumos)
+    ..addColumns([db.bonoConsumos.id.count()])
+    ..where(db.bonoConsumos.bonoId.equals(bonoId));
+  final row = await q.getSingleOrNull();
+  return row?.read(db.bonoConsumos.id.count()) ?? 0;
+}
+
+Future<double> ingresoReconocidoBono(String bonoId) async {
+  final bono = await (db.select(db.bonos)..where((b) => b.id.equals(bonoId))).getSingle();
+  final precio = bono.precioBono ?? 0;
+  if (precio <= 0 || bono.sesionesTotales <= 0) return 0;
+
+  final consumidas = await sesionesConsumidasBono(bonoId);
+  final porSesion  = precio / bono.sesionesTotales;
+  return consumidas * porSesion;
+}
+
 
 
 }

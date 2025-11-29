@@ -1,6 +1,4 @@
 import 'dart:io';
-import 'package:app_gestion_negocio/models/cita.dart';
-import 'package:app_gestion_negocio/services/app_database.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/clientes_provider.dart';

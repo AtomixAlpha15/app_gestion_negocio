@@ -83,6 +83,7 @@ class Bonos extends Table {
   DateTimeColumn get caducaEl => dateTime().nullable()();
   BoolColumn get activo => boolean().withDefault(const Constant(true))();
   DateTimeColumn get creadoEl => dateTime().withDefault(currentDateAndTime)();
+  TextColumn get reconocimiento => text().withDefault(const Constant('prorrateado'))(); 
 
   @override
   Set<Column> get primaryKey => {id};
@@ -91,10 +92,25 @@ class Bonos extends Table {
 // CONSUMOS DE BONO (1 fila = 1 sesión usada)
 class BonoConsumos extends Table {
   TextColumn get id => text()();              // uuid
-  TextColumn get bonoId => text()();          // FK -> bonos.id
-  TextColumn get citaId => text().nullable()();  // cita donde se consumió (opcional)
+  TextColumn get bonoId => text().references(Bonos, #id)();          // FK -> bonos.id
+  TextColumn get citaId => text().references(Citas, #id, onDelete: KeyAction.cascade)();   // cita donde se consumió (opcional)
   DateTimeColumn get fecha => dateTime().withDefault(currentDateAndTime)();
   TextColumn get nota => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+  
+    @override
+  List<String> get customConstraints => ['UNIQUE(cita_id)']; // <- clave
+}
+
+class BonoPagos extends Table {
+  TextColumn get id => text()();                         // uuid
+  TextColumn get bonoId => text().references(Bonos, #id)(); // FK -> bonos.id
+  RealColumn get importe => real()();                    // + cobro / - devolución
+  TextColumn get metodo => text().nullable()();          // 'efectivo' | 'bizum' | 'tarjeta' | ...
+  DateTimeColumn get fecha => dateTime().withDefault(currentDateAndTime)();
+  TextColumn get nota  => text().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -102,11 +118,10 @@ class BonoConsumos extends Table {
 
 
 
-
 // Importa las tablas arriba definidas
 
 @DriftDatabase(
-  tables: [Clientes, Servicios, Citas, ExtrasServicio,ExtrasCita,Gastos,Bonos,BonoConsumos],
+  tables: [Clientes, Servicios, Citas, ExtrasServicio,ExtrasCita,Gastos,Bonos,BonoConsumos,BonoPagos],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());

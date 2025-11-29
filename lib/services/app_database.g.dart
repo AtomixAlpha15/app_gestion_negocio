@@ -1996,6 +1996,14 @@ class $BonosTable extends Bonos with TableInfo<$BonosTable, Bono> {
       type: DriftSqlType.dateTime,
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
+  static const VerificationMeta _reconocimientoMeta =
+      const VerificationMeta('reconocimiento');
+  @override
+  late final GeneratedColumn<String> reconocimiento = GeneratedColumn<String>(
+      'reconocimiento', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('prorrateado'));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -2008,7 +2016,8 @@ class $BonosTable extends Bonos with TableInfo<$BonosTable, Bono> {
         compradoEl,
         caducaEl,
         activo,
-        creadoEl
+        creadoEl,
+        reconocimiento
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2081,6 +2090,12 @@ class $BonosTable extends Bonos with TableInfo<$BonosTable, Bono> {
       context.handle(_creadoElMeta,
           creadoEl.isAcceptableOrUnknown(data['creado_el']!, _creadoElMeta));
     }
+    if (data.containsKey('reconocimiento')) {
+      context.handle(
+          _reconocimientoMeta,
+          reconocimiento.isAcceptableOrUnknown(
+              data['reconocimiento']!, _reconocimientoMeta));
+    }
     return context;
   }
 
@@ -2112,6 +2127,8 @@ class $BonosTable extends Bonos with TableInfo<$BonosTable, Bono> {
           .read(DriftSqlType.bool, data['${effectivePrefix}activo'])!,
       creadoEl: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}creado_el'])!,
+      reconocimiento: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}reconocimiento'])!,
     );
   }
 
@@ -2133,6 +2150,7 @@ class Bono extends DataClass implements Insertable<Bono> {
   final DateTime? caducaEl;
   final bool activo;
   final DateTime creadoEl;
+  final String reconocimiento;
   const Bono(
       {required this.id,
       required this.clienteId,
@@ -2144,7 +2162,8 @@ class Bono extends DataClass implements Insertable<Bono> {
       required this.compradoEl,
       this.caducaEl,
       required this.activo,
-      required this.creadoEl});
+      required this.creadoEl,
+      required this.reconocimiento});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2163,6 +2182,7 @@ class Bono extends DataClass implements Insertable<Bono> {
     }
     map['activo'] = Variable<bool>(activo);
     map['creado_el'] = Variable<DateTime>(creadoEl);
+    map['reconocimiento'] = Variable<String>(reconocimiento);
     return map;
   }
 
@@ -2183,6 +2203,7 @@ class Bono extends DataClass implements Insertable<Bono> {
           : Value(caducaEl),
       activo: Value(activo),
       creadoEl: Value(creadoEl),
+      reconocimiento: Value(reconocimiento),
     );
   }
 
@@ -2201,6 +2222,7 @@ class Bono extends DataClass implements Insertable<Bono> {
       caducaEl: serializer.fromJson<DateTime?>(json['caducaEl']),
       activo: serializer.fromJson<bool>(json['activo']),
       creadoEl: serializer.fromJson<DateTime>(json['creadoEl']),
+      reconocimiento: serializer.fromJson<String>(json['reconocimiento']),
     );
   }
   @override
@@ -2218,6 +2240,7 @@ class Bono extends DataClass implements Insertable<Bono> {
       'caducaEl': serializer.toJson<DateTime?>(caducaEl),
       'activo': serializer.toJson<bool>(activo),
       'creadoEl': serializer.toJson<DateTime>(creadoEl),
+      'reconocimiento': serializer.toJson<String>(reconocimiento),
     };
   }
 
@@ -2232,7 +2255,8 @@ class Bono extends DataClass implements Insertable<Bono> {
           DateTime? compradoEl,
           Value<DateTime?> caducaEl = const Value.absent(),
           bool? activo,
-          DateTime? creadoEl}) =>
+          DateTime? creadoEl,
+          String? reconocimiento}) =>
       Bono(
         id: id ?? this.id,
         clienteId: clienteId ?? this.clienteId,
@@ -2245,6 +2269,7 @@ class Bono extends DataClass implements Insertable<Bono> {
         caducaEl: caducaEl.present ? caducaEl.value : this.caducaEl,
         activo: activo ?? this.activo,
         creadoEl: creadoEl ?? this.creadoEl,
+        reconocimiento: reconocimiento ?? this.reconocimiento,
       );
   Bono copyWithCompanion(BonosCompanion data) {
     return Bono(
@@ -2266,6 +2291,9 @@ class Bono extends DataClass implements Insertable<Bono> {
       caducaEl: data.caducaEl.present ? data.caducaEl.value : this.caducaEl,
       activo: data.activo.present ? data.activo.value : this.activo,
       creadoEl: data.creadoEl.present ? data.creadoEl.value : this.creadoEl,
+      reconocimiento: data.reconocimiento.present
+          ? data.reconocimiento.value
+          : this.reconocimiento,
     );
   }
 
@@ -2282,7 +2310,8 @@ class Bono extends DataClass implements Insertable<Bono> {
           ..write('compradoEl: $compradoEl, ')
           ..write('caducaEl: $caducaEl, ')
           ..write('activo: $activo, ')
-          ..write('creadoEl: $creadoEl')
+          ..write('creadoEl: $creadoEl, ')
+          ..write('reconocimiento: $reconocimiento')
           ..write(')'))
         .toString();
   }
@@ -2299,7 +2328,8 @@ class Bono extends DataClass implements Insertable<Bono> {
       compradoEl,
       caducaEl,
       activo,
-      creadoEl);
+      creadoEl,
+      reconocimiento);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2314,7 +2344,8 @@ class Bono extends DataClass implements Insertable<Bono> {
           other.compradoEl == this.compradoEl &&
           other.caducaEl == this.caducaEl &&
           other.activo == this.activo &&
-          other.creadoEl == this.creadoEl);
+          other.creadoEl == this.creadoEl &&
+          other.reconocimiento == this.reconocimiento);
 }
 
 class BonosCompanion extends UpdateCompanion<Bono> {
@@ -2329,6 +2360,7 @@ class BonosCompanion extends UpdateCompanion<Bono> {
   final Value<DateTime?> caducaEl;
   final Value<bool> activo;
   final Value<DateTime> creadoEl;
+  final Value<String> reconocimiento;
   final Value<int> rowid;
   const BonosCompanion({
     this.id = const Value.absent(),
@@ -2342,6 +2374,7 @@ class BonosCompanion extends UpdateCompanion<Bono> {
     this.caducaEl = const Value.absent(),
     this.activo = const Value.absent(),
     this.creadoEl = const Value.absent(),
+    this.reconocimiento = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   BonosCompanion.insert({
@@ -2356,6 +2389,7 @@ class BonosCompanion extends UpdateCompanion<Bono> {
     this.caducaEl = const Value.absent(),
     this.activo = const Value.absent(),
     this.creadoEl = const Value.absent(),
+    this.reconocimiento = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         clienteId = Value(clienteId),
@@ -2373,6 +2407,7 @@ class BonosCompanion extends UpdateCompanion<Bono> {
     Expression<DateTime>? caducaEl,
     Expression<bool>? activo,
     Expression<DateTime>? creadoEl,
+    Expression<String>? reconocimiento,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2387,6 +2422,7 @@ class BonosCompanion extends UpdateCompanion<Bono> {
       if (caducaEl != null) 'caduca_el': caducaEl,
       if (activo != null) 'activo': activo,
       if (creadoEl != null) 'creado_el': creadoEl,
+      if (reconocimiento != null) 'reconocimiento': reconocimiento,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2403,6 +2439,7 @@ class BonosCompanion extends UpdateCompanion<Bono> {
       Value<DateTime?>? caducaEl,
       Value<bool>? activo,
       Value<DateTime>? creadoEl,
+      Value<String>? reconocimiento,
       Value<int>? rowid}) {
     return BonosCompanion(
       id: id ?? this.id,
@@ -2416,6 +2453,7 @@ class BonosCompanion extends UpdateCompanion<Bono> {
       caducaEl: caducaEl ?? this.caducaEl,
       activo: activo ?? this.activo,
       creadoEl: creadoEl ?? this.creadoEl,
+      reconocimiento: reconocimiento ?? this.reconocimiento,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2456,6 +2494,9 @@ class BonosCompanion extends UpdateCompanion<Bono> {
     if (creadoEl.present) {
       map['creado_el'] = Variable<DateTime>(creadoEl.value);
     }
+    if (reconocimiento.present) {
+      map['reconocimiento'] = Variable<String>(reconocimiento.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2476,6 +2517,7 @@ class BonosCompanion extends UpdateCompanion<Bono> {
           ..write('caducaEl: $caducaEl, ')
           ..write('activo: $activo, ')
           ..write('creadoEl: $creadoEl, ')
+          ..write('reconocimiento: $reconocimiento, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2784,6 +2826,349 @@ class BonoConsumosCompanion extends UpdateCompanion<BonoConsumo> {
   }
 }
 
+class $BonoPagosTable extends BonoPagos
+    with TableInfo<$BonoPagosTable, BonoPago> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BonoPagosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _bonoIdMeta = const VerificationMeta('bonoId');
+  @override
+  late final GeneratedColumn<String> bonoId = GeneratedColumn<String>(
+      'bono_id', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES bonos (id)'));
+  static const VerificationMeta _importeMeta =
+      const VerificationMeta('importe');
+  @override
+  late final GeneratedColumn<double> importe = GeneratedColumn<double>(
+      'importe', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _metodoMeta = const VerificationMeta('metodo');
+  @override
+  late final GeneratedColumn<String> metodo = GeneratedColumn<String>(
+      'metodo', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _fechaMeta = const VerificationMeta('fecha');
+  @override
+  late final GeneratedColumn<DateTime> fecha = GeneratedColumn<DateTime>(
+      'fecha', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      defaultValue: currentDateAndTime);
+  static const VerificationMeta _notaMeta = const VerificationMeta('nota');
+  @override
+  late final GeneratedColumn<String> nota = GeneratedColumn<String>(
+      'nota', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, bonoId, importe, metodo, fecha, nota];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'bono_pagos';
+  @override
+  VerificationContext validateIntegrity(Insertable<BonoPago> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('bono_id')) {
+      context.handle(_bonoIdMeta,
+          bonoId.isAcceptableOrUnknown(data['bono_id']!, _bonoIdMeta));
+    } else if (isInserting) {
+      context.missing(_bonoIdMeta);
+    }
+    if (data.containsKey('importe')) {
+      context.handle(_importeMeta,
+          importe.isAcceptableOrUnknown(data['importe']!, _importeMeta));
+    } else if (isInserting) {
+      context.missing(_importeMeta);
+    }
+    if (data.containsKey('metodo')) {
+      context.handle(_metodoMeta,
+          metodo.isAcceptableOrUnknown(data['metodo']!, _metodoMeta));
+    }
+    if (data.containsKey('fecha')) {
+      context.handle(
+          _fechaMeta, fecha.isAcceptableOrUnknown(data['fecha']!, _fechaMeta));
+    }
+    if (data.containsKey('nota')) {
+      context.handle(
+          _notaMeta, nota.isAcceptableOrUnknown(data['nota']!, _notaMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BonoPago map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BonoPago(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      bonoId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}bono_id'])!,
+      importe: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}importe'])!,
+      metodo: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}metodo']),
+      fecha: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}fecha'])!,
+      nota: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}nota']),
+    );
+  }
+
+  @override
+  $BonoPagosTable createAlias(String alias) {
+    return $BonoPagosTable(attachedDatabase, alias);
+  }
+}
+
+class BonoPago extends DataClass implements Insertable<BonoPago> {
+  final String id;
+  final String bonoId;
+  final double importe;
+  final String? metodo;
+  final DateTime fecha;
+  final String? nota;
+  const BonoPago(
+      {required this.id,
+      required this.bonoId,
+      required this.importe,
+      this.metodo,
+      required this.fecha,
+      this.nota});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['bono_id'] = Variable<String>(bonoId);
+    map['importe'] = Variable<double>(importe);
+    if (!nullToAbsent || metodo != null) {
+      map['metodo'] = Variable<String>(metodo);
+    }
+    map['fecha'] = Variable<DateTime>(fecha);
+    if (!nullToAbsent || nota != null) {
+      map['nota'] = Variable<String>(nota);
+    }
+    return map;
+  }
+
+  BonoPagosCompanion toCompanion(bool nullToAbsent) {
+    return BonoPagosCompanion(
+      id: Value(id),
+      bonoId: Value(bonoId),
+      importe: Value(importe),
+      metodo:
+          metodo == null && nullToAbsent ? const Value.absent() : Value(metodo),
+      fecha: Value(fecha),
+      nota: nota == null && nullToAbsent ? const Value.absent() : Value(nota),
+    );
+  }
+
+  factory BonoPago.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BonoPago(
+      id: serializer.fromJson<String>(json['id']),
+      bonoId: serializer.fromJson<String>(json['bonoId']),
+      importe: serializer.fromJson<double>(json['importe']),
+      metodo: serializer.fromJson<String?>(json['metodo']),
+      fecha: serializer.fromJson<DateTime>(json['fecha']),
+      nota: serializer.fromJson<String?>(json['nota']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'bonoId': serializer.toJson<String>(bonoId),
+      'importe': serializer.toJson<double>(importe),
+      'metodo': serializer.toJson<String?>(metodo),
+      'fecha': serializer.toJson<DateTime>(fecha),
+      'nota': serializer.toJson<String?>(nota),
+    };
+  }
+
+  BonoPago copyWith(
+          {String? id,
+          String? bonoId,
+          double? importe,
+          Value<String?> metodo = const Value.absent(),
+          DateTime? fecha,
+          Value<String?> nota = const Value.absent()}) =>
+      BonoPago(
+        id: id ?? this.id,
+        bonoId: bonoId ?? this.bonoId,
+        importe: importe ?? this.importe,
+        metodo: metodo.present ? metodo.value : this.metodo,
+        fecha: fecha ?? this.fecha,
+        nota: nota.present ? nota.value : this.nota,
+      );
+  BonoPago copyWithCompanion(BonoPagosCompanion data) {
+    return BonoPago(
+      id: data.id.present ? data.id.value : this.id,
+      bonoId: data.bonoId.present ? data.bonoId.value : this.bonoId,
+      importe: data.importe.present ? data.importe.value : this.importe,
+      metodo: data.metodo.present ? data.metodo.value : this.metodo,
+      fecha: data.fecha.present ? data.fecha.value : this.fecha,
+      nota: data.nota.present ? data.nota.value : this.nota,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BonoPago(')
+          ..write('id: $id, ')
+          ..write('bonoId: $bonoId, ')
+          ..write('importe: $importe, ')
+          ..write('metodo: $metodo, ')
+          ..write('fecha: $fecha, ')
+          ..write('nota: $nota')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, bonoId, importe, metodo, fecha, nota);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BonoPago &&
+          other.id == this.id &&
+          other.bonoId == this.bonoId &&
+          other.importe == this.importe &&
+          other.metodo == this.metodo &&
+          other.fecha == this.fecha &&
+          other.nota == this.nota);
+}
+
+class BonoPagosCompanion extends UpdateCompanion<BonoPago> {
+  final Value<String> id;
+  final Value<String> bonoId;
+  final Value<double> importe;
+  final Value<String?> metodo;
+  final Value<DateTime> fecha;
+  final Value<String?> nota;
+  final Value<int> rowid;
+  const BonoPagosCompanion({
+    this.id = const Value.absent(),
+    this.bonoId = const Value.absent(),
+    this.importe = const Value.absent(),
+    this.metodo = const Value.absent(),
+    this.fecha = const Value.absent(),
+    this.nota = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BonoPagosCompanion.insert({
+    required String id,
+    required String bonoId,
+    required double importe,
+    this.metodo = const Value.absent(),
+    this.fecha = const Value.absent(),
+    this.nota = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        bonoId = Value(bonoId),
+        importe = Value(importe);
+  static Insertable<BonoPago> custom({
+    Expression<String>? id,
+    Expression<String>? bonoId,
+    Expression<double>? importe,
+    Expression<String>? metodo,
+    Expression<DateTime>? fecha,
+    Expression<String>? nota,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (bonoId != null) 'bono_id': bonoId,
+      if (importe != null) 'importe': importe,
+      if (metodo != null) 'metodo': metodo,
+      if (fecha != null) 'fecha': fecha,
+      if (nota != null) 'nota': nota,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BonoPagosCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? bonoId,
+      Value<double>? importe,
+      Value<String?>? metodo,
+      Value<DateTime>? fecha,
+      Value<String?>? nota,
+      Value<int>? rowid}) {
+    return BonoPagosCompanion(
+      id: id ?? this.id,
+      bonoId: bonoId ?? this.bonoId,
+      importe: importe ?? this.importe,
+      metodo: metodo ?? this.metodo,
+      fecha: fecha ?? this.fecha,
+      nota: nota ?? this.nota,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (bonoId.present) {
+      map['bono_id'] = Variable<String>(bonoId.value);
+    }
+    if (importe.present) {
+      map['importe'] = Variable<double>(importe.value);
+    }
+    if (metodo.present) {
+      map['metodo'] = Variable<String>(metodo.value);
+    }
+    if (fecha.present) {
+      map['fecha'] = Variable<DateTime>(fecha.value);
+    }
+    if (nota.present) {
+      map['nota'] = Variable<String>(nota.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BonoPagosCompanion(')
+          ..write('id: $id, ')
+          ..write('bonoId: $bonoId, ')
+          ..write('importe: $importe, ')
+          ..write('metodo: $metodo, ')
+          ..write('fecha: $fecha, ')
+          ..write('nota: $nota, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2795,6 +3180,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $GastosTable gastos = $GastosTable(this);
   late final $BonosTable bonos = $BonosTable(this);
   late final $BonoConsumosTable bonoConsumos = $BonoConsumosTable(this);
+  late final $BonoPagosTable bonoPagos = $BonoPagosTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -2807,7 +3193,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         extrasCita,
         gastos,
         bonos,
-        bonoConsumos
+        bonoConsumos,
+        bonoPagos
       ];
 }
 
@@ -4691,6 +5078,7 @@ typedef $$BonosTableCreateCompanionBuilder = BonosCompanion Function({
   Value<DateTime?> caducaEl,
   Value<bool> activo,
   Value<DateTime> creadoEl,
+  Value<String> reconocimiento,
   Value<int> rowid,
 });
 typedef $$BonosTableUpdateCompanionBuilder = BonosCompanion Function({
@@ -4705,8 +5093,28 @@ typedef $$BonosTableUpdateCompanionBuilder = BonosCompanion Function({
   Value<DateTime?> caducaEl,
   Value<bool> activo,
   Value<DateTime> creadoEl,
+  Value<String> reconocimiento,
   Value<int> rowid,
 });
+
+final class $$BonosTableReferences
+    extends BaseReferences<_$AppDatabase, $BonosTable, Bono> {
+  $$BonosTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$BonoPagosTable, List<BonoPago>>
+      _bonoPagosRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+          db.bonoPagos,
+          aliasName: $_aliasNameGenerator(db.bonos.id, db.bonoPagos.bonoId));
+
+  $$BonoPagosTableProcessedTableManager get bonoPagosRefs {
+    final manager = $$BonoPagosTableTableManager($_db, $_db.bonoPagos)
+        .filter((f) => f.bonoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_bonoPagosRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+}
 
 class $$BonosTableFilterComposer extends Composer<_$AppDatabase, $BonosTable> {
   $$BonosTableFilterComposer({
@@ -4750,6 +5158,31 @@ class $$BonosTableFilterComposer extends Composer<_$AppDatabase, $BonosTable> {
 
   ColumnFilters<DateTime> get creadoEl => $composableBuilder(
       column: $table.creadoEl, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get reconocimiento => $composableBuilder(
+      column: $table.reconocimiento,
+      builder: (column) => ColumnFilters(column));
+
+  Expression<bool> bonoPagosRefs(
+      Expression<bool> Function($$BonoPagosTableFilterComposer f) f) {
+    final $$BonoPagosTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.bonoPagos,
+        getReferencedColumn: (t) => t.bonoId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BonoPagosTableFilterComposer(
+              $db: $db,
+              $table: $db.bonoPagos,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$BonosTableOrderingComposer
@@ -4795,6 +5228,10 @@ class $$BonosTableOrderingComposer
 
   ColumnOrderings<DateTime> get creadoEl => $composableBuilder(
       column: $table.creadoEl, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get reconocimiento => $composableBuilder(
+      column: $table.reconocimiento,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$BonosTableAnnotationComposer
@@ -4838,6 +5275,30 @@ class $$BonosTableAnnotationComposer
 
   GeneratedColumn<DateTime> get creadoEl =>
       $composableBuilder(column: $table.creadoEl, builder: (column) => column);
+
+  GeneratedColumn<String> get reconocimiento => $composableBuilder(
+      column: $table.reconocimiento, builder: (column) => column);
+
+  Expression<T> bonoPagosRefs<T extends Object>(
+      Expression<T> Function($$BonoPagosTableAnnotationComposer a) f) {
+    final $$BonoPagosTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.bonoPagos,
+        getReferencedColumn: (t) => t.bonoId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BonoPagosTableAnnotationComposer(
+              $db: $db,
+              $table: $db.bonoPagos,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$BonosTableTableManager extends RootTableManager<
@@ -4849,9 +5310,9 @@ class $$BonosTableTableManager extends RootTableManager<
     $$BonosTableAnnotationComposer,
     $$BonosTableCreateCompanionBuilder,
     $$BonosTableUpdateCompanionBuilder,
-    (Bono, BaseReferences<_$AppDatabase, $BonosTable, Bono>),
+    (Bono, $$BonosTableReferences),
     Bono,
-    PrefetchHooks Function()> {
+    PrefetchHooks Function({bool bonoPagosRefs})> {
   $$BonosTableTableManager(_$AppDatabase db, $BonosTable table)
       : super(TableManagerState(
           db: db,
@@ -4874,6 +5335,7 @@ class $$BonosTableTableManager extends RootTableManager<
             Value<DateTime?> caducaEl = const Value.absent(),
             Value<bool> activo = const Value.absent(),
             Value<DateTime> creadoEl = const Value.absent(),
+            Value<String> reconocimiento = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               BonosCompanion(
@@ -4888,6 +5350,7 @@ class $$BonosTableTableManager extends RootTableManager<
             caducaEl: caducaEl,
             activo: activo,
             creadoEl: creadoEl,
+            reconocimiento: reconocimiento,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -4902,6 +5365,7 @@ class $$BonosTableTableManager extends RootTableManager<
             Value<DateTime?> caducaEl = const Value.absent(),
             Value<bool> activo = const Value.absent(),
             Value<DateTime> creadoEl = const Value.absent(),
+            Value<String> reconocimiento = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               BonosCompanion.insert(
@@ -4916,12 +5380,35 @@ class $$BonosTableTableManager extends RootTableManager<
             caducaEl: caducaEl,
             activo: activo,
             creadoEl: creadoEl,
+            reconocimiento: reconocimiento,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map((e) =>
+                  (e.readTable(table), $$BonosTableReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({bonoPagosRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (bonoPagosRefs) db.bonoPagos],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (bonoPagosRefs)
+                    await $_getPrefetchedData<Bono, $BonosTable, BonoPago>(
+                        currentTable: table,
+                        referencedTable:
+                            $$BonosTableReferences._bonoPagosRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$BonosTableReferences(db, table, p0).bonoPagosRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.bonoId == item.id),
+                        typedResults: items)
+                ];
+              },
+            );
+          },
         ));
 }
 
@@ -4934,9 +5421,9 @@ typedef $$BonosTableProcessedTableManager = ProcessedTableManager<
     $$BonosTableAnnotationComposer,
     $$BonosTableCreateCompanionBuilder,
     $$BonosTableUpdateCompanionBuilder,
-    (Bono, BaseReferences<_$AppDatabase, $BonosTable, Bono>),
+    (Bono, $$BonosTableReferences),
     Bono,
-    PrefetchHooks Function()>;
+    PrefetchHooks Function({bool bonoPagosRefs})>;
 typedef $$BonoConsumosTableCreateCompanionBuilder = BonoConsumosCompanion
     Function({
   required String id,
@@ -5110,6 +5597,293 @@ typedef $$BonoConsumosTableProcessedTableManager = ProcessedTableManager<
     ),
     BonoConsumo,
     PrefetchHooks Function()>;
+typedef $$BonoPagosTableCreateCompanionBuilder = BonoPagosCompanion Function({
+  required String id,
+  required String bonoId,
+  required double importe,
+  Value<String?> metodo,
+  Value<DateTime> fecha,
+  Value<String?> nota,
+  Value<int> rowid,
+});
+typedef $$BonoPagosTableUpdateCompanionBuilder = BonoPagosCompanion Function({
+  Value<String> id,
+  Value<String> bonoId,
+  Value<double> importe,
+  Value<String?> metodo,
+  Value<DateTime> fecha,
+  Value<String?> nota,
+  Value<int> rowid,
+});
+
+final class $$BonoPagosTableReferences
+    extends BaseReferences<_$AppDatabase, $BonoPagosTable, BonoPago> {
+  $$BonoPagosTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $BonosTable _bonoIdTable(_$AppDatabase db) => db.bonos
+      .createAlias($_aliasNameGenerator(db.bonoPagos.bonoId, db.bonos.id));
+
+  $$BonosTableProcessedTableManager get bonoId {
+    final $_column = $_itemColumn<String>('bono_id')!;
+
+    final manager = $$BonosTableTableManager($_db, $_db.bonos)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_bonoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+}
+
+class $$BonoPagosTableFilterComposer
+    extends Composer<_$AppDatabase, $BonoPagosTable> {
+  $$BonoPagosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get importe => $composableBuilder(
+      column: $table.importe, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get metodo => $composableBuilder(
+      column: $table.metodo, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get fecha => $composableBuilder(
+      column: $table.fecha, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get nota => $composableBuilder(
+      column: $table.nota, builder: (column) => ColumnFilters(column));
+
+  $$BonosTableFilterComposer get bonoId {
+    final $$BonosTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.bonoId,
+        referencedTable: $db.bonos,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BonosTableFilterComposer(
+              $db: $db,
+              $table: $db.bonos,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$BonoPagosTableOrderingComposer
+    extends Composer<_$AppDatabase, $BonoPagosTable> {
+  $$BonoPagosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get importe => $composableBuilder(
+      column: $table.importe, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get metodo => $composableBuilder(
+      column: $table.metodo, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get fecha => $composableBuilder(
+      column: $table.fecha, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get nota => $composableBuilder(
+      column: $table.nota, builder: (column) => ColumnOrderings(column));
+
+  $$BonosTableOrderingComposer get bonoId {
+    final $$BonosTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.bonoId,
+        referencedTable: $db.bonos,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BonosTableOrderingComposer(
+              $db: $db,
+              $table: $db.bonos,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$BonoPagosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BonoPagosTable> {
+  $$BonoPagosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<double> get importe =>
+      $composableBuilder(column: $table.importe, builder: (column) => column);
+
+  GeneratedColumn<String> get metodo =>
+      $composableBuilder(column: $table.metodo, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fecha =>
+      $composableBuilder(column: $table.fecha, builder: (column) => column);
+
+  GeneratedColumn<String> get nota =>
+      $composableBuilder(column: $table.nota, builder: (column) => column);
+
+  $$BonosTableAnnotationComposer get bonoId {
+    final $$BonosTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.bonoId,
+        referencedTable: $db.bonos,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BonosTableAnnotationComposer(
+              $db: $db,
+              $table: $db.bonos,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$BonoPagosTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $BonoPagosTable,
+    BonoPago,
+    $$BonoPagosTableFilterComposer,
+    $$BonoPagosTableOrderingComposer,
+    $$BonoPagosTableAnnotationComposer,
+    $$BonoPagosTableCreateCompanionBuilder,
+    $$BonoPagosTableUpdateCompanionBuilder,
+    (BonoPago, $$BonoPagosTableReferences),
+    BonoPago,
+    PrefetchHooks Function({bool bonoId})> {
+  $$BonoPagosTableTableManager(_$AppDatabase db, $BonoPagosTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BonoPagosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$BonoPagosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$BonoPagosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> bonoId = const Value.absent(),
+            Value<double> importe = const Value.absent(),
+            Value<String?> metodo = const Value.absent(),
+            Value<DateTime> fecha = const Value.absent(),
+            Value<String?> nota = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BonoPagosCompanion(
+            id: id,
+            bonoId: bonoId,
+            importe: importe,
+            metodo: metodo,
+            fecha: fecha,
+            nota: nota,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String bonoId,
+            required double importe,
+            Value<String?> metodo = const Value.absent(),
+            Value<DateTime> fecha = const Value.absent(),
+            Value<String?> nota = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BonoPagosCompanion.insert(
+            id: id,
+            bonoId: bonoId,
+            importe: importe,
+            metodo: metodo,
+            fecha: fecha,
+            nota: nota,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable(table),
+                    $$BonoPagosTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: ({bonoId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (bonoId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.bonoId,
+                    referencedTable:
+                        $$BonoPagosTableReferences._bonoIdTable(db),
+                    referencedColumn:
+                        $$BonoPagosTableReferences._bonoIdTable(db).id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$BonoPagosTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $BonoPagosTable,
+    BonoPago,
+    $$BonoPagosTableFilterComposer,
+    $$BonoPagosTableOrderingComposer,
+    $$BonoPagosTableAnnotationComposer,
+    $$BonoPagosTableCreateCompanionBuilder,
+    $$BonoPagosTableUpdateCompanionBuilder,
+    (BonoPago, $$BonoPagosTableReferences),
+    BonoPago,
+    PrefetchHooks Function({bool bonoId})>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5130,4 +5904,6 @@ class $AppDatabaseManager {
       $$BonosTableTableManager(_db, _db.bonos);
   $$BonoConsumosTableTableManager get bonoConsumos =>
       $$BonoConsumosTableTableManager(_db, _db.bonoConsumos);
+  $$BonoPagosTableTableManager get bonoPagos =>
+      $$BonoPagosTableTableManager(_db, _db.bonoPagos);
 }

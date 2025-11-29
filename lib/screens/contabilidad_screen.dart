@@ -5,6 +5,8 @@ import '../providers/servicios_provider.dart';
 import '../providers/citas_provider.dart';
 import '../providers/gastos_provider.dart';
 import '../services/app_database.dart';
+import '../models/movimiento_contable.dart';
+import '../providers/contabilidad_provider.dart';
 
 // Helper para Dart < 3
 extension FirstWhereOrNullExtension<E> on List<E> {
@@ -628,6 +630,7 @@ class _DialogNuevoGastoState extends State<DialogNuevoGasto> {
             controller: _conceptoController,
             decoration: const InputDecoration(labelText: 'Concepto'),
           ),
+          const SizedBox(height: 10),
           TextField(
             controller: _precioController,
             keyboardType: TextInputType.number,

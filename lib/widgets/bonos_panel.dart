@@ -27,7 +27,37 @@ class _BonosPanelState extends State<BonosPanel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Bonos', style: text.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Row(
+              children: [
+                Expanded(child:
+                  Text('Bonos', style: text.titleMedium?.copyWith(fontWeight: FontWeight.bold))
+                ),
+                const SizedBox(height: 12),
+                Expanded(child:
+                  FilledButton.icon(
+                    icon: const Icon(Icons.card_membership),
+                    label: const Text('Crear bono'),
+                    onPressed: () async {
+                      final creado = await showDialog<bool>(
+                        context: context,
+                        builder: (_) => _CrearBonoDialog(clienteId: clienteId),
+                      );
+                      if (creado == true && mounted) {
+                        setState(() {}); // recarga ambos FutureBuilder
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Bono creado'),
+                            backgroundColor: scheme.secondaryContainer,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+              ]            
+
+              ),
             const SizedBox(height: 12),
 
             // Bono activo destacado + CTA crear
@@ -57,26 +87,7 @@ class _BonosPanelState extends State<BonosPanel> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                FilledButton.icon(
-                  icon: const Icon(Icons.card_membership),
-                  label: const Text('Crear bono'),
-                  onPressed: () async {
-                    final creado = await showDialog<bool>(
-                      context: context,
-                      builder: (_) => _CrearBonoDialog(clienteId: clienteId),
-                    );
-                    if (creado == true && mounted) {
-                      setState(() {}); // recarga ambos FutureBuilder
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: const Text('Bono creado'),
-                          backgroundColor: scheme.secondaryContainer,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  },
-                ),
+
               ],
             ),
 
@@ -249,6 +260,121 @@ class _BonoFaceplate extends StatelessWidget {
               );
             }),
           ),
+          // Botón para añadir pago (ponlo junto a eliminar si quieres)
+          TextButton.icon(
+            onPressed: () async {
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (_) => _AnadirPagoDialog(bonoId: bono.id),
+              );
+              if (ok == true && context.mounted) {
+                // Fuerza a refrescar el faceplate/panel
+                (context.findAncestorStateOfType<_BonosPanelState>())?.setState(() {});
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Pago registrado')),
+                );
+              }
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('Añadir pago'),
+          ),
+
+          const SizedBox(height: 12),
+
+          // === Sección Pagos ===
+          FutureBuilder<List<BonoPago>>(
+            future: context.read<BonosProvider>().pagosDeBono(bono.id),
+            builder: (context, snap) {
+              if (snap.connectionState == ConnectionState.waiting) {
+                return const _Loader();
+              }
+              final pagos = snap.data ?? [];
+              if (pagos.isEmpty) {
+                return Text(
+                  'Sin pagos registrados.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSecondaryContainer.withOpacity(0.8),
+                  ),
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Pagos', style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    fontWeight: FontWeight.w700,
+                  )),
+                  const SizedBox(height: 8),
+                  ...pagos.map((p) => Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${_fmtDate(p.fecha)} · ${p.metodo ?? '—'}',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSecondaryContainer,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${p.importe.toStringAsFixed(2)} €',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: Theme.of(context).colorScheme.onSecondaryContainer,
+                        ),
+                      ),
+                    ],
+                  )),
+                ],
+              );
+            },
+          ),
+
+          const SizedBox(height: 12),
+
+          // === Totales ===
+          FutureBuilder<double>(
+            future: context.read<BonosProvider>().totalCobradoBono(bono.id),
+            builder: (context, cobroSnap) {
+              final cobrado = cobroSnap.data ?? 0.0;
+              return FutureBuilder<double>(
+                future: context.read<BonosProvider>().ingresoReconocidoBono(bono.id),
+                builder: (context, ingSnap) {
+                  final reconocido = ingSnap.data ?? 0.0;
+                  final diferido = (cobrado - reconocido);
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Expanded(child: Text('Cobrado', style: text.bodyMedium?.copyWith(color: scheme.onSecondaryContainer))),
+                          Text('${cobrado.toStringAsFixed(2)} €', style: text.bodyMedium?.copyWith(
+                            color: scheme.onSecondaryContainer, fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(child: Text('Ingresos reconocidos', style: text.bodyMedium?.copyWith(color: scheme.onSecondaryContainer))),
+                          Text('${reconocido.toStringAsFixed(2)} €', style: text.bodyMedium?.copyWith(
+                            color: scheme.onSecondaryContainer, fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(child: Text('Diferido', style: text.bodyMedium?.copyWith(color: scheme.onSecondaryContainer))),
+                          Text('${diferido.toStringAsFixed(2)} €', style: text.bodyMedium?.copyWith(
+                            color: scheme.onSecondaryContainer, fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+
 
           if (!bono.activo) ...[
             const SizedBox(height: 8),
@@ -442,6 +568,106 @@ class _CrearBonoDialogState extends State<_CrearBonoDialog> {
     );
   }
 }
+
+class _AnadirPagoDialog extends StatefulWidget {
+  final String bonoId;
+  const _AnadirPagoDialog({required this.bonoId});
+
+  @override
+  State<_AnadirPagoDialog> createState() => _AnadirPagoDialogState();
+}
+
+class _AnadirPagoDialogState extends State<_AnadirPagoDialog> {
+  final _formKey = GlobalKey<FormState>();
+  double? importe;
+  String? metodo; // efectivo | bizum | tarjeta
+  DateTime fecha = DateTime.now();
+  String? nota;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return AlertDialog(
+      title: const Text('Añadir pago de bono'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              decoration: const InputDecoration(labelText: 'Importe'),
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              validator: (v) {
+                final x = double.tryParse((v ?? '').replaceAll(',', '.'));
+                if (x == null) return 'Importe inválido';
+                return null;
+              },
+              onSaved: (v) => importe = double.tryParse((v ?? '').replaceAll(',', '.')),
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              decoration: const InputDecoration(labelText: 'Método'),
+              value: metodo,
+              items: const [
+                DropdownMenuItem(value: 'efectivo', child: Text('Efectivo')),
+                DropdownMenuItem(value: 'bizum', child: Text('Bizum')),
+                DropdownMenuItem(value: 'tarjeta', child: Text('Tarjeta')),
+              ],
+              onChanged: (v) => setState(() => metodo = v),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.event),
+                    label: Text('${_fmtDate(fecha)}'),
+                    onPressed: () async {
+                      final now = DateTime.now();
+                      final picked = await showDatePicker(
+                        context: context,
+                        initialDate: fecha,
+                        firstDate: DateTime(now.year - 1),
+                        lastDate: DateTime(now.year + 5),
+                      );
+                      if (picked != null) setState(() => fecha = picked);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextFormField(
+              decoration: const InputDecoration(labelText: 'Nota (opcional)'),
+              onChanged: (v) => nota = v.isEmpty ? null : v,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+        FilledButton(
+          onPressed: () async {
+            if (!_formKey.currentState!.validate()) return;
+            _formKey.currentState!.save();
+
+            await context.read<BonosProvider>().insertarPagoBono(
+              bonoId: widget.bonoId,
+              importe: importe!, // validado
+              metodo: metodo,
+              fecha: fecha,
+              nota: nota,
+            );
+            if (context.mounted) Navigator.pop(context, true);
+          },
+          child: const Text('Guardar'),
+        ),
+      ],
+    );
+  }
+}
+
 
 // Utilidad de formateo de fecha
 String _fmtDate(DateTime d) =>

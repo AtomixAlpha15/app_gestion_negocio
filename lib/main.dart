@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'providers/servicios_provider.dart';
 import 'providers/clientes_provider.dart';
 import 'providers/settings_provider.dart';
+import 'providers/contabilidad_provider.dart';
 import 'providers/gastos_provider.dart';
 import 'providers/extras_servicio_provider.dart';
 import 'providers/bonos_provider.dart';
@@ -25,6 +26,7 @@ void main() async{
         ChangeNotifierProvider(create: (context) => CitasProvider(context.read<AppDatabase>())),
         ChangeNotifierProvider(create: (context) => GastosProvider(context.read<AppDatabase>())),
         ChangeNotifierProvider(create: (context) => BonosProvider(context.read<AppDatabase>()),),
+        ChangeNotifierProvider(create: (_) => ContabilidadProvider(AppDatabase()),),
       ],
       child: MyApp(),
     ),

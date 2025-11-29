@@ -66,7 +66,8 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
   Future<_ClientePanelData> _cargarPanelCliente(String clienteId) async {
     final citasProv = context.read<CitasProvider>();
     final db = citasProv.db;
-    final ahora = DateTime.now();
+    final inicioHoy = DateTime.now();
+    final hoy = DateTime(inicioHoy.year, inicioHoy.month, inicioHoy.day);
 
     // Traemos TODAS las citas del cliente (simple y suficiente para empezar)
     final citas = await (db.select(db.citas)
@@ -82,12 +83,21 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
     // Impagos: citas pasadas SIN método de pago (y no marcadas pagadas)
     final impagos = citas.where((c) {
       final sinPago = (c.metodoPago == null || c.metodoPago!.isEmpty) && (c.pagada != true);
-      return sinPago && c.inicio.isBefore(ahora);
+      return sinPago && c.inicio.isBefore(hoy);
     }).toList();
 
     final totalImpagos = impagos.fold<double>(0.0, (a, c) => a + c.precio);
 
     // Historial: últimas 10 citas
+//    int count = 0;
+//    final ultimas10 =citas.where((c) {
+ //     bool check = false;//   if (c.inicio.isBefore(hoy)){
+ //       count = count + 1;
+//        if(count<10){check == true;}
+//      }
+//      return(check);
+//   }).toList();
+
     final ultimas10 = citas.take(10).toList();
 
     return _ClientePanelData(

@@ -278,7 +278,10 @@ class AgendaVisual extends StatelessWidget {
               final nombreCliente = cliente?.nombre ?? 'Cliente';
               final nombreServicioYExtras = (servicioYExtrasPorCita[cita.id] ?? []).join(' + ');
 
-              final esPasada = cita.inicio.isBefore(DateTime.now());
+              final inicioHoy = DateTime.now();
+              final hoy = DateTime(inicioHoy.year, inicioHoy.month, inicioHoy.day);
+
+              final esPasada = cita.inicio.isBefore(hoy);
               final impagada = (cita.metodoPago == null || cita.metodoPago!.isEmpty) && esPasada;
 
               final Color bg =
@@ -429,6 +432,7 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                 ),
               ],
             ),
+            const SizedBox(height: 10),
             if (servicioId != null)
               FutureBuilder<List<ExtrasServicioData>>(
                 future: extrasProvider.obtenerExtrasPorServicio(servicioId!),
@@ -468,6 +472,10 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
         if (widget.cita != null)
           TextButton(
             onPressed: () async {
+                final bonosProv = context.read<BonosProvider>();
+                final bonoActivo = await bonosProv.bonoActivoPara(clienteId!, servicioId!);
+                final hayBonoDisponible = bonoActivo != null &&
+                                          (await bonosProv.sesionesAsignadasBono(bonoActivo.id)) < bonoActivo.sesionesTotales;
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (_) => AlertDialog(
@@ -481,6 +489,9 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
               );
               if (confirm == true) {
                 await context.read<CitasProvider>().eliminarCita(widget.cita!.id, anio: widget.cita!.inicio.year);
+                if (hayBonoDisponible && bonoActivo != null) {
+                  await bonosProv.eliminarConsumoPorCita(widget.cita!.id, bonoActivo.id);
+                }
                 if (context.mounted) Navigator.pop(context, true);
               }
             },
@@ -488,69 +499,83 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
           ),
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
         FilledButton(
-          onPressed: () async {
-      if (clienteId == null || servicioId == null || horaInicio == null || horaFin == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Faltan datos')),
-        );
-        return;
-      }
+        onPressed: () async {
+          if (clienteId == null || servicioId == null || horaInicio == null || horaFin == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Faltan datos')),
+            );
+            return;
+          }
 
-      final fecha = DateTime(
-        widget.fecha.year, widget.fecha.month, widget.fecha.day,
-        horaInicio!.hour, horaInicio!.minute,
-      );
-      final fechaFin = DateTime(
-        widget.fecha.year, widget.fecha.month, widget.fecha.day,
-        horaFin!.hour, horaFin!.minute,
-      );
+          final inicio = DateTime(widget.fecha.year, widget.fecha.month, widget.fecha.day, horaInicio!.hour, horaInicio!.minute);
+          final fin    = DateTime(widget.fecha.year, widget.fecha.month, widget.fecha.day, horaFin!.hour, horaFin!.minute);
 
-      // Precio base del servicio
-      final servicios = context.read<ServiciosProvider>().servicios;
-      final precioBase = servicios.firstWhere((s) => s.id == servicioId).precio;
+          final servicios  = context.read<ServiciosProvider>().servicios;
+          final precioBase = servicios.firstWhere((s) => s.id == servicioId).precio;
 
-      // Providers
-      final citasProv  = context.read<CitasProvider>();
-      final bonosProv  = context.read<BonosProvider>();
+          final citasProv = context.read<CitasProvider>();
+          final bonosProv = context.read<BonosProvider>();
 
-      // --- Lógica Bono (si hay bono activo, la cita va "pagada por bono") ---
-      double precioFinal = precioBase;
-      String? metodoPagoFinal = metodoPago;
+          // Bono disponible => metodoPago 'Bono' y precio 0
+          double precioFinal = precioBase;
+          String? metodoPagoFinal = metodoPago;
 
-      final bonoActivo = await bonosProv.bonoActivoPara(clienteId!, servicioId!);
-      final hayBonoDisponible = bonoActivo != null &&
-                                bonoActivo.sesionesUsadas < bonoActivo.sesionesTotales;
+          final bonoActivo = await bonosProv.bonoActivoPara(clienteId!, servicioId!);
+          final hayBonoDisponible = bonoActivo != null &&
+                                    (await bonosProv.sesionesAsignadasBono(bonoActivo.id)) < bonoActivo.sesionesTotales;
 
-      if (hayBonoDisponible) {
-        metodoPagoFinal = 'Bono';
-        precioFinal = 0.0;
-      }
+          if (hayBonoDisponible) {
+            metodoPagoFinal = 'Bono';
+            precioFinal = 0.0;
+          }
 
-      // Inserta SOLO UNA vez. 'insertarCita' te devuelve el id de la cita
-      final citaId = await citasProv.insertarCita(
-        clienteId: clienteId!,
-        servicioId: servicioId!,
-        inicio: fecha,
-        fin: fechaFin,
-        precio: precioFinal,
-        metodoPago: metodoPagoFinal,
-        notas: notas,
-        // Marcamos pagada si tiene método de pago, o si es Bono
-        pagada: (metodoPagoFinal != null && metodoPagoFinal.isNotEmpty),
-      );
+          final editando = widget.cita != null;
+          String citaId;
 
-      // Si ha usado Bono, registra el consumo y avanza el contador
-      if (hayBonoDisponible && bonoActivo != null) {
-        await bonosProv.consumirSesion(bonoActivo.id, citaId: citaId);
-      }
+          if (editando) {
+            // EDITAR: actualizar la misma cita (NO tocar consumo)
+            citaId = widget.cita!.id;
 
-      // Refresca cache del año actual
-      await citasProv.cargarCitasAnio(widget.fecha.year);
+            await citasProv.actualizarCita(
+              id: citaId,
+              clienteId: clienteId!,
+              servicioId: servicioId!,
+              inicio: inicio,
+              fin: fin,
+              metodoPago: metodoPagoFinal,
+              precio: precioFinal,
+              pagada: (metodoPagoFinal != null && metodoPagoFinal.isNotEmpty),
+              notas: notas,
+            );
 
-      if (context.mounted) Navigator.pop(context, true);
-    },
-    child: Text(widget.cita == null ? 'Guardar' : 'Guardar cambios'),
-        ),
+            // NO crear ni borrar consumo aquí: mover fecha no cambia asignación.
+
+          } else {
+            // CREAR: insertar y obtener id
+            citaId = await citasProv.insertarCita(
+              clienteId: clienteId!,
+              servicioId: servicioId!,
+              inicio: inicio,
+              fin: fin,
+              precio: precioFinal,
+              metodoPago: metodoPagoFinal,
+              notas: notas,
+              pagada: (metodoPagoFinal != null && metodoPagoFinal.isNotEmpty),
+            );
+
+            // Asignación inmediata si hay bono
+            if (hayBonoDisponible && bonoActivo != null) {
+              await bonosProv.consumirSesion(bonoActivo.id, citaId,DateTime.now());
+            }
+          }
+
+          await citasProv.cargarCitasAnio(widget.fecha.year);
+          if (context.mounted) Navigator.pop(context, true);
+        },
+        child: Text(widget.cita == null ? 'Guardar' : 'Guardar cambios'),
+      )
+
+
       ],
     );
   }
