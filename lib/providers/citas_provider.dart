@@ -249,13 +249,24 @@ class CitasProvider extends ChangeNotifier {
   // ------------------ ANALÍTICA POR CLIENTE ------------------
 
   /// Últimas N citas (por defecto 10) de un cliente (desc por fecha)
-  Future<List<Cita>> ultimasCitasCliente(String clienteId, {int limit = 10}) async {
-    final q = (db.select(db.citas)
-      ..where((c) => c.clienteId.equals(clienteId))
-      ..orderBy([(c) => d.OrderingTerm(expression: c.inicio, mode: d.OrderingMode.desc)])
-      ..limit(limit));
-    return q.get();
-  }
+Future<List<Cita>> ultimasCitasCliente(String clienteId, {int limit = 10}) async {
+  final now = DateTime.now();
+  // Hoy a las 00:00, igual que usamos para impagos
+  final hoy = DateTime(now.year, now.month, now.day);
+
+  final q = (db.select(db.citas)
+    ..where((c) =>
+      c.clienteId.equals(clienteId) &
+      c.inicio.isSmallerThanValue(hoy) // 👈 SOLO citas pasadas
+    )
+    ..orderBy([
+      (c) => d.OrderingTerm(expression: c.inicio, mode: d.OrderingMode.desc),
+    ])
+    ..limit(limit));
+
+  return q.get();
+}
+
 
   /// Total gastado por un cliente (citas con método de pago no vacío)
   Future<double> totalGastadoCliente(String clienteId) async {

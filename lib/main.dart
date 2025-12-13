@@ -11,24 +11,35 @@ import 'providers/bonos_provider.dart';
 import 'package:app_gestion_negocio/providers/citas_provider.dart';
 import '../services/app_database.dart';
 
-void main() async{
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 1) Una única instancia de SettingsProvider
   final settingsProvider = SettingsProvider();
   await settingsProvider.cargarAjustes();
+
+  // 2) Una única instancia de AppDatabase compartida por toda la app
+  final db = AppDatabase();
+
   runApp(
     MultiProvider(
       providers: [
-        Provider<AppDatabase>(create: (_) => AppDatabase()),
-        ChangeNotifierProvider(create: (_) => settingsProvider),
-        ChangeNotifierProvider(create: (context) => ClientesProvider(context.read<AppDatabase>()),),
-        ChangeNotifierProvider(create: (context) => ServiciosProvider(context.read<AppDatabase>())),
-        ChangeNotifierProvider(create: (context) => ExtrasServicioProvider(context.read<AppDatabase>())),
-        ChangeNotifierProvider(create: (context) => CitasProvider(context.read<AppDatabase>())),
-        ChangeNotifierProvider(create: (context) => GastosProvider(context.read<AppDatabase>())),
-        ChangeNotifierProvider(create: (context) => BonosProvider(context.read<AppDatabase>()),),
-        ChangeNotifierProvider(create: (_) => ContabilidadProvider(AppDatabase()),),
+        // Exponemos la instancia única de db
+        Provider<AppDatabase>.value(value: db),
+
+        // Settings: reutilizamos el mismo objeto creado arriba
+        ChangeNotifierProvider<SettingsProvider>.value(value: settingsProvider),
+
+        // El resto de providers usan SIEMPRE la misma instancia 'db'
+        ChangeNotifierProvider(create: (_) => ClientesProvider(db)),
+        ChangeNotifierProvider(create: (_) => ServiciosProvider(db)),
+        ChangeNotifierProvider(create: (_) => ExtrasServicioProvider(db)),
+        ChangeNotifierProvider(create: (_) => CitasProvider(db)),
+        ChangeNotifierProvider(create: (_) => GastosProvider(db)),
+        ChangeNotifierProvider(create: (_) => BonosProvider(db)),
+        ChangeNotifierProvider(create: (_) => ContabilidadProvider(db)),
       ],
-      child: MyApp(),
+      child: const MyApp(),
     ),
   );
 }

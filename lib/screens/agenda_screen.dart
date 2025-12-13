@@ -472,10 +472,10 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
         if (widget.cita != null)
           TextButton(
             onPressed: () async {
-                final bonosProv = context.read<BonosProvider>();
-                final bonoActivo = await bonosProv.bonoActivoPara(clienteId!, servicioId!);
-                final hayBonoDisponible = bonoActivo != null &&
-                                          (await bonosProv.sesionesAsignadasBono(bonoActivo.id)) < bonoActivo.sesionesTotales;
+              final scheme    = Theme.of(context).colorScheme;
+              final bonosProv = context.read<BonosProvider>();
+              final citasProv = context.read<CitasProvider>();
+
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (_) => AlertDialog(
@@ -487,11 +487,17 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                   ],
                 ),
               );
+
               if (confirm == true) {
-                await context.read<CitasProvider>().eliminarCita(widget.cita!.id, anio: widget.cita!.inicio.year);
-                if (hayBonoDisponible && bonoActivo != null) {
-                  await bonosProv.eliminarConsumoPorCita(widget.cita!.id, bonoActivo.id);
-                }
+                final citaId  = widget.cita!.id;
+                final anio    = widget.cita!.inicio.year;
+
+                // 1) Eliminar la cita
+                await citasProv.eliminarCita(citaId, anio: anio);
+
+                // 2) Intentar eliminar el consumo asociado, si lo hay
+                await bonosProv.eliminarConsumoPorCita(citaId);
+
                 if (context.mounted) Navigator.pop(context, true);
               }
             },

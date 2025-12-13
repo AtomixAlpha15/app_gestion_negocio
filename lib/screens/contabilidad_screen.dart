@@ -79,6 +79,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
   Widget build(BuildContext context) {
     final clientes = context.watch<ClientesProvider>().clientes;
     final servicios = context.watch<ServiciosProvider>().servicios;
+    final contab = context.read<ContabilidadProvider>();
     final gastosProvider = context.watch<GastosProvider>();
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
@@ -88,12 +89,12 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
     final gastosMes = gastosProvider.gastosPorMes(mesActual, anioActual);
 
     // Totales independientes de filtros
-    final totalEfectivo = citasMes.where((c) => c.metodoPago == 'Efectivo').fold<double>(0.0, (a, c) => a + c.precio);
-    final totalBizum = citasMes.where((c) => c.metodoPago == 'Bizum').fold<double>(0.0, (a, c) => a + c.precio);
-    final totalTarjeta = citasMes.where((c) => c.metodoPago == 'Tarjeta').fold<double>(0.0, (a, c) => a + c.precio);
-    final totalFacturado = totalEfectivo + totalBizum + totalTarjeta;
+    //final totalEfectivo = citasMes.where((c) => c.metodoPago == 'Efectivo').fold<double>(0.0, (a, c) => a + c.precio);
+    //final totalBizum = citasMes.where((c) => c.metodoPago == 'Bizum').fold<double>(0.0, (a, c) => a + c.precio);
+    //final totalTarjeta = citasMes.where((c) => c.metodoPago == 'Tarjeta').fold<double>(0.0, (a, c) => a + c.precio);
+    //final totalFacturado = totalEfectivo + totalBizum + totalTarjeta;
     final totalGastos = gastosMes.fold<double>(0.0, (a, g) => a + g.precio);
-    final beneficio = totalFacturado - totalGastos;
+    //final beneficio = totalFacturado - totalGastos;
 
     // Preview de año
     final beneficiosPorMes = List.generate(12, (i) {
@@ -272,62 +273,86 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
                 const SizedBox(height: 16),
 
                 // Efectivo / Bizum / Tarjeta -> secondaryContainer
-                Card(
-                  color: scheme.secondaryContainer,
-                  child: ListTile(
-                    title: Text('Efectivo', style: text.bodyMedium?.copyWith(color: scheme.onSecondaryContainer)),
-                    trailing: Text('${totalEfectivo.toStringAsFixed(2)} €',
-                        style: text.titleMedium?.copyWith(color: scheme.onSecondaryContainer, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-                Card(
-                  color: scheme.secondaryContainer,
-                  child: ListTile(
-                    title: Text('Bizum', style: text.bodyMedium?.copyWith(color: scheme.onSecondaryContainer)),
-                    trailing: Text('${totalBizum.toStringAsFixed(2)} €',
-                        style: text.titleMedium?.copyWith(color: scheme.onSecondaryContainer, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-                Card(
-                  color: scheme.secondaryContainer,
-                  child: ListTile(
-                    title: Text('Tarjeta', style: text.bodyMedium?.copyWith(color: scheme.onSecondaryContainer)),
-                    trailing: Text('${totalTarjeta.toStringAsFixed(2)} €',
-                        style: text.titleMedium?.copyWith(color: scheme.onSecondaryContainer, fontWeight: FontWeight.bold)),
-                  ),
+                FutureBuilder<Map<String, double>>(
+                  future: context.read<ContabilidadProvider>()
+                      .totalCobradoPorMetodoMes(anioActual, mesActual),
+                  builder: (_, snap) {
+                    final porMetodo = snap.data ?? {};
+                    final efe = porMetodo['efectivo'] ?? 0.0;
+                    final biz = porMetodo['bizum'] ?? 0.0;
+                    final tar = porMetodo['tarjeta'] ?? 0.0;
+
+                    // Facturado = caja total del mes (citas cobradas + pagos de bonos)
+                    final totalFacturado = efe + biz + tar;
+
+                    // Usa tu totalGastos ya calculado más arriba en build()
+                    final beneficio = totalFacturado - totalGastos;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Efectivo / Bizum / Tarjeta
+                        Card(
+                          color: scheme.secondaryContainer,
+                          child: ListTile(
+                            title: Text('Efectivo', style: text.bodyMedium?.copyWith(color: scheme.onSecondaryContainer)),
+                            trailing: Text('${efe.toStringAsFixed(2)} €',
+                              style: text.titleMedium?.copyWith(color: scheme.onSecondaryContainer, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                        Card(
+                          color: scheme.secondaryContainer,
+                          child: ListTile(
+                            title: Text('Bizum', style: text.bodyMedium?.copyWith(color: scheme.onSecondaryContainer)),
+                            trailing: Text('${biz.toStringAsFixed(2)} €',
+                              style: text.titleMedium?.copyWith(color: scheme.onSecondaryContainer, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                        Card(
+                          color: scheme.secondaryContainer,
+                          child: ListTile(
+                            title: Text('Tarjeta', style: text.bodyMedium?.copyWith(color: scheme.onSecondaryContainer)),
+                            trailing: Text('${tar.toStringAsFixed(2)} €',
+                              style: text.titleMedium?.copyWith(color: scheme.onSecondaryContainer, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+
+                        Divider(height: 32, color: scheme.outlineVariant),
+
+                        // Facturado
+                        Card(
+                          color: scheme.primaryContainer,
+                          child: ListTile(
+                            title: Text('Facturado', style: text.titleMedium?.copyWith(color: scheme.onPrimaryContainer, fontWeight: FontWeight.bold)),
+                            trailing: Text('${totalFacturado.toStringAsFixed(2)} €',
+                              style: text.titleMedium?.copyWith(color: scheme.onPrimaryContainer, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+
+                        // Gastos (mantenemos tu cálculo existente)
+                        Card(
+                          color: scheme.errorContainer,
+                          child: ListTile(
+                            title: Text('Gastos', style: text.titleMedium?.copyWith(color: scheme.onErrorContainer, fontWeight: FontWeight.bold)),
+                            trailing: Text('${totalGastos.toStringAsFixed(2)} €',
+                              style: text.titleMedium?.copyWith(color: scheme.onErrorContainer, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+
+                        // Beneficio = Facturado - Gastos
+                        Card(
+                          color: scheme.tertiaryContainer,
+                          child: ListTile(
+                            title: Text('Beneficio', style: text.titleMedium?.copyWith(color: scheme.onTertiaryContainer, fontWeight: FontWeight.bold)),
+                            trailing: Text('${beneficio.toStringAsFixed(2)} €',
+                              style: text.titleMedium?.copyWith(color: scheme.onTertiaryContainer, fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
 
-                Divider(height: 32, color: scheme.outlineVariant),
-
-                // Facturado -> primaryContainer
-                Card(
-                  color: scheme.primaryContainer,
-                  child: ListTile(
-                    title: Text('Facturado', style: text.titleMedium?.copyWith(color: scheme.onPrimaryContainer, fontWeight: FontWeight.bold)),
-                    trailing: Text('${totalFacturado.toStringAsFixed(2)} €',
-                        style: text.titleMedium?.copyWith(color: scheme.onPrimaryContainer, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-
-                // Gastos -> errorContainer
-                Card(
-                  color: scheme.errorContainer,
-                  child: ListTile(
-                    title: Text('Gastos', style: text.titleMedium?.copyWith(color: scheme.onErrorContainer, fontWeight: FontWeight.bold)),
-                    trailing: Text('${totalGastos.toStringAsFixed(2)} €',
-                        style: text.titleMedium?.copyWith(color: scheme.onErrorContainer, fontWeight: FontWeight.bold)),
-                  ),
-                ),
-
-                // Beneficio -> terciario
-                Card(
-                  color: scheme.tertiaryContainer,
-                  child: ListTile(
-                    title: Text('Beneficio', style: text.titleMedium?.copyWith(color: scheme.onTertiaryContainer, fontWeight: FontWeight.bold)),
-                    trailing: Text('${beneficio.toStringAsFixed(2)} €',
-                        style: text.titleMedium?.copyWith(color: scheme.onTertiaryContainer, fontWeight: FontWeight.bold)),
-                  ),
-                ),
 
                 const SizedBox(height: 32),
                 Text('Año: Vista mensual', style: text.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
@@ -389,141 +414,222 @@ class IngresosTab extends StatelessWidget {
     this.fechaSeleccionada,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    final clientes = context.watch<ClientesProvider>().clientes;
-    final servicios = context.watch<ServiciosProvider>().servicios;
-    final citas = context.watch<CitasProvider>().citasPorMes(mes, anio);
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
+@override
+Widget build(BuildContext context) {
+  return StreamBuilder<List<MovimientoContable>>(
+    stream: context
+        .read<ContabilidadProvider>()
+        .movimientosMesStream(anio, mes),
+    builder: (context, snap) {
+      final clientes  = context.watch<ClientesProvider>().clientes;
+      final servicios = context.watch<ServiciosProvider>().servicios;
+      final citasMes  = context.watch<CitasProvider>().citasPorMes(mes, anio);
+      final scheme    = Theme.of(context).colorScheme;
+      final text      = Theme.of(context).textTheme;
 
-    final citasFiltradas = citas.where((cita) {
-      final pago = cita.metodoPago ?? '';
-      final pagoOk = metodoPagoSeleccionado.entries.any((e) =>
-          e.value &&
-          ((e.key == 'Impagado' && (pago.isEmpty || pago == '')) ||
-           (e.key != 'Impagado' && pago == e.key)));
-      final metodoPagoOk = metodoPagoSeleccionado.values.every((v) => !v) || pagoOk;
+      // Usamos los datos que haya; si aún no ha llegado nada, lista vacía (sin spinner)
+      final todos = snap.data ?? [];
 
-      final clienteOk = clienteId == null || cita.clienteId == clienteId;
-      final servicioOk = servicioId == null || cita.servicioId == servicioId;
+      // === APLICAR FILTROS (igual que hacías antes, pero sobre 'todos') ===
+      final movsFiltrados = todos.where((m) {
+        final ml = (m.metodo ?? '').toLowerCase();
 
-      final fechaOk = fechaSeleccionada == null ||
-          (cita.inicio.year == fechaSeleccionada!.year &&
-           cita.inicio.month == fechaSeleccionada!.month &&
-           cita.inicio.day == fechaSeleccionada!.day);
+        // Métodos de pago
+        final hayFiltrosMetodo = metodoPagoSeleccionado.values.any((v) => v);
+        bool metodoOk = true;
+        if (hayFiltrosMetodo) {
+          bool coincide = false;
+          if (metodoPagoSeleccionado['Efectivo'] == true && ml == 'efectivo'.toLowerCase()) coincide = true;
+          if (metodoPagoSeleccionado['Bizum']    == true && ml == 'bizum'.toLowerCase())    coincide = true;
+          if (metodoPagoSeleccionado['Tarjeta']  == true && ml == 'tarjeta'.toLowerCase())  coincide = true;
 
-      return metodoPagoOk && clienteOk && servicioOk && fechaOk;
-    }).toList();
+          // Impagado: solo citas sin método y pasadas
+          if (metodoPagoSeleccionado['Impagado'] == true &&
+              m.tipo == MovimientoTipo.cita &&
+              (m.metodo == null || m.metodo!.isEmpty)) {
+            final now = DateTime.now();
+            final hoy = DateTime(now.year, now.month, now.day);
+            if (m.fecha.isBefore(hoy)) coincide = true;
+          }
 
-    if (citasFiltradas.isEmpty) {
-      return const Center(child: Text('No hay citas en este periodo'));
-    }
+          metodoOk = coincide;
+        }
 
-    return ListView.builder(
-      itemCount: citasFiltradas.length + 1,
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          // Cabecera
+        final clienteOk  = (clienteId == null)  || (m.clienteId == clienteId);
+        final servicioOk = (servicioId == null) || (m.servicioId == servicioId);
+        final fechaOk    = (fechaSeleccionada == null) ||
+                          (m.fecha.year  == fechaSeleccionada!.year &&
+                            m.fecha.month == fechaSeleccionada!.month &&
+                            m.fecha.day   == fechaSeleccionada!.day);
+
+        return metodoOk && clienteOk && servicioOk && fechaOk;
+      }).toList();
+
+      if (movsFiltrados.isEmpty) {
+        return const Center(child: Text('No hay movimientos en este periodo'));
+      }
+
+      return ListView.builder(
+        itemCount: movsFiltrados.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            // Cabecera
+            return Container(
+              color: scheme.secondaryContainer,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+              child: Row(
+                children: [
+                  Expanded(flex: 2, child: Text('Fecha',    style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: scheme.onSecondaryContainer))),
+                  Expanded(flex: 3, child: Text('Cliente',  style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: scheme.onSecondaryContainer))),
+                  Expanded(flex: 3, child: Text('Concepto', style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: scheme.onSecondaryContainer))),
+                  Expanded(flex: 2, child: Text('Importe',  style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: scheme.onSecondaryContainer))),
+                  Expanded(child: Center(child: Text('Efectivo', style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: scheme.onSecondaryContainer)))),
+                  Expanded(child: Center(child: Text('Bizum',    style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: scheme.onSecondaryContainer)))),
+                  Expanded(child: Center(child: Text('Tarjeta',  style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: scheme.onSecondaryContainer)))),
+                ],
+              ),
+            );
+          }
+
+          final m = movsFiltrados[index - 1];
+
+          final clienteNombre = clientes
+                  .firstWhereOrNull((c) => c.id == m.clienteId)
+                  ?.nombre
+              ?? 'Cliente';
+
+          final servicioNombre = (m.servicioId != null)
+              ? servicios.firstWhereOrNull((s) => s.id == m.servicioId)?.nombre
+              : null;
+
+          final detalle = (m.tipo == MovimientoTipo.cita)
+              ? (servicioNombre ?? 'Cita')
+              : (m.detalle.isNotEmpty ? m.detalle : (servicioNombre != null ? 'Pago bono $servicioNombre' : 'Pago bono'));
+
+          // Cita completa para poder actualizar método de pago
+          final citaParaEditar = (m.tipo == MovimientoTipo.cita && m.citaId != null)
+              ? citasMes.firstWhereOrNull((c) => c.id == m.citaId)
+              : null;
+
+          final metodo = m.metodo ?? '';
+
+          // Impagadas (solo citas)
+          bool impagada = false;
+          if (m.tipo == MovimientoTipo.cita) {
+            final now = DateTime.now();
+            final hoy = DateTime(now.year, now.month, now.day);
+            final esPasada = m.fecha.isBefore(hoy);
+            impagada = (metodo.isEmpty) && esPasada;
+          }
+
+          final bg = impagada ? scheme.tertiaryContainer : Colors.transparent;
+          final fg = impagada ? scheme.onTertiaryContainer : null;
+          final cellText = text.bodyMedium?.copyWith(color: fg);
+
           return Container(
-            color: scheme.secondaryContainer,
-            padding: const EdgeInsets.symmetric(vertical: 8,horizontal: 8),
+            color: bg,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Row(
               children: [
-                Expanded(flex: 2, child: Text('Fecha', style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: scheme.onSecondaryContainer))),
-                Expanded(flex: 3, child: Text('Cliente', style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: scheme.onSecondaryContainer))),
-                Expanded(flex: 3, child: Text('Servicio', style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: scheme.onSecondaryContainer))),
-                Expanded(flex: 2, child: Text('Precio', style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: scheme.onSecondaryContainer))),
-                Expanded(child: Center(child: Text('Efectivo', style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: scheme.onSecondaryContainer)))),
-                Expanded(child: Center(child: Text('Bizum', style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: scheme.onSecondaryContainer)))),
-                Expanded(child: Center(child: Text('Tarjeta', style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: scheme.onSecondaryContainer)))),
+                // Fecha
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    '${m.fecha.day.toString().padLeft(2, '0')}/${m.fecha.month.toString().padLeft(2, '0')}/${m.fecha.year}',
+                    style: cellText,
+                  ),
+                ),
+                // Cliente
+                Expanded(flex: 3, child: Text(clienteNombre, style: cellText)),
+                // Concepto/Servicio
+                Expanded(flex: 3, child: Text(detalle, style: cellText)),
+                // Importe
+                Expanded(
+                  flex: 2,
+                  child: Text('${m.importe.toStringAsFixed(2)} €', style: cellText),
+                ),
+
+                // Efectivo
+                Expanded(
+                  child: Center(
+                    child: m.tipo == MovimientoTipo.cita
+                        ? Checkbox(
+                            value: metodo == 'Efectivo',
+                            onChanged: (val) async {
+                              if (citaParaEditar == null) return;
+                              await _actualizarMetodoPagoCita(context, citaParaEditar, val == true ? 'Efectivo' : null);
+                            },
+                          )
+                        : IgnorePointer(
+                            child: Checkbox(
+                              value: metodo == 'Efectivo',
+                              onChanged: (_) {},
+                            ),
+                          ),
+                  ),
+                ),
+                // Bizum
+                Expanded(
+                  child: Center(
+                    child: m.tipo == MovimientoTipo.cita
+                        ? Checkbox(
+                            value: metodo == 'Bizum',
+                            onChanged: (val) async {
+                              if (citaParaEditar == null) return;
+                              await _actualizarMetodoPagoCita(context, citaParaEditar, val == true ? 'Bizum' : null);
+                            },
+                          )
+                        : IgnorePointer(
+                            child: Checkbox(
+                              value: metodo == 'Bizum',
+                              onChanged: (_) {},
+                            ),
+                          ),
+                  ),
+                ),
+                // Tarjeta
+                Expanded(
+                  child: Center(
+                    child: m.tipo == MovimientoTipo.cita
+                        ? Checkbox(
+                            value: metodo == 'Tarjeta',
+                            onChanged: (val) async {
+                              if (citaParaEditar == null) return;
+                              await _actualizarMetodoPagoCita(context, citaParaEditar, val == true ? 'Tarjeta' : null);
+                            },
+                          )
+                        : IgnorePointer(
+                            child: Checkbox(
+                              value: metodo == 'Tarjeta',
+                              onChanged: (_) {},
+                            ),
+                          ),
+                  ),
+                ),
               ],
             ),
           );
-        }
+        },
+      );
+    },
+  );
 
-        final cita = citasFiltradas[index - 1];
-        final cliente = clientes.firstWhereOrNull((c) => c.id == cita.clienteId);
-        final servicio = servicios.firstWhereOrNull((s) => s.id == cita.servicioId);
+}
 
-        final inicioHoy = DateTime.now();
-        final hoy = DateTime(inicioHoy.year, inicioHoy.month, inicioHoy.day);
+Future<void> _actualizarMetodoPagoCita(BuildContext context, Cita cita, String? nuevoMetodo) async {
+  final provider = context.read<CitasProvider>();
+  await provider.actualizarCita(
+    id: cita.id,
+    clienteId: cita.clienteId,
+    servicioId: cita.servicioId,
+    inicio: cita.inicio,
+    fin: cita.fin,
+    precio: cita.precio,
+    notas: cita.notas,
+    metodoPago: nuevoMetodo,
+  );
+}
 
-        final esPasada = cita.inicio.isBefore(hoy);
-        final impagada = (cita.metodoPago == null || cita.metodoPago!.isEmpty) && esPasada;
-
-        final bg = impagada ? scheme.tertiaryContainer : Colors.transparent;
-        final fg = impagada ? scheme.onTertiaryContainer : null;
-
-        final cellText = Theme.of(context).textTheme.bodyMedium?.copyWith(color: fg);
-
-        return Container(
-          color: bg,
-          child: Padding( 
-            padding:EdgeInsetsGeometry.only(left: 8),
-            child: Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: Text(
-                  '${cita.inicio.day.toString().padLeft(2, '0')}/${cita.inicio.month.toString().padLeft(2, '0')}/${cita.inicio.year}',
-                  style: cellText,
-                ),
-              ),
-              Expanded(flex: 3, child: Text(cliente?.nombre ?? 'Cliente', style: cellText)),
-              Expanded(flex: 3, child: Text(servicio?.nombre ?? 'Servicio', style: cellText)),
-              Expanded(flex: 2, child: Text('${cita.precio.toStringAsFixed(2)} €', style: cellText)),
-              Expanded(
-                child: Center(
-                  child: Checkbox(
-                    value: cita.metodoPago == 'Efectivo',
-                    onChanged: (val) async {
-                      await actualizarMetodoPagoCita(context, cita, val! ? 'Efectivo' : null);
-                    },
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Center(
-                  child: Checkbox(
-                    value: cita.metodoPago == 'Bizum',
-                    onChanged: (val) async {
-                      await actualizarMetodoPagoCita(context, cita, val! ? 'Bizum' : null);
-                    },
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Center(
-                  child: Checkbox(
-                    value: cita.metodoPago == 'Tarjeta',
-                    onChanged: (val) async {
-                      await actualizarMetodoPagoCita(context, cita, val! ? 'Tarjeta' : null);
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> actualizarMetodoPagoCita(BuildContext context, Cita cita, String? nuevoMetodo) async {
-    final provider = context.read<CitasProvider>();
-    await provider.actualizarCita(
-      id: cita.id,
-      clienteId: cita.clienteId,
-      servicioId: cita.servicioId,
-      inicio: cita.inicio,
-      fin: cita.fin,
-      precio: cita.precio,
-      notas: cita.notas,
-      metodoPago: nuevoMetodo,
-    );
-  }
 }
 
 // ------ Pestaña GASTOS -------

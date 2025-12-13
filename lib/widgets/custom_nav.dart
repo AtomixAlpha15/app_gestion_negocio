@@ -21,6 +21,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
   bool _extended = false;
   bool _lastManualExtended = false;
   bool _autoCollapsed = false;
+  bool _showLabels = false;
 
   void _updateResponsiveMenu() {
     final width = MediaQuery.of(context).size.width;
@@ -77,7 +78,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
     child:  AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       width: _extended ? 220 : 80,
-      onEnd: () => setState(() {}), // fuerza un repintado al terminar la animación
+      onEnd: () => setState(() { _showLabels = _extended;}), // fuerza un repintado al terminar la animación
       child: Material(
         color: railBg,
         elevation: 3,
@@ -97,6 +98,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
                   setState(() {
                     _extended = !_extended;
                     _lastManualExtended = _extended;
+                    if (!_extended) _showLabels = false;
                   });
                 },
                 tooltip: _extended ? "Contraer menú" : "Expandir menú",
@@ -153,6 +155,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
                   selected: widget.selectedIndex == 0,
                   extended: _extended,
                   onTap: () => widget.onDestinationSelected(0),
+                  showLabels: _showLabels,
                   railFg: railFg,
                   selectedBg: selectedBg,
                   selectedFg: selectedFg,
@@ -163,6 +166,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
                   selected: widget.selectedIndex == 1,
                   extended: _extended,
                   onTap: () => widget.onDestinationSelected(1),
+                  showLabels: _showLabels,
                   railFg: railFg,
                   selectedBg: selectedBg,
                   selectedFg: selectedFg,
@@ -173,6 +177,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
                   selected: widget.selectedIndex == 2,
                   extended: _extended,
                   onTap: () => widget.onDestinationSelected(2),
+                  showLabels: _showLabels,
                   railFg: railFg,
                   selectedBg: selectedBg,
                   selectedFg: selectedFg,
@@ -183,6 +188,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
                   selected: widget.selectedIndex == 3,
                   extended: _extended,
                   onTap: () => widget.onDestinationSelected(3),
+                  showLabels: _showLabels,
                   railFg: railFg,
                   selectedBg: selectedBg,
                   selectedFg: selectedFg,
@@ -193,6 +199,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
                   selected: widget.selectedIndex == 4,
                   extended: _extended,
                   onTap: () => widget.onDestinationSelected(4),
+                  showLabels: _showLabels,
                   railFg: railFg,
                   selectedBg: selectedBg,
                   selectedFg: selectedFg,
@@ -239,6 +246,7 @@ class _NavButton extends StatelessWidget {
   final bool selected;
   final bool extended;
   final VoidCallback onTap;
+  final bool showLabels;
 
   // Colores inyectados para garantizar contraste con el rail
   final Color railFg;     // Texto/ícono normal sobre rail
@@ -251,6 +259,7 @@ class _NavButton extends StatelessWidget {
     required this.selected,
     required this.extended,
     required this.onTap,
+    required this.showLabels,
     required this.railFg,
     required this.selectedBg,
     required this.selectedFg,
@@ -260,15 +269,28 @@ class _NavButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: Icon(icon, color: selected ? selectedFg : railFg.withOpacity(0.90)),
-      title: extended
-          ? Text(
+      title: ClipRect(
+        child: AnimatedAlign(
+          alignment: Alignment.centerLeft,
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOut,
+          widthFactor: showLabels ? 1 : 0, // <- evita la "columna de letras"
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 120),
+            opacity: showLabels ? 1 : 0,
+            child: Text(
               label,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: selected ? selectedFg : railFg.withOpacity(0.95),
                 fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
               ),
-            )
-          : null,
+            ),
+          ),
+        ),
+      ),
       selected: selected,
       selectedTileColor: selectedBg,
       onTap: onTap,

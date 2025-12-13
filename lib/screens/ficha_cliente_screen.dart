@@ -88,17 +88,11 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
 
     final totalImpagos = impagos.fold<double>(0.0, (a, c) => a + c.precio);
 
-    // Historial: últimas 10 citas
-//    int count = 0;
-//    final ultimas10 =citas.where((c) {
- //     bool check = false;//   if (c.inicio.isBefore(hoy)){
- //       count = count + 1;
-//        if(count<10){check == true;}
-//      }
-//      return(check);
-//   }).toList();
-
-    final ultimas10 = citas.take(10).toList();
+  // Historial: últimas 10 citas PASADAS
+  final ultimas10 = citas
+      .where((c) => c.inicio.isBefore(hoy)) // solo pasadas (mismo criterio que impagos)
+      .take(10)
+      .toList();
 
     return _ClientePanelData(
       totalGastado: totalGastado,
