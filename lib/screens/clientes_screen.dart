@@ -22,6 +22,15 @@ class _ClientesScreenState extends State<ClientesScreen> {
     Future.microtask(() => context.read<ClientesProvider>().cargarClientes());
   }
 
+  String _norm(String s) {
+  const from = 'áéíóúüñÁÉÍÓÚÜÑ';
+  const to   = 'aeiouunAEIOUUN';
+  for (var i = 0; i < from.length; i++) {
+    s = s.replaceAll(from[i], to[i]);
+  }
+  return s.toLowerCase();
+}
+
   @override
   void dispose() {
     busquedaController.dispose();
@@ -36,9 +45,13 @@ class _ClientesScreenState extends State<ClientesScreen> {
     final clientes = provider.clientes;
 
     // Filtra clientes por el texto del buscador
-    final clientesFiltrados = filtro.isEmpty
+    final q = _norm(filtro);
+    final clientesFiltrados = q.isEmpty
         ? clientes
-        : clientes.where((c) => c.nombre.toLowerCase().contains(filtro)).toList();
+        : clientes.where((s) {
+        final nombre = _norm(s.nombre);
+        return nombre.contains(q);
+      }).toList();
 
     // El primer elemento es siempre el botón "añadir"
     final items = [
@@ -107,43 +120,64 @@ class _ClientesScreenState extends State<ClientesScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Clientes')),
-      body: Column(
+      body: Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
+                // --- Buscador ---
+          SizedBox(
+            height: 44,
             child: TextField(
               controller: busquedaController,
-              decoration: const InputDecoration(
-                labelText: 'Buscar cliente...',
-                prefixIcon: Icon(Icons.search),
+              onChanged: (v) => setState(() => filtro = v.trim()),
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: 'Buscar cliente...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: filtro.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Limpiar',
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          setState(() {
+                            filtro = '';
+                            busquedaController.clear();
+                          });
+                          FocusScope.of(context).unfocus();
+                        },
+                      ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                isDense: true,
               ),
-              onChanged: (value) {
-                setState(() {
-                  filtro = value.toLowerCase();
-                });
+            ),
+          ),
+          const SizedBox(height: 10),
+          
+          Divider(color: scheme.outlineVariant),
+
+          const SizedBox(height: 24),
+
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final ancho = constraints.maxWidth;
+                final columnas = (ancho / 220).floor().clamp(1, 6);
+                return GridView.count(
+                  crossAxisCount: columnas,
+                  mainAxisSpacing: 20,
+                  crossAxisSpacing: 20,
+                  children: items,
+                );
               },
             ),
           ),
-          Divider(color: scheme.outlineVariant),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final ancho = constraints.maxWidth;
-                  final columnas = (ancho / 220).floor().clamp(1, 6);
-                  return GridView.count(
-                    crossAxisCount: columnas,
-                    mainAxisSpacing: 20,
-                    crossAxisSpacing: 20,
-                    children: items,
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
+        ]
       ),
+    ),
     );
   }
 }

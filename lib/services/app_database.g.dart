@@ -384,9 +384,15 @@ class $ServiciosTable extends Servicios
   late final GeneratedColumn<String> descripcion = GeneratedColumn<String>(
       'descripcion', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _imagenPathMeta =
+      const VerificationMeta('imagenPath');
+  @override
+  late final GeneratedColumn<String> imagenPath = GeneratedColumn<String>(
+      'imagen_path', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, nombre, precio, duracionMinutos, descripcion];
+      [id, nombre, precio, duracionMinutos, descripcion, imagenPath];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -428,6 +434,12 @@ class $ServiciosTable extends Servicios
           descripcion.isAcceptableOrUnknown(
               data['descripcion']!, _descripcionMeta));
     }
+    if (data.containsKey('imagen_path')) {
+      context.handle(
+          _imagenPathMeta,
+          imagenPath.isAcceptableOrUnknown(
+              data['imagen_path']!, _imagenPathMeta));
+    }
     return context;
   }
 
@@ -447,6 +459,8 @@ class $ServiciosTable extends Servicios
           .read(DriftSqlType.int, data['${effectivePrefix}duracion_minutos'])!,
       descripcion: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}descripcion']),
+      imagenPath: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}imagen_path']),
     );
   }
 
@@ -462,12 +476,14 @@ class Servicio extends DataClass implements Insertable<Servicio> {
   final double precio;
   final int duracionMinutos;
   final String? descripcion;
+  final String? imagenPath;
   const Servicio(
       {required this.id,
       required this.nombre,
       required this.precio,
       required this.duracionMinutos,
-      this.descripcion});
+      this.descripcion,
+      this.imagenPath});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -477,6 +493,9 @@ class Servicio extends DataClass implements Insertable<Servicio> {
     map['duracion_minutos'] = Variable<int>(duracionMinutos);
     if (!nullToAbsent || descripcion != null) {
       map['descripcion'] = Variable<String>(descripcion);
+    }
+    if (!nullToAbsent || imagenPath != null) {
+      map['imagen_path'] = Variable<String>(imagenPath);
     }
     return map;
   }
@@ -490,6 +509,9 @@ class Servicio extends DataClass implements Insertable<Servicio> {
       descripcion: descripcion == null && nullToAbsent
           ? const Value.absent()
           : Value(descripcion),
+      imagenPath: imagenPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(imagenPath),
     );
   }
 
@@ -502,6 +524,7 @@ class Servicio extends DataClass implements Insertable<Servicio> {
       precio: serializer.fromJson<double>(json['precio']),
       duracionMinutos: serializer.fromJson<int>(json['duracionMinutos']),
       descripcion: serializer.fromJson<String?>(json['descripcion']),
+      imagenPath: serializer.fromJson<String?>(json['imagenPath']),
     );
   }
   @override
@@ -513,6 +536,7 @@ class Servicio extends DataClass implements Insertable<Servicio> {
       'precio': serializer.toJson<double>(precio),
       'duracionMinutos': serializer.toJson<int>(duracionMinutos),
       'descripcion': serializer.toJson<String?>(descripcion),
+      'imagenPath': serializer.toJson<String?>(imagenPath),
     };
   }
 
@@ -521,13 +545,15 @@ class Servicio extends DataClass implements Insertable<Servicio> {
           String? nombre,
           double? precio,
           int? duracionMinutos,
-          Value<String?> descripcion = const Value.absent()}) =>
+          Value<String?> descripcion = const Value.absent(),
+          Value<String?> imagenPath = const Value.absent()}) =>
       Servicio(
         id: id ?? this.id,
         nombre: nombre ?? this.nombre,
         precio: precio ?? this.precio,
         duracionMinutos: duracionMinutos ?? this.duracionMinutos,
         descripcion: descripcion.present ? descripcion.value : this.descripcion,
+        imagenPath: imagenPath.present ? imagenPath.value : this.imagenPath,
       );
   Servicio copyWithCompanion(ServiciosCompanion data) {
     return Servicio(
@@ -539,6 +565,8 @@ class Servicio extends DataClass implements Insertable<Servicio> {
           : this.duracionMinutos,
       descripcion:
           data.descripcion.present ? data.descripcion.value : this.descripcion,
+      imagenPath:
+          data.imagenPath.present ? data.imagenPath.value : this.imagenPath,
     );
   }
 
@@ -549,14 +577,15 @@ class Servicio extends DataClass implements Insertable<Servicio> {
           ..write('nombre: $nombre, ')
           ..write('precio: $precio, ')
           ..write('duracionMinutos: $duracionMinutos, ')
-          ..write('descripcion: $descripcion')
+          ..write('descripcion: $descripcion, ')
+          ..write('imagenPath: $imagenPath')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, nombre, precio, duracionMinutos, descripcion);
+      Object.hash(id, nombre, precio, duracionMinutos, descripcion, imagenPath);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -565,7 +594,8 @@ class Servicio extends DataClass implements Insertable<Servicio> {
           other.nombre == this.nombre &&
           other.precio == this.precio &&
           other.duracionMinutos == this.duracionMinutos &&
-          other.descripcion == this.descripcion);
+          other.descripcion == this.descripcion &&
+          other.imagenPath == this.imagenPath);
 }
 
 class ServiciosCompanion extends UpdateCompanion<Servicio> {
@@ -574,6 +604,7 @@ class ServiciosCompanion extends UpdateCompanion<Servicio> {
   final Value<double> precio;
   final Value<int> duracionMinutos;
   final Value<String?> descripcion;
+  final Value<String?> imagenPath;
   final Value<int> rowid;
   const ServiciosCompanion({
     this.id = const Value.absent(),
@@ -581,6 +612,7 @@ class ServiciosCompanion extends UpdateCompanion<Servicio> {
     this.precio = const Value.absent(),
     this.duracionMinutos = const Value.absent(),
     this.descripcion = const Value.absent(),
+    this.imagenPath = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ServiciosCompanion.insert({
@@ -589,6 +621,7 @@ class ServiciosCompanion extends UpdateCompanion<Servicio> {
     required double precio,
     required int duracionMinutos,
     this.descripcion = const Value.absent(),
+    this.imagenPath = const Value.absent(),
     this.rowid = const Value.absent(),
   })  : id = Value(id),
         nombre = Value(nombre),
@@ -600,6 +633,7 @@ class ServiciosCompanion extends UpdateCompanion<Servicio> {
     Expression<double>? precio,
     Expression<int>? duracionMinutos,
     Expression<String>? descripcion,
+    Expression<String>? imagenPath,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -608,6 +642,7 @@ class ServiciosCompanion extends UpdateCompanion<Servicio> {
       if (precio != null) 'precio': precio,
       if (duracionMinutos != null) 'duracion_minutos': duracionMinutos,
       if (descripcion != null) 'descripcion': descripcion,
+      if (imagenPath != null) 'imagen_path': imagenPath,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -618,6 +653,7 @@ class ServiciosCompanion extends UpdateCompanion<Servicio> {
       Value<double>? precio,
       Value<int>? duracionMinutos,
       Value<String?>? descripcion,
+      Value<String?>? imagenPath,
       Value<int>? rowid}) {
     return ServiciosCompanion(
       id: id ?? this.id,
@@ -625,6 +661,7 @@ class ServiciosCompanion extends UpdateCompanion<Servicio> {
       precio: precio ?? this.precio,
       duracionMinutos: duracionMinutos ?? this.duracionMinutos,
       descripcion: descripcion ?? this.descripcion,
+      imagenPath: imagenPath ?? this.imagenPath,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -647,6 +684,9 @@ class ServiciosCompanion extends UpdateCompanion<Servicio> {
     if (descripcion.present) {
       map['descripcion'] = Variable<String>(descripcion.value);
     }
+    if (imagenPath.present) {
+      map['imagen_path'] = Variable<String>(imagenPath.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -661,6 +701,7 @@ class ServiciosCompanion extends UpdateCompanion<Servicio> {
           ..write('precio: $precio, ')
           ..write('duracionMinutos: $duracionMinutos, ')
           ..write('descripcion: $descripcion, ')
+          ..write('imagenPath: $imagenPath, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2539,12 +2580,18 @@ class $BonoConsumosTable extends BonoConsumos
   @override
   late final GeneratedColumn<String> bonoId = GeneratedColumn<String>(
       'bono_id', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
+      type: DriftSqlType.string,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES bonos (id)'));
   static const VerificationMeta _citaIdMeta = const VerificationMeta('citaId');
   @override
   late final GeneratedColumn<String> citaId = GeneratedColumn<String>(
       'cita_id', aliasedName, true,
-      type: DriftSqlType.string, requiredDuringInsert: false);
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'REFERENCES citas (id) ON DELETE CASCADE'));
   static const VerificationMeta _fechaMeta = const VerificationMeta('fecha');
   @override
   late final GeneratedColumn<DateTime> fecha = GeneratedColumn<DateTime>(
@@ -3196,6 +3243,18 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         bonoConsumos,
         bonoPagos
       ];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
+        [
+          WritePropagation(
+            on: TableUpdateQuery.onTableName('citas',
+                limitUpdateKind: UpdateKind.delete),
+            result: [
+              TableUpdate('bono_consumos', kind: UpdateKind.delete),
+            ],
+          ),
+        ],
+      );
 }
 
 typedef $$ClientesTableCreateCompanionBuilder = ClientesCompanion Function({
@@ -3467,6 +3526,7 @@ typedef $$ServiciosTableCreateCompanionBuilder = ServiciosCompanion Function({
   required double precio,
   required int duracionMinutos,
   Value<String?> descripcion,
+  Value<String?> imagenPath,
   Value<int> rowid,
 });
 typedef $$ServiciosTableUpdateCompanionBuilder = ServiciosCompanion Function({
@@ -3475,6 +3535,7 @@ typedef $$ServiciosTableUpdateCompanionBuilder = ServiciosCompanion Function({
   Value<double> precio,
   Value<int> duracionMinutos,
   Value<String?> descripcion,
+  Value<String?> imagenPath,
   Value<int> rowid,
 });
 
@@ -3537,6 +3598,9 @@ class $$ServiciosTableFilterComposer
 
   ColumnFilters<String> get descripcion => $composableBuilder(
       column: $table.descripcion, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get imagenPath => $composableBuilder(
+      column: $table.imagenPath, builder: (column) => ColumnFilters(column));
 
   Expression<bool> citasRefs(
       Expression<bool> Function($$CitasTableFilterComposer f) f) {
@@ -3605,6 +3669,9 @@ class $$ServiciosTableOrderingComposer
 
   ColumnOrderings<String> get descripcion => $composableBuilder(
       column: $table.descripcion, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get imagenPath => $composableBuilder(
+      column: $table.imagenPath, builder: (column) => ColumnOrderings(column));
 }
 
 class $$ServiciosTableAnnotationComposer
@@ -3630,6 +3697,9 @@ class $$ServiciosTableAnnotationComposer
 
   GeneratedColumn<String> get descripcion => $composableBuilder(
       column: $table.descripcion, builder: (column) => column);
+
+  GeneratedColumn<String> get imagenPath => $composableBuilder(
+      column: $table.imagenPath, builder: (column) => column);
 
   Expression<T> citasRefs<T extends Object>(
       Expression<T> Function($$CitasTableAnnotationComposer a) f) {
@@ -3702,6 +3772,7 @@ class $$ServiciosTableTableManager extends RootTableManager<
             Value<double> precio = const Value.absent(),
             Value<int> duracionMinutos = const Value.absent(),
             Value<String?> descripcion = const Value.absent(),
+            Value<String?> imagenPath = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               ServiciosCompanion(
@@ -3710,6 +3781,7 @@ class $$ServiciosTableTableManager extends RootTableManager<
             precio: precio,
             duracionMinutos: duracionMinutos,
             descripcion: descripcion,
+            imagenPath: imagenPath,
             rowid: rowid,
           ),
           createCompanionCallback: ({
@@ -3718,6 +3790,7 @@ class $$ServiciosTableTableManager extends RootTableManager<
             required double precio,
             required int duracionMinutos,
             Value<String?> descripcion = const Value.absent(),
+            Value<String?> imagenPath = const Value.absent(),
             Value<int> rowid = const Value.absent(),
           }) =>
               ServiciosCompanion.insert(
@@ -3726,6 +3799,7 @@ class $$ServiciosTableTableManager extends RootTableManager<
             precio: precio,
             duracionMinutos: duracionMinutos,
             descripcion: descripcion,
+            imagenPath: imagenPath,
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
@@ -3858,6 +3932,20 @@ final class $$CitasTableReferences
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: cache));
   }
+
+  static MultiTypedResultKey<$BonoConsumosTable, List<BonoConsumo>>
+      _bonoConsumosRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+          db.bonoConsumos,
+          aliasName: $_aliasNameGenerator(db.citas.id, db.bonoConsumos.citaId));
+
+  $$BonoConsumosTableProcessedTableManager get bonoConsumosRefs {
+    final manager = $$BonoConsumosTableTableManager($_db, $_db.bonoConsumos)
+        .filter((f) => f.citaId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_bonoConsumosRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
 }
 
 class $$CitasTableFilterComposer extends Composer<_$AppDatabase, $CitasTable> {
@@ -3942,6 +4030,27 @@ class $$CitasTableFilterComposer extends Composer<_$AppDatabase, $CitasTable> {
             $$ExtrasCitaTableFilterComposer(
               $db: $db,
               $table: $db.extrasCita,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+
+  Expression<bool> bonoConsumosRefs(
+      Expression<bool> Function($$BonoConsumosTableFilterComposer f) f) {
+    final $$BonoConsumosTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.bonoConsumos,
+        getReferencedColumn: (t) => t.citaId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BonoConsumosTableFilterComposer(
+              $db: $db,
+              $table: $db.bonoConsumos,
               $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
               joinBuilder: joinBuilder,
               $removeJoinBuilderFromRootComposer:
@@ -4112,6 +4221,27 @@ class $$CitasTableAnnotationComposer
             ));
     return f(composer);
   }
+
+  Expression<T> bonoConsumosRefs<T extends Object>(
+      Expression<T> Function($$BonoConsumosTableAnnotationComposer a) f) {
+    final $$BonoConsumosTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.bonoConsumos,
+        getReferencedColumn: (t) => t.citaId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BonoConsumosTableAnnotationComposer(
+              $db: $db,
+              $table: $db.bonoConsumos,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$CitasTableTableManager extends RootTableManager<
@@ -4126,7 +4256,10 @@ class $$CitasTableTableManager extends RootTableManager<
     (Cita, $$CitasTableReferences),
     Cita,
     PrefetchHooks Function(
-        {bool clienteId, bool servicioId, bool extrasCitaRefs})> {
+        {bool clienteId,
+        bool servicioId,
+        bool extrasCitaRefs,
+        bool bonoConsumosRefs})> {
   $$CitasTableTableManager(_$AppDatabase db, $CitasTable table)
       : super(TableManagerState(
           db: db,
@@ -4190,10 +4323,16 @@ class $$CitasTableTableManager extends RootTableManager<
                   (e.readTable(table), $$CitasTableReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: (
-              {clienteId = false, servicioId = false, extrasCitaRefs = false}) {
+              {clienteId = false,
+              servicioId = false,
+              extrasCitaRefs = false,
+              bonoConsumosRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [if (extrasCitaRefs) db.extrasCita],
+              explicitlyWatchedTables: [
+                if (extrasCitaRefs) db.extrasCita,
+                if (bonoConsumosRefs) db.bonoConsumos
+              ],
               addJoins: <
                   T extends TableManagerState<
                       dynamic,
@@ -4243,6 +4382,18 @@ class $$CitasTableTableManager extends RootTableManager<
                         referencedItemsForCurrentItem: (item,
                                 referencedItems) =>
                             referencedItems.where((e) => e.citaId == item.id),
+                        typedResults: items),
+                  if (bonoConsumosRefs)
+                    await $_getPrefetchedData<Cita, $CitasTable, BonoConsumo>(
+                        currentTable: table,
+                        referencedTable:
+                            $$CitasTableReferences._bonoConsumosRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$CitasTableReferences(db, table, p0)
+                                .bonoConsumosRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.citaId == item.id),
                         typedResults: items)
                 ];
               },
@@ -4263,7 +4414,10 @@ typedef $$CitasTableProcessedTableManager = ProcessedTableManager<
     (Cita, $$CitasTableReferences),
     Cita,
     PrefetchHooks Function(
-        {bool clienteId, bool servicioId, bool extrasCitaRefs})>;
+        {bool clienteId,
+        bool servicioId,
+        bool extrasCitaRefs,
+        bool bonoConsumosRefs})>;
 typedef $$ExtrasServicioTableCreateCompanionBuilder = ExtrasServicioCompanion
     Function({
   required String id,
@@ -5101,6 +5255,20 @@ final class $$BonosTableReferences
     extends BaseReferences<_$AppDatabase, $BonosTable, Bono> {
   $$BonosTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
+  static MultiTypedResultKey<$BonoConsumosTable, List<BonoConsumo>>
+      _bonoConsumosRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+          db.bonoConsumos,
+          aliasName: $_aliasNameGenerator(db.bonos.id, db.bonoConsumos.bonoId));
+
+  $$BonoConsumosTableProcessedTableManager get bonoConsumosRefs {
+    final manager = $$BonoConsumosTableTableManager($_db, $_db.bonoConsumos)
+        .filter((f) => f.bonoId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_bonoConsumosRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+
   static MultiTypedResultKey<$BonoPagosTable, List<BonoPago>>
       _bonoPagosRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
           db.bonoPagos,
@@ -5162,6 +5330,27 @@ class $$BonosTableFilterComposer extends Composer<_$AppDatabase, $BonosTable> {
   ColumnFilters<String> get reconocimiento => $composableBuilder(
       column: $table.reconocimiento,
       builder: (column) => ColumnFilters(column));
+
+  Expression<bool> bonoConsumosRefs(
+      Expression<bool> Function($$BonoConsumosTableFilterComposer f) f) {
+    final $$BonoConsumosTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.bonoConsumos,
+        getReferencedColumn: (t) => t.bonoId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BonoConsumosTableFilterComposer(
+              $db: $db,
+              $table: $db.bonoConsumos,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 
   Expression<bool> bonoPagosRefs(
       Expression<bool> Function($$BonoPagosTableFilterComposer f) f) {
@@ -5279,6 +5468,27 @@ class $$BonosTableAnnotationComposer
   GeneratedColumn<String> get reconocimiento => $composableBuilder(
       column: $table.reconocimiento, builder: (column) => column);
 
+  Expression<T> bonoConsumosRefs<T extends Object>(
+      Expression<T> Function($$BonoConsumosTableAnnotationComposer a) f) {
+    final $$BonoConsumosTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.bonoConsumos,
+        getReferencedColumn: (t) => t.bonoId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BonoConsumosTableAnnotationComposer(
+              $db: $db,
+              $table: $db.bonoConsumos,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+
   Expression<T> bonoPagosRefs<T extends Object>(
       Expression<T> Function($$BonoPagosTableAnnotationComposer a) f) {
     final $$BonoPagosTableAnnotationComposer composer = $composerBuilder(
@@ -5312,7 +5522,7 @@ class $$BonosTableTableManager extends RootTableManager<
     $$BonosTableUpdateCompanionBuilder,
     (Bono, $$BonosTableReferences),
     Bono,
-    PrefetchHooks Function({bool bonoPagosRefs})> {
+    PrefetchHooks Function({bool bonoConsumosRefs, bool bonoPagosRefs})> {
   $$BonosTableTableManager(_$AppDatabase db, $BonosTable table)
       : super(TableManagerState(
           db: db,
@@ -5387,13 +5597,29 @@ class $$BonosTableTableManager extends RootTableManager<
               .map((e) =>
                   (e.readTable(table), $$BonosTableReferences(db, table, e)))
               .toList(),
-          prefetchHooksCallback: ({bonoPagosRefs = false}) {
+          prefetchHooksCallback: (
+              {bonoConsumosRefs = false, bonoPagosRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [if (bonoPagosRefs) db.bonoPagos],
+              explicitlyWatchedTables: [
+                if (bonoConsumosRefs) db.bonoConsumos,
+                if (bonoPagosRefs) db.bonoPagos
+              ],
               addJoins: null,
               getPrefetchedDataCallback: (items) async {
                 return [
+                  if (bonoConsumosRefs)
+                    await $_getPrefetchedData<Bono, $BonosTable, BonoConsumo>(
+                        currentTable: table,
+                        referencedTable:
+                            $$BonosTableReferences._bonoConsumosRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$BonosTableReferences(db, table, p0)
+                                .bonoConsumosRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.bonoId == item.id),
+                        typedResults: items),
                   if (bonoPagosRefs)
                     await $_getPrefetchedData<Bono, $BonosTable, BonoPago>(
                         currentTable: table,
@@ -5423,7 +5649,7 @@ typedef $$BonosTableProcessedTableManager = ProcessedTableManager<
     $$BonosTableUpdateCompanionBuilder,
     (Bono, $$BonosTableReferences),
     Bono,
-    PrefetchHooks Function({bool bonoPagosRefs})>;
+    PrefetchHooks Function({bool bonoConsumosRefs, bool bonoPagosRefs})>;
 typedef $$BonoConsumosTableCreateCompanionBuilder = BonoConsumosCompanion
     Function({
   required String id,
@@ -5443,6 +5669,39 @@ typedef $$BonoConsumosTableUpdateCompanionBuilder = BonoConsumosCompanion
   Value<int> rowid,
 });
 
+final class $$BonoConsumosTableReferences
+    extends BaseReferences<_$AppDatabase, $BonoConsumosTable, BonoConsumo> {
+  $$BonoConsumosTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $BonosTable _bonoIdTable(_$AppDatabase db) => db.bonos
+      .createAlias($_aliasNameGenerator(db.bonoConsumos.bonoId, db.bonos.id));
+
+  $$BonosTableProcessedTableManager get bonoId {
+    final $_column = $_itemColumn<String>('bono_id')!;
+
+    final manager = $$BonosTableTableManager($_db, $_db.bonos)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_bonoIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+
+  static $CitasTable _citaIdTable(_$AppDatabase db) => db.citas
+      .createAlias($_aliasNameGenerator(db.bonoConsumos.citaId, db.citas.id));
+
+  $$CitasTableProcessedTableManager? get citaId {
+    final $_column = $_itemColumn<String>('cita_id');
+    if ($_column == null) return null;
+    final manager = $$CitasTableTableManager($_db, $_db.citas)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_citaIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+}
+
 class $$BonoConsumosTableFilterComposer
     extends Composer<_$AppDatabase, $BonoConsumosTable> {
   $$BonoConsumosTableFilterComposer({
@@ -5455,17 +5714,51 @@ class $$BonoConsumosTableFilterComposer
   ColumnFilters<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get bonoId => $composableBuilder(
-      column: $table.bonoId, builder: (column) => ColumnFilters(column));
-
-  ColumnFilters<String> get citaId => $composableBuilder(
-      column: $table.citaId, builder: (column) => ColumnFilters(column));
-
   ColumnFilters<DateTime> get fecha => $composableBuilder(
       column: $table.fecha, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get nota => $composableBuilder(
       column: $table.nota, builder: (column) => ColumnFilters(column));
+
+  $$BonosTableFilterComposer get bonoId {
+    final $$BonosTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.bonoId,
+        referencedTable: $db.bonos,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BonosTableFilterComposer(
+              $db: $db,
+              $table: $db.bonos,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$CitasTableFilterComposer get citaId {
+    final $$CitasTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.citaId,
+        referencedTable: $db.citas,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$CitasTableFilterComposer(
+              $db: $db,
+              $table: $db.citas,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
 }
 
 class $$BonoConsumosTableOrderingComposer
@@ -5480,17 +5773,51 @@ class $$BonoConsumosTableOrderingComposer
   ColumnOrderings<String> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get bonoId => $composableBuilder(
-      column: $table.bonoId, builder: (column) => ColumnOrderings(column));
-
-  ColumnOrderings<String> get citaId => $composableBuilder(
-      column: $table.citaId, builder: (column) => ColumnOrderings(column));
-
   ColumnOrderings<DateTime> get fecha => $composableBuilder(
       column: $table.fecha, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get nota => $composableBuilder(
       column: $table.nota, builder: (column) => ColumnOrderings(column));
+
+  $$BonosTableOrderingComposer get bonoId {
+    final $$BonosTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.bonoId,
+        referencedTable: $db.bonos,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BonosTableOrderingComposer(
+              $db: $db,
+              $table: $db.bonos,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$CitasTableOrderingComposer get citaId {
+    final $$CitasTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.citaId,
+        referencedTable: $db.citas,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$CitasTableOrderingComposer(
+              $db: $db,
+              $table: $db.citas,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
 }
 
 class $$BonoConsumosTableAnnotationComposer
@@ -5505,17 +5832,51 @@ class $$BonoConsumosTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get bonoId =>
-      $composableBuilder(column: $table.bonoId, builder: (column) => column);
-
-  GeneratedColumn<String> get citaId =>
-      $composableBuilder(column: $table.citaId, builder: (column) => column);
-
   GeneratedColumn<DateTime> get fecha =>
       $composableBuilder(column: $table.fecha, builder: (column) => column);
 
   GeneratedColumn<String> get nota =>
       $composableBuilder(column: $table.nota, builder: (column) => column);
+
+  $$BonosTableAnnotationComposer get bonoId {
+    final $$BonosTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.bonoId,
+        referencedTable: $db.bonos,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$BonosTableAnnotationComposer(
+              $db: $db,
+              $table: $db.bonos,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$CitasTableAnnotationComposer get citaId {
+    final $$CitasTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.citaId,
+        referencedTable: $db.citas,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$CitasTableAnnotationComposer(
+              $db: $db,
+              $table: $db.citas,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
 }
 
 class $$BonoConsumosTableTableManager extends RootTableManager<
@@ -5527,12 +5888,9 @@ class $$BonoConsumosTableTableManager extends RootTableManager<
     $$BonoConsumosTableAnnotationComposer,
     $$BonoConsumosTableCreateCompanionBuilder,
     $$BonoConsumosTableUpdateCompanionBuilder,
-    (
-      BonoConsumo,
-      BaseReferences<_$AppDatabase, $BonoConsumosTable, BonoConsumo>
-    ),
+    (BonoConsumo, $$BonoConsumosTableReferences),
     BonoConsumo,
-    PrefetchHooks Function()> {
+    PrefetchHooks Function({bool bonoId, bool citaId})> {
   $$BonoConsumosTableTableManager(_$AppDatabase db, $BonoConsumosTable table)
       : super(TableManagerState(
           db: db,
@@ -5576,9 +5934,56 @@ class $$BonoConsumosTableTableManager extends RootTableManager<
             rowid: rowid,
           ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map((e) => (
+                    e.readTable(table),
+                    $$BonoConsumosTableReferences(db, table, e)
+                  ))
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({bonoId = false, citaId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (bonoId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.bonoId,
+                    referencedTable:
+                        $$BonoConsumosTableReferences._bonoIdTable(db),
+                    referencedColumn:
+                        $$BonoConsumosTableReferences._bonoIdTable(db).id,
+                  ) as T;
+                }
+                if (citaId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.citaId,
+                    referencedTable:
+                        $$BonoConsumosTableReferences._citaIdTable(db),
+                    referencedColumn:
+                        $$BonoConsumosTableReferences._citaIdTable(db).id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
         ));
 }
 
@@ -5591,12 +5996,9 @@ typedef $$BonoConsumosTableProcessedTableManager = ProcessedTableManager<
     $$BonoConsumosTableAnnotationComposer,
     $$BonoConsumosTableCreateCompanionBuilder,
     $$BonoConsumosTableUpdateCompanionBuilder,
-    (
-      BonoConsumo,
-      BaseReferences<_$AppDatabase, $BonoConsumosTable, BonoConsumo>
-    ),
+    (BonoConsumo, $$BonoConsumosTableReferences),
     BonoConsumo,
-    PrefetchHooks Function()>;
+    PrefetchHooks Function({bool bonoId, bool citaId})>;
 typedef $$BonoPagosTableCreateCompanionBuilder = BonoPagosCompanion Function({
   required String id,
   required String bonoId,

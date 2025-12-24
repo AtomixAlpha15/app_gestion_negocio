@@ -25,6 +25,7 @@ class Servicios extends Table {
   RealColumn get precio => real()();
   IntColumn get duracionMinutos => integer()(); // Usar minutos como entero
   TextColumn get descripcion => text().nullable()();
+  TextColumn get imagenPath => text().nullable()();
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -93,7 +94,7 @@ class Bonos extends Table {
 class BonoConsumos extends Table {
   TextColumn get id => text()();              // uuid
   TextColumn get bonoId => text().references(Bonos, #id)();          // FK -> bonos.id
-  TextColumn get citaId => text().references(Citas, #id, onDelete: KeyAction.cascade)();   // cita donde se consumió (opcional)
+  TextColumn get citaId =>text().nullable().references(Citas, #id, onDelete: KeyAction.cascade)();  // cita donde se consumió (opcional)
   DateTimeColumn get fecha => dateTime().withDefault(currentDateAndTime)();
   TextColumn get nota => text().nullable()();
 

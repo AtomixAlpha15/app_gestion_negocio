@@ -13,9 +13,7 @@ class ClientesProvider extends ChangeNotifier {
 
   // Carga todos los clientes (puedes ordenar por nombre si quieres)
   Future<void> cargarClientes() async {
-    _clientes = await (db.select(db.clientes)
-      // ..orderBy([(c) => OrderingTerm(expression: c.nombre)]) // opcional
-    ).get();
+    _clientes = await db.select(db.clientes).get();
     notifyListeners();
   }
 
@@ -23,7 +21,6 @@ class ClientesProvider extends ChangeNotifier {
     return (db.select(db.clientes)..where((c) => c.id.equals(id))).getSingleOrNull();
   }
 
-  /// Inserta un cliente. Si [imagenSeleccionada] no es null, la copiamos a la carpeta de la app.
   Future<void> insertarCliente({
     required String nombre,
     String? telefono,
@@ -34,16 +31,21 @@ class ClientesProvider extends ChangeNotifier {
     final id = DateTime.now().millisecondsSinceEpoch.toString();
 
     String? nuevaImagenPath;
-    if (imagenSeleccionada != null && imagenSeleccionada.isNotEmpty) {
-      nuevaImagenPath = await guardarImagenEnAppDir(imagenSeleccionada, id);
+    final clean = (imagenSeleccionada ?? '').trim();
+    if (clean.isNotEmpty) {
+      nuevaImagenPath = await guardarImagenEnAppDir(
+        origenPath: clean,
+        entidadId: id,
+        carpeta: 'imagenes_clientes',
+      );
     }
 
     final cliente = ClientesCompanion(
-      id:        Value(id),
-      nombre:    Value(nombre),
-      telefono:  Value(telefono),
-      email:     Value(email),
-      notas:     Value(notas),
+      id: Value(id),
+      nombre: Value(nombre),
+      telefono: Value(telefono),
+      email: Value(email),
+      notas: Value(notas),
       imagenPath: Value(nuevaImagenPath),
     );
 
@@ -51,7 +53,7 @@ class ClientesProvider extends ChangeNotifier {
     await cargarClientes();
   }
 
-  /// Actualiza un cliente. Si [nuevaImagenSeleccionada] viene, copiamos y guardamos la nueva ruta.
+
   Future<void> actualizarCliente({
     required String id,
     required String nombre,
@@ -60,24 +62,36 @@ class ClientesProvider extends ChangeNotifier {
     String? notas,
     String? nuevaImagenSeleccionada,
   }) async {
-    String? nuevaImagenPath;
-    if (nuevaImagenSeleccionada != null && nuevaImagenSeleccionada.isNotEmpty) {
-      nuevaImagenPath = await guardarImagenEnAppDir(nuevaImagenSeleccionada, id);
+    Value<String?> imagenValue = const Value.absent();
+
+    if (nuevaImagenSeleccionada != null) {
+      final clean = nuevaImagenSeleccionada.trim();
+
+      if (clean.isEmpty) {
+        // ✅ borrar imagen
+        imagenValue = const Value(null);
+      } else {
+        final nuevaImagenPath = await guardarImagenEnAppDir(
+          origenPath: clean,
+          entidadId: id,
+          carpeta: 'imagenes_clientes',
+        );
+        imagenValue = Value(nuevaImagenPath);
+      }
     }
 
     final companion = ClientesCompanion(
-      nombre:   Value(nombre),
+      nombre: Value(nombre),
       telefono: Value(telefono),
-      email:    Value(email),
-      notas:    Value(notas),
-      imagenPath: nuevaImagenSeleccionada != null
-          ? Value(nuevaImagenPath)
-          : const Value.absent(),
+      email: Value(email),
+      notas: Value(notas),
+      imagenPath: imagenValue,
     );
 
     await (db.update(db.clientes)..where((c) => c.id.equals(id))).write(companion);
     await cargarClientes();
   }
+
 
   /// Elimina cliente y borra la imagen física si existe.
   Future<void> eliminarCliente(String id, {String? imagenPath}) async {
@@ -98,6 +112,6 @@ class ClientesProvider extends ChangeNotifier {
   List<Cliente> filtrarPorNombre(String query) {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return _clientes;
-    return _clientes.where((c) => (c.nombre ?? '').toLowerCase().contains(q)).toList();
+    return _clientes.where((c) => (c.nombre ).toLowerCase().contains(q)).toList();
   }
 }

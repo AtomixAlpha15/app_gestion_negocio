@@ -305,7 +305,7 @@ class _BonoFaceplate extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                bono.nombre ?? 'Bono de sesiones',
+                bono.nombre ,
                 style: text.titleSmall?.copyWith(
                   color: scheme.onSecondaryContainer,
                   fontWeight: FontWeight.w700,
@@ -568,7 +568,7 @@ class _BonoListTile extends StatelessWidget {
       selectedTileColor: scheme.secondaryContainer.withOpacity(0.15),
       contentPadding: EdgeInsets.zero,
       title: Text(
-        bono.nombre ?? 'Bono',
+        bono.nombre,
         style: text.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
       ),
       subtitle: Column(
@@ -735,7 +735,6 @@ class _AnadirPagoDialogState extends State<_AnadirPagoDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
 
     return AlertDialog(
       title: const Text('Añadir pago de bono'),

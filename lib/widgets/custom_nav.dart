@@ -70,30 +70,71 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
     final railFg = _onColor(railBg);
 
     // Estado seleccionado: fondo derivado del secundario para contraste sobre el rail
-    final selectedBg = _blend(scheme.secondary, railBg, isDark ? 0.35 : 0.18);
+    final hoverBg = _blend(
+      scheme.secondary,
+      railBg,
+      isDark ? 0.28 : 0.14,
+    );
+
+    final selectedBg = _blend(
+      scheme.secondary,
+      railBg,
+      isDark ? 0.55 : 0.32,
+    );
     final selectedFg = _onColor(selectedBg);
 
-    return SizedBox(                   // 👈 asegura altura finita
-    height: double.infinity,
-    child:  AnimatedContainer(
-      duration: const Duration(milliseconds: 250),
-      width: _extended ? 220 : 80,
-      onEnd: () => setState(() { _showLabels = _extended;}), // fuerza un repintado al terminar la animación
-      child: Material(
-        color: railBg,
-        elevation: 3,
-        surfaceTintColor: Colors.transparent, // evita tinte M3
+return Padding(
+  padding: const EdgeInsets.all(12), // separa del borde de pantalla
+  child: AnimatedContainer(
+    duration: const Duration(milliseconds: 250),
+    width: _extended ? 220 : 80,
+    onEnd: () {
+      setState(() {
+        _showLabels = _extended; // ✅ al terminar, si está expandido, mostramos
+      });
+    },
+    child: Material(
+      color: railBg,
+      elevation: 10, // dejamos la sombra a BoxShadow (más control)
+      surfaceTintColor: Colors.transparent,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: scheme.outlineVariant.withOpacity(0.5)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.35 : 0.10),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
       child: Column(
         mainAxisSize: MainAxisSize.max,
         children: [
           // Botón hamburguesa
           Padding(
-            padding: const EdgeInsets.only(top: 18, left: 15, right: 10),
+            padding: const EdgeInsets.only(top: 18, left: 18, right: 16),
             child: Align(
               alignment: Alignment.centerLeft,
               child: IconButton(
                 icon: Icon(_extended ? Icons.menu_open : Icons.menu),
                 color: railFg,
+                style: ButtonStyle(
+                  overlayColor: WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.hovered)) {
+                      return scheme.secondary.withOpacity(0.10); // 👈 sin hover permanente
+                    }
+                    if (states.contains(WidgetState.focused)) {
+                      return Colors.transparent; // 👈 quita el focus persistente
+                    }
+                    if (states.contains(WidgetState.pressed)) {
+                      return scheme.secondary.withOpacity(0.12); // click sutil (opcional)
+                    }
+                    return Colors.transparent;
+                  }),
+                ),
                 onPressed: () {
                   setState(() {
                     _extended = !_extended;
@@ -103,45 +144,85 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
                 },
                 tooltip: _extended ? "Contraer menú" : "Expandir menú",
               ),
+
             ),
           ),
 
-          // Nombre de empresa (solo extendido)
-          if (_extended) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
-              child: Text(
-                settings.nombreEmpresa,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontFamily: settings.fuente,
-                  fontSize: 22 * settings.tamanoFuente,
-                  fontWeight: FontWeight.bold,
-                  color: railFg,
+          const SizedBox(height: 10),
+
+          // Logo de empresa (suave: scale + fade, sin saltos de tamaño)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: () {
+              final hasLogo =
+                  settings.logoPath.isNotEmpty && File(settings.logoPath).existsSync();
+
+              const double boxSize = 96; // 👈 tamaño afinado para rail flotante
+
+              final Widget content = hasLogo
+                  ? Image.file(
+                      File(settings.logoPath),
+                      width: boxSize,
+                      height: boxSize,
+                      fit: BoxFit.contain,
+                    )
+                  : Icon(
+                      Icons.business,
+                      size: 42,
+                      color: railFg,
+                    );
+
+              return SizedBox(
+                width: boxSize,
+                height: boxSize,
+                child: Center(
+                  child: AnimatedScale(
+                    scale: _extended ? 1.2 : 0.60,
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                    child: AnimatedOpacity(
+                      opacity: _extended ? 1.0 : 0.85,
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOut,
+                      child: content,
+                    ),
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
+              );
+            }(),
+          ),
+
+          // Nombre de empresa (sin empujar el layout)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: SizedBox(
+              height: 44, // 👈 reserva altura fija (ajusta 40–52 según tu fuente)
+              child: Center(
+                child: AnimatedOpacity(
+                  opacity: _showLabels ? 1 : 0,
+                  duration: const Duration(milliseconds: 160),
+                  curve: Curves.easeOut,
+                  child: AnimatedScale(
+                    scale: _showLabels ? 1.0 : 0.98,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOutCubic,
+                    child: Text(
+                      settings.nombreEmpresa,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontFamily: settings.fuente,
+                        fontSize: 22 * settings.tamanoFuente,
+                        fontWeight: FontWeight.bold,
+                        color: railFg,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      softWrap: false,
+                    ),
+                  ),
+                ),
               ),
             ),
-          ],
-
-          // Logo de empresa
-          Padding(
-            padding: EdgeInsets.only(
-              top: _extended ? 0 : 12,
-              bottom: 16,
-            ),
-            child: (() {
-              final hasLogo = settings.logoPath.isNotEmpty && File(settings.logoPath).existsSync();
-              if (!hasLogo) {
-                return Icon(Icons.business, size: _extended ? 80 : 36, color: railFg);
-              }
-              return Image.file(
-                File(settings.logoPath),
-                width: _extended ? 200 : 48,
-                height: _extended ? 200 : 48,
-                fit: BoxFit.contain,
-              );
-            })(),
           ),
 
           // Botones de navegación
@@ -158,6 +239,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
                   showLabels: _showLabels,
                   railFg: railFg,
                   selectedBg: selectedBg,
+                  hoverBg: hoverBg,
                   selectedFg: selectedFg,
                 ),
                 _NavButton(
@@ -169,6 +251,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
                   showLabels: _showLabels,
                   railFg: railFg,
                   selectedBg: selectedBg,
+                  hoverBg: hoverBg,
                   selectedFg: selectedFg,
                 ),
                 _NavButton(
@@ -180,6 +263,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
                   showLabels: _showLabels,
                   railFg: railFg,
                   selectedBg: selectedBg,
+                  hoverBg: hoverBg,
                   selectedFg: selectedFg,
                 ),
                 _NavButton(
@@ -191,6 +275,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
                   showLabels: _showLabels,
                   railFg: railFg,
                   selectedBg: selectedBg,
+                  hoverBg: hoverBg,
                   selectedFg: selectedFg,
                 ),
                 _NavButton(
@@ -202,6 +287,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
                   showLabels: _showLabels,
                   railFg: railFg,
                   selectedBg: selectedBg,
+                  hoverBg: hoverBg,
                   selectedFg: selectedFg,
                 ),
               ],
@@ -211,47 +297,84 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
           // Botón inferior (usuario - futuro)
           Padding(
             padding: const EdgeInsets.only(bottom: 18),
-            child: _extended
-                ? ListTile(
-                    leading: CircleAvatar(
+            child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {},
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                child: Row(
+                  children: [
+                    // Icono/Avatar siempre visible
+                    CircleAvatar(
+                      radius: 16,
                       backgroundColor: railFg,
-                      child: Icon(Icons.person, color: _onColor(railFg)),
+                      child: Icon(Icons.person, color: _onColor(railFg), size: 18),
                     ),
-                    title: Text(
-                      "Usuario",
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontSize: 16 * (settings.tamanoFuente),
-                        color: railFg,
+                    const SizedBox(width: 12),
+
+                    // Texto solo cuando _showLabels == true (no cuando _extended empieza)
+                    Expanded(
+                      child: ClipRect(
+                        child: AnimatedAlign(
+                          alignment: Alignment.centerLeft,
+                          duration: const Duration(milliseconds: 160),
+                          curve: Curves.easeOut,
+                          widthFactor: _showLabels ? 1 : 0,
+                          child: AnimatedOpacity(
+                            duration: const Duration(milliseconds: 120),
+                            opacity: _showLabels ? 1 : 0,
+                            child: Text(
+                              "Usuario",
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                fontSize: 16 * (settings.tamanoFuente),
+                                color: railFg,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    onTap: () {},
-                  )
-                : Tooltip(
-                    message: "Cuenta de usuario",
-                    child: IconButton(
-                      icon: Icon(Icons.person, color: railFg),
-                      onPressed: () {},
-                    ),
-                  ),
+
+                    // Tooltip solo cuando está colapsado
+                    if (!_showLabels)
+                      Tooltip(
+                        message: "Cuenta de usuario",
+                        child: Icon(Icons.info_outline, color: railFg.withOpacity(0.7), size: 18),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
           ),
         ],
       ),
-    )));
+        ),
+      ),
+    ),
+  );
+
   }
 }
 
-class _NavButton extends StatelessWidget {
+class _NavButton extends StatefulWidget {
   final IconData icon;
   final String label;
   final bool selected;
-  final bool extended;
+  final bool extended; // lo puedes mantener aunque ya no lo uses
   final VoidCallback onTap;
   final bool showLabels;
 
-  // Colores inyectados para garantizar contraste con el rail
-  final Color railFg;     // Texto/ícono normal sobre rail
-  final Color selectedBg; // Fondo del tile seleccionado
-  final Color selectedFg; // Texto/ícono del tile seleccionado
+  final Color railFg;
+  final Color selectedBg;
+  final Color hoverBg;
+  final Color selectedFg;
 
   const _NavButton({
     required this.icon,
@@ -262,42 +385,92 @@ class _NavButton extends StatelessWidget {
     required this.showLabels,
     required this.railFg,
     required this.selectedBg,
+    required this.hoverBg,
     required this.selectedFg,
   });
 
   @override
+  State<_NavButton> createState() => _NavButtonState();
+}
+
+class _NavButtonState extends State<_NavButton> {
+  bool _hover = false;
+
+  bool get _enableHover {
+    final p = Theme.of(context).platform;
+    return p == TargetPlatform.windows ||
+        p == TargetPlatform.macOS ||
+        p == TargetPlatform.linux;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: selected ? selectedFg : railFg.withOpacity(0.90)),
-      title: ClipRect(
-        child: AnimatedAlign(
-          alignment: Alignment.centerLeft,
-          duration: const Duration(milliseconds: 160),
-          curve: Curves.easeOut,
-          widthFactor: showLabels ? 1 : 0, // <- evita la "columna de letras"
-          child: AnimatedOpacity(
+    final theme = Theme.of(context);
+
+    final fg = widget.selected
+        ? widget.selectedFg
+        : widget.railFg.withOpacity(0.8);
+
+    // Fondo:
+    // - seleccionado: tu selectedBg
+    // - hover (no seleccionado): un toque del selectedBg
+    final Color bg = widget.selected
+        ? widget.selectedBg
+        : (_hover ? widget.hoverBg : Colors.transparent);
+
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: _enableHover ? (_) => setState(() => _hover = true) : null,
+      onExit: _enableHover ? (_) => setState(() => _hover = false) : null,
+      child: Material(
+        color: bg, // 👈 el fondo va aquí
+        borderRadius: BorderRadius.circular(10),
+        clipBehavior: Clip.antiAlias, // 👈 AQUÍ es donde va
+        child: ListTile(
+          leading: AnimatedScale(
+            scale: _hover ? 1.2 : 1.0,
             duration: const Duration(milliseconds: 120),
-            opacity: showLabels ? 1 : 0,
-            child: Text(
-              label,
-              maxLines: 1,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: selected ? selectedFg : railFg.withOpacity(0.95),
-                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+            curve: Curves.easeOut,
+            child: Icon(widget.icon, color: fg),
+          ),
+
+          title: ClipRect(
+            child: AnimatedAlign(
+              alignment: Alignment.centerLeft,
+              duration: const Duration(milliseconds: 160),
+              curve: Curves.easeOut,
+              widthFactor: widget.showLabels ? 1 : 0,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 120),
+                opacity: widget.showLabels ? 1 : 0,
+                child: Text(
+                  widget.label,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: fg,
+                    fontWeight: widget.selected ? FontWeight.w600 : FontWeight.normal,
+                  ),
+                ),
               ),
             ),
           ),
+
+          onTap: widget.onTap,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+          minLeadingWidth: 0,
+          dense: true,
+
+          // ya no usamos estos
+          selected: false,
+          selectedTileColor: Colors.transparent,
         ),
       ),
-      selected: selected,
-      selectedTileColor: selectedBg,
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      minLeadingWidth: 0,
-      dense: true,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     );
+
+
   }
 }
+

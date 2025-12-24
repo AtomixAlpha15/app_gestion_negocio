@@ -47,7 +47,6 @@ class _MainShellState extends State<MainShell> {
               setState(() => _selectedSection = AppSection.values[idx]);
             },
           ),
-          const VerticalDivider(width: 1),
           // Zona de contenido principal
           Expanded(
             child: _getSectionWidget(_selectedSection),

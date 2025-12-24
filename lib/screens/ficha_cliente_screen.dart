@@ -10,9 +10,6 @@ import 'package:drift/drift.dart' show OrderingTerm, OrderingMode;
 import 'package:image_picker/image_picker.dart';
 import '../widgets/bonos_panel.dart';
 
-extension _LetExt<T> on T {
-  R let<R>(R Function(T it) op) => op(this);
-}
 
 class FichaClienteScreen extends StatefulWidget {
   final dynamic cliente; // ClienteData o null (crear)
