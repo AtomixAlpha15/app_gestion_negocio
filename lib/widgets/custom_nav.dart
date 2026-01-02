@@ -95,20 +95,14 @@ return Padding(
     },
     child: Material(
       color: railBg,
-      elevation: 10, // dejamos la sombra a BoxShadow (más control)
+      elevation: 10,
       surfaceTintColor: Colors.transparent,
       borderRadius: BorderRadius.circular(18),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: scheme.outlineVariant.withOpacity(0.5)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.35 : 0.10),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
+
         ),
       child: Column(
         mainAxisSize: MainAxisSize.max,

@@ -414,13 +414,15 @@ class IngresosTab extends StatelessWidget {
     this.fechaSeleccionada,
   });
 
-@override
-Widget build(BuildContext context) {
-  return StreamBuilder<List<MovimientoContable>>(
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<MovimientoContable>>(
     stream: context
         .read<ContabilidadProvider>()
         .movimientosMesStream(anio, mes),
     builder: (context, snap) {
+      print('[UI movs] state=${snap.connectionState} hasData=${snap.hasData} len=${snap.data?.length} hasError=${snap.hasError} err=${snap.error}');
+
       final clientes  = context.watch<ClientesProvider>().clientes;
       final servicios = context.watch<ServiciosProvider>().servicios;
       final citasMes  = context.watch<CitasProvider>().citasPorMes(mes, anio);
@@ -613,6 +615,7 @@ Widget build(BuildContext context) {
       );
     },
   );
+
 
 }
 
