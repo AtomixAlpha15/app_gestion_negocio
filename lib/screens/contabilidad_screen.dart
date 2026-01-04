@@ -79,13 +79,11 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
   Widget build(BuildContext context) {
     final clientes = context.watch<ClientesProvider>().clientes;
     final servicios = context.watch<ServiciosProvider>().servicios;
-    final contab = context.read<ContabilidadProvider>();
     final gastosProvider = context.watch<GastosProvider>();
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
     // Citas y gastos del mes (para totales, SIN filtrar)
-    final citasMes = context.watch<CitasProvider>().citasPorMes(mesActual, anioActual);
     final gastosMes = gastosProvider.gastosPorMes(mesActual, anioActual);
 
     // Totales independientes de filtros

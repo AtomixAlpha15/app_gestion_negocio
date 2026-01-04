@@ -6,7 +6,6 @@ import '../providers/citas_provider.dart';
 import '../providers/bonos_provider.dart';
 import '../providers/extras_servicio_provider.dart';
 import '../services/app_database.dart';
-import 'package:drift/drift.dart' show Value;
 
 // Helper para Dart < 3
 extension FirstWhereOrNullExtension<E> on List<E> {
@@ -472,7 +471,6 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
         if (widget.cita != null)
           TextButton(
             onPressed: () async {
-              final scheme    = Theme.of(context).colorScheme;
               final bonosProv = context.read<BonosProvider>();
               final citasProv = context.read<CitasProvider>();
 

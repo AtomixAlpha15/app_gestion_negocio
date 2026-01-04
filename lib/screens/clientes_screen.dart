@@ -1,9 +1,10 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/clientes_provider.dart';
 import '../providers/citas_provider.dart';
 import 'ficha_cliente_screen.dart';
+import '../widgets/entity_card.dart';
+
 
 class ClientesScreen extends StatefulWidget {
   const ClientesScreen({super.key});
@@ -54,69 +55,8 @@ class _ClientesScreenState extends State<ClientesScreen> {
       }).toList();
 
     // El primer elemento es siempre el botón "añadir"
-    final items = [
-      _ClienteCard(
-        esNuevo: true,
-        onTap: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const FichaClienteScreen(),
-            ),
-          );
-          provider.cargarClientes(); // Recarga al volver
-        },
-      ),
-      ...clientesFiltrados.map(
-        (c) => FutureBuilder(
-          future: context.read<CitasProvider>().impagosCliente(c.id),
-          builder: (context, snapshot) {
-            final hayImpagos = (snapshot.data?.isNotEmpty ?? false);
+  
 
-            return _ClienteCard(
-              cliente: c,
-              tieneImpagos: hayImpagos, // <— ¡clave!
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => FichaClienteScreen(cliente: c),
-                  ),
-                );
-                provider.cargarClientes(); // Recarga al volver
-              },
-              onDelete: () async {
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text('¿Eliminar cliente?'),
-                    content: const Text('Esta acción no se puede deshacer.'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancelar'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Eliminar'),
-                      ),
-                    ],
-                  ),
-                );
-                if (confirm == true) {
-                  await provider.eliminarCliente(c.id, imagenPath: c.imagenPath);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Cliente eliminado')),
-                    );
-                  }
-                }
-              },
-            );
-          },
-        ),
-      ),
-    ];
 
     return Scaffold(
       appBar: AppBar(title: const Text('Clientes')),
@@ -166,12 +106,84 @@ class _ClientesScreenState extends State<ClientesScreen> {
               builder: (context, constraints) {
                 final ancho = constraints.maxWidth;
                 final columnas = (ancho / 220).floor().clamp(1, 6);
-                return GridView.count(
-                  crossAxisCount: columnas,
-                  mainAxisSpacing: 20,
-                  crossAxisSpacing: 20,
-                  children: items,
+
+                // clave única por estado del filtro (imprescindible)
+                final gridKey = ValueKey(clientesFiltrados.map((e) => e.id).join('|'));
+
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeOutCubic,
+                  transitionBuilder: (child, anim) {
+                    final fade = CurvedAnimation(parent: anim, curve: Curves.easeOut);
+                    final slide = Tween<Offset>(
+                      begin: const Offset(0, 0.03),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic));
+
+                    return FadeTransition(
+                      opacity: fade,
+                      child: SlideTransition(position: slide, child: child),
+                    );
+                  },
+                  child: GridView.count(
+                    key: gridKey,
+                    crossAxisCount: columnas,
+                    mainAxisSpacing: 20,
+                    crossAxisSpacing: 20,
+                    children: [
+                      // ---- AÑADIR CLIENTE ----
+                      EntityCard(
+                        isNew: true,
+                        newIcon: Icons.person_add,
+                        newLabel: 'Añadir cliente',
+                        onTap: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const FichaClienteScreen()),
+                          );
+                          provider.cargarClientes();
+                        },
+                      ),
+
+                      // ---- CLIENTES ----
+                      ...clientesFiltrados.map(
+                        (c) => _AnimatedClienteItem(
+                          key: ValueKey(c.id),
+                          child: FutureBuilder(
+                            future: context.read<CitasProvider>().impagosCliente(c.id),
+                            builder: (context, snapshot) {
+                              final hayImpagos = (snapshot.data?.isNotEmpty ?? false);
+
+                              return EntityCard(
+                                onTap: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => FichaClienteScreen(cliente: c),
+                                    ),
+                                  );
+                                  provider.cargarClientes();
+                                },
+                                title: c.nombre,
+                                imagePath: c.imagenPath,
+                                cornerBadge: hayImpagos
+                                    ? const Icon(
+                                        Icons.warning,
+                                        size: 28,
+                                        color: Colors.orange,
+                                      )
+                                    : null,
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 );
+
+
               },
             ),
           ),
@@ -182,103 +194,6 @@ class _ClientesScreenState extends State<ClientesScreen> {
   }
 }
 
-class _ClienteCard extends StatelessWidget {
-  final dynamic cliente;
-  final bool esNuevo;
-  final VoidCallback onTap;
-  final VoidCallback? onDelete;
-  final bool tieneImpagos; // NEW
-
-  const _ClienteCard({
-    this.cliente,
-    this.esNuevo = false,
-    required this.onTap,
-    this.onDelete,
-    this.tieneImpagos = false, // NEW
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    if (esNuevo) {
-      return Card(
-        clipBehavior: Clip.antiAlias, // importante para overlays
-        child: InkWell(
-          onTap: onTap,
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                Icon(Icons.person_add, size: 48),
-                SizedBox(height: 12),
-                Text('Añadir cliente'),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Card(
-      color: scheme.secondaryContainer,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: scheme.outlineVariant),
-      ),
-      clipBehavior: Clip.antiAlias, // para que el triángulo no se salga
-      child: InkWell(
-        onTap: onTap,
-        child: Stack(
-          children: [
-            // Contenido
-            Center(
-              child:Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircleAvatar(
-                      radius: 36,
-                      backgroundImage: cliente.imagenPath != null
-                        ? Image.file(File(cliente.imagenPath!)).image
-                        : null,
-                      child: cliente.imagenPath == null
-                        ? const Icon(Icons.person, size: 36)
-                        : null,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      cliente.nombre,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    if (onDelete != null)
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        color: Theme.of(context).colorScheme.error,
-                        tooltip: 'Eliminar',
-                        onPressed: onDelete,
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            // Badge triangular SOLO si hay impagos, sin texto
-            if (tieneImpagos)
-              Positioned(
-                top: 6,
-                right: 6,
-                child: ImpagoWarning(),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 /// Pequeño triángulo para la esquina superior derecha
 class ImpagoWarning extends StatelessWidget {
@@ -292,6 +207,32 @@ class ImpagoWarning extends StatelessWidget {
       Icons.warning,
       color: scheme.tertiary,
       size: 28,
+    );
+  }
+}
+
+class _AnimatedClienteItem extends StatelessWidget {
+  final Widget child;
+  const _AnimatedClienteItem({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      builder: (_, t, __) {
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(0, (1 - t) * 6),
+            child: Transform.scale(
+              scale: 0.98 + (t * 0.02),
+              child: child,
+            ),
+          ),
+        );
+      },
     );
   }
 }

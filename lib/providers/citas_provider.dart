@@ -38,7 +38,7 @@ class CitasProvider extends ChangeNotifier {
     final citas = await citasQ.get();
     for (final c in citas) {
       // precio de la cita; si tu modelo guarda precio en otra tabla, ajusta aquí
-      final double importe = c.precio ?? 0.0;
+      final double importe = c.precio ;
       final String detalle = 'Cita'; // si tienes servicios, puedes sustituir por su nombre
 
       movimientos.add(MovimientoContable(

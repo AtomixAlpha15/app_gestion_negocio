@@ -18,7 +18,7 @@ class ContabilidadProvider extends ChangeNotifier {
       citaId: c.id,
       detalle: 'Cita',
       metodo: c.metodoPago,
-      importe: c.precio ?? 0.0,
+      importe: c.precio ,
       tipo: MovimientoTipo.cita,
     );
   }

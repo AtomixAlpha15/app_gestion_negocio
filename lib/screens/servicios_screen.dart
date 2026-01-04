@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_database.dart';
@@ -5,6 +6,7 @@ import '../providers/servicios_provider.dart';
 import '../providers/extras_servicio_provider.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import '../widgets/entity_card.dart';
 
 class ServiciosScreen extends StatefulWidget {
   const ServiciosScreen({super.key});
@@ -16,9 +18,11 @@ class ServiciosScreen extends StatefulWidget {
 class _ServiciosScreenState extends State<ServiciosScreen> {
   final _searchCtrl = TextEditingController();
   String _query = '';
+  Timer? _debounce;
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -39,22 +43,31 @@ class _ServiciosScreenState extends State<ServiciosScreen> {
 }
 
 
-Future<void> _mostrarDialogoServicio({dynamic servicio}) async {
-  final changed = await showDialog<bool>(
+void _mostrarDialogoServicio({dynamic servicio}) {
+  showGeneralDialog(
     context: context,
-    builder: (_) => _ServicioDialogo(servicio: servicio),
+    barrierDismissible: true,
+    barrierLabel: 'Servicio',
+    barrierColor: Colors.black.withOpacity(0.35),
+    transitionDuration: const Duration(milliseconds: 220),
+    pageBuilder: (_, __, ___) {
+      return Center(
+        child: _ServicioDialogo(servicio: servicio),
+      );
+    },
+    transitionBuilder: (_, anim, __, child) {
+      final curved = Curves.easeOutCubic.transform(anim.value);
+      return Transform.scale(
+        scale: 0.96 + (0.04 * curved),
+        child: Opacity(
+          opacity: anim.value,
+          child: child,
+        ),
+      );
+    },
   );
-
-  if (changed == true && mounted) {
-    await context.read<ServiciosProvider>().cargarServicios();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(servicio == null ? 'Servicio creado' : 'Cambios guardados'),
-      ),
-    );
-  }
 }
+
 
 
   @override
@@ -74,7 +87,13 @@ Future<void> _mostrarDialogoServicio({dynamic servicio}) async {
             height: 44,
             child: TextField(
               controller: _searchCtrl,
-              onChanged: (v) => setState(() => _query = v.trim()),
+              onChanged: (v) {
+                _debounce?.cancel();
+                _debounce = Timer(const Duration(milliseconds: 120), () {
+                  if (!mounted) return;
+                  setState(() => _query = v.trim());
+                });
+              },
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
                 hintText: 'Buscar servicio...',
@@ -122,56 +141,55 @@ Future<void> _mostrarDialogoServicio({dynamic servicio}) async {
                         return nombre.contains(q) || desc.contains(q);
                       }).toList();
 
-
-                final items = [
-                  _ServicioCard(
-                    esNuevo: true,
-                    onTap: () => _mostrarDialogoServicio(),
-                  ),
-                  ...filtrados.map(
-                    (s) => _ServicioCard(
-                      servicio: s,
-                      onTap: () => _mostrarDialogoServicio(servicio: s),
-                      onDelete: () async {
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            title: const Text('¿Eliminar servicio?'),
-                            content: const Text('Esta acción no se puede deshacer.'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Cancelar'),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('Eliminar'),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (confirm == true) {
-                          await provider.eliminarServicio(s.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Servicio eliminado')),
-                            );
-                          }
-                        }
-                      },
-                    ),
-                  ),
-                ];
-
                 final ancho = constraints.maxWidth;
                 final columnas = (ancho / 220).floor().clamp(1, 6);
+                final filtered = filtrados;
+                final gridKey = ValueKey(filtered.map((e) => e.id).join('|'));
 
-                return GridView.count(
-                  crossAxisCount: columnas,
-                  mainAxisSpacing: 20,
-                  crossAxisSpacing: 20,
-                  children: items,
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeOutCubic,
+                  transitionBuilder: (child, anim) {
+                    final fade = CurvedAnimation(parent: anim, curve: Curves.easeOut);
+                    final slide = Tween<Offset>(
+                      begin: const Offset(0, 0.03),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic));
+
+                    return FadeTransition(
+                      opacity: fade,
+                      child: SlideTransition(position: slide, child: child),
+                    );
+                  },
+                  child: GridView.count(
+                    key: gridKey,
+                    crossAxisCount: columnas,
+                    mainAxisSpacing: 20,
+                    crossAxisSpacing: 20,
+                    children: [
+                      EntityCard(
+                        isNew: true,
+                        newIcon: Icons.add_box,
+                        newLabel: 'Añadir servicio',
+                        onTap: () => _mostrarDialogoServicio(),
+                      ),
+
+                      ...filtered.map(
+                        (s) => _AnimatedServicioItem(
+                          key: ValueKey(s.id),
+                          child: EntityCard(
+                            onTap: () => _mostrarDialogoServicio(servicio: s),
+                            title: s.nombre,
+                            subtitle: '${s.precio.toStringAsFixed(2)} € · ${s.duracionMinutos} min',
+                            imagePath: s.imagenPath, // String? en tu modelo
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 );
+
               },
             ),
           ),
@@ -183,111 +201,28 @@ Future<void> _mostrarDialogoServicio({dynamic servicio}) async {
   }
 }
 
-class _ServicioCard extends StatelessWidget {
-  final dynamic servicio;
-  final bool esNuevo;
-  final VoidCallback onTap;
-  final VoidCallback? onDelete;
-
-  const _ServicioCard({
-    this.servicio,
-    this.esNuevo = false,
-    required this.onTap,
-    this.onDelete,
-  });
+class _AnimatedServicioItem extends StatelessWidget {
+  final Widget child;
+  const _AnimatedServicioItem({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-
-    if (esNuevo) {
-      return Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.add_box, size: 48, color: scheme.onSecondaryContainer),
-                const SizedBox(height: 12),
-                Text(
-                  'Añadir servicio',
-
-                ),
-              ],
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      builder: (_, t, __) {
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(0, (1 - t) * 6),
+            child: Transform.scale(
+              scale: 0.98 + (t * 0.02),
+              child: child,
             ),
           ),
-        ),
-      );
-    }
-
-    return Card(
-      color: scheme.secondaryContainer,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: scheme.outlineVariant),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Imagen
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: servicio.imagenPath != null
-                    ? Image.file(
-                        File(servicio.imagenPath!),
-                        width: 96,
-                        height: 96,
-                        fit: BoxFit.cover,
-                      )
-                    : Container(
-                        width: 96,
-                        height: 96,
-                        color: scheme.surfaceVariant,
-                        child: Icon(
-                          Icons.image_outlined,
-                          size: 40,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Nombre
-              Text(
-                servicio.nombre,
-                style: text.titleMedium?.copyWith(
-                  color: scheme.onSecondaryContainer,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-              ),
-
-              const SizedBox(height: 8),
-
-              // Precio + duración
-              Text(
-                '${servicio.precio.toStringAsFixed(2)} € · ${servicio.duracionMinutos} min',
-                style: text.bodyMedium?.copyWith(
-                  color: scheme.onSecondaryContainer.withOpacity(0.9),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -518,7 +453,6 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
   Widget build(BuildContext context) {
     final s = widget.servicio;
     final esNuevo = s == null;
-    final text = Theme.of(context).textTheme;
 
     return AlertDialog(
       title: Text(esNuevo ? 'Nuevo Servicio' : 'Editar Servicio'),
