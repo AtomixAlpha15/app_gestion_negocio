@@ -3,6 +3,11 @@ import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import 'dart:io';
 
+const double _kCollapsedWidth = 72.0;
+const double _kExpandedWidth = 240.0;
+const double _kIconSize = 22.0;
+const double _kIconAreaWidth = 48.0; // ancho fijo reservado para el icono
+
 class CustomNavigationRail extends StatefulWidget {
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
@@ -21,7 +26,6 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
   bool _extended = false;
   bool _lastManualExtended = false;
   bool _autoCollapsed = false;
-  bool _showLabels = false;
 
   void _updateResponsiveMenu() {
     final width = MediaQuery.of(context).size.width;
@@ -45,438 +49,448 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _updateResponsiveMenu());
   }
 
-  // Utils de color
-  Color _blend(Color fg, Color bg, double opacity) {
-    return Color.alphaBlend(fg.withOpacity(opacity), bg);
-  }
+  Color _blend(Color fg, Color bg, double opacity) =>
+      Color.alphaBlend(fg.withValues(alpha: opacity), bg);
 
-  Color _onColor(Color bg) {
-    // Contraste simple: luminancia
-    return bg.computeLuminance() > 0.5 ? Colors.black : Colors.white;
-  }
+  Color _onColor(Color bg) =>
+      bg.computeLuminance() > 0.5 ? Colors.black : Colors.white;
 
   @override
   Widget build(BuildContext context) {
-    //WidgetsBinding.instance.addPostFrameCallback((_) => _updateResponsiveMenu());
-
     final settings = context.watch<SettingsProvider>();
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    // Fondo del rail: mezclar colorBase con surface para que armonice con el tema
-    // (más opacidad en dark para que se note)
     final railBg = _blend(settings.colorBase, scheme.surface, isDark ? 0.22 : 0.50);
     final railFg = _onColor(railBg);
-
-    // Estado seleccionado: fondo derivado del secundario para contraste sobre el rail
-    final hoverBg = _blend(
-      scheme.secondary,
-      railBg,
-      isDark ? 0.28 : 0.14,
-    );
-
-    final selectedBg = _blend(
-      scheme.secondary,
-      railBg,
-      isDark ? 0.55 : 0.32,
-    );
+    final hoverBg = _blend(scheme.secondary, railBg, isDark ? 0.28 : 0.14);
+    final selectedBg = _blend(scheme.secondary, railBg, isDark ? 0.55 : 0.32);
     final selectedFg = _onColor(selectedBg);
 
-return Padding(
-  padding: const EdgeInsets.all(12), // separa del borde de pantalla
-  child: AnimatedContainer(
-    duration: const Duration(milliseconds: 250),
-    width: _extended ? 220 : 80,
-    onEnd: () {
-      setState(() {
-        _showLabels = _extended; // ✅ al terminar, si está expandido, mostramos
-      });
-    },
-    child: Material(
-      color: railBg,
-      elevation: 10,
-      surfaceTintColor: Colors.transparent,
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
+    final destinations = [
+      (Icons.dashboard_rounded, 'Inicio'),
+      (Icons.people_rounded, 'Clientes'),
+      (Icons.handyman_rounded, 'Servicios'),
+      (Icons.calendar_month_rounded, 'Agenda'),
+      (Icons.wallet_rounded, 'Contabilidad'),
+      (Icons.settings_rounded, 'Ajustes'),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeInOut,
+        width: _extended ? _kExpandedWidth : _kCollapsedWidth,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: scheme.outlineVariant.withOpacity(0.5)),
-
+          borderRadius: BorderRadius.circular(24),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              railBg.withValues(alpha: 0.95),
+              railBg.withValues(alpha: 0.88),
+            ],
+          ),
+          border: Border.all(
+            color: scheme.outlineVariant.withValues(alpha: 0.3),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-      child: Column(
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          // Botón hamburguesa
-          Padding(
-            padding: const EdgeInsets.only(top: 18, left: 18, right: 16),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: IconButton(
-                icon: Icon(_extended ? Icons.menu_open : Icons.menu),
-                color: railFg,
-                style: ButtonStyle(
-                  overlayColor: WidgetStateProperty.resolveWith((states) {
-                    if (states.contains(WidgetState.hovered)) {
-                      return scheme.secondary.withOpacity(0.10); // 👈 sin hover permanente
-                    }
-                    if (states.contains(WidgetState.focused)) {
-                      return Colors.transparent; // 👈 quita el focus persistente
-                    }
-                    if (states.contains(WidgetState.pressed)) {
-                      return scheme.secondary.withOpacity(0.12); // click sutil (opcional)
-                    }
-                    return Colors.transparent;
-                  }),
-                ),
-                onPressed: () {
-                  setState(() {
-                    _extended = !_extended;
-                    _lastManualExtended = _extended;
-                    if (!_extended) _showLabels = false;
-                  });
-                },
-                tooltip: _extended ? "Contraer menú" : "Expandir menú",
-              ),
-
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          // Logo de empresa (suave: scale + fade, sin saltos de tamaño)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: () {
-              final hasLogo =
-                  settings.logoPath.isNotEmpty && File(settings.logoPath).existsSync();
-
-              const double boxSize = 96; // 👈 tamaño afinado para rail flotante
-
-              final Widget content = hasLogo
-                  ? Image.file(
-                      File(settings.logoPath),
-                      width: boxSize,
-                      height: boxSize,
-                      fit: BoxFit.contain,
-                    )
-                  : Icon(
-                      Icons.business,
-                      size: 42,
-                      color: railFg,
-                    );
-
-              return SizedBox(
-                width: boxSize,
-                height: boxSize,
-                child: Center(
-                  child: AnimatedScale(
-                    scale: _extended ? 1.2 : 0.60,
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeOutCubic,
+        child: Column(
+          children: [
+            // — Header con botón toggle —
+            SizedBox(
+              height: 64,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Texto "Menú" alineado a la izquierda, sólo visible expandido
+                  Positioned(
+                    left: _kIconAreaWidth / 2 + (_kCollapsedWidth - _kIconAreaWidth) / 2 + 8,
                     child: AnimatedOpacity(
-                      opacity: _extended ? 1.0 : 0.85,
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeOut,
-                      child: content,
-                    ),
-                  ),
-                ),
-              );
-            }(),
-          ),
-
-          // Nombre de empresa (sin empujar el layout)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: SizedBox(
-              height: 44, // 👈 reserva altura fija (ajusta 40–52 según tu fuente)
-              child: Center(
-                child: AnimatedOpacity(
-                  opacity: _showLabels ? 1 : 0,
-                  duration: const Duration(milliseconds: 160),
-                  curve: Curves.easeOut,
-                  child: AnimatedScale(
-                    scale: _showLabels ? 1.0 : 0.98,
-                    duration: const Duration(milliseconds: 200),
-                    curve: Curves.easeOutCubic,
-                    child: Text(
-                      settings.nombreEmpresa,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontFamily: settings.fuente,
-                        fontSize: 22 * settings.tamanoFuente,
-                        fontWeight: FontWeight.bold,
-                        color: railFg,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      softWrap: false,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Botones de navegación
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.only(left: 8, right: 8),
-              children: [
-                _NavButton(
-                  icon: Icons.dashboard,
-                  label: 'Inicio',
-                  selected: widget.selectedIndex == 0,
-                  extended: _extended,
-                  onTap: () => widget.onDestinationSelected(0),
-                  showLabels: _showLabels,
-                  railFg: railFg,
-                  selectedBg: selectedBg,
-                  hoverBg: hoverBg,
-                  selectedFg: selectedFg,
-                ),
-                _NavButton(
-                  icon: Icons.people,
-                  label: 'Clientes',
-                  selected: widget.selectedIndex == 1,
-                  extended: _extended,
-                  onTap: () => widget.onDestinationSelected(1),
-                  showLabels: _showLabels,
-                  railFg: railFg,
-                  selectedBg: selectedBg,
-                  hoverBg: hoverBg,
-                  selectedFg: selectedFg,
-                ),
-                _NavButton(
-                  icon: Icons.home_repair_service,
-                  label: 'Servicios',
-                  selected: widget.selectedIndex == 2,
-                  extended: _extended,
-                  onTap: () => widget.onDestinationSelected(2),
-                  showLabels: _showLabels,
-                  railFg: railFg,
-                  selectedBg: selectedBg,
-                  hoverBg: hoverBg,
-                  selectedFg: selectedFg,
-                ),
-                _NavButton(
-                  icon: Icons.calendar_today,
-                  label: 'Agenda',
-                  selected: widget.selectedIndex == 3,
-                  extended: _extended,
-                  onTap: () => widget.onDestinationSelected(3),
-                  showLabels: _showLabels,
-                  railFg: railFg,
-                  selectedBg: selectedBg,
-                  hoverBg: hoverBg,
-                  selectedFg: selectedFg,
-                ),
-                _NavButton(
-                  icon: Icons.account_balance_wallet,
-                  label: 'Contabilidad',
-                  selected: widget.selectedIndex == 4,
-                  extended: _extended,
-                  onTap: () => widget.onDestinationSelected(4),
-                  showLabels: _showLabels,
-                  railFg: railFg,
-                  selectedBg: selectedBg,
-                  hoverBg: hoverBg,
-                  selectedFg: selectedFg,
-                ),
-                _NavButton(
-                  icon: Icons.settings,
-                  label: 'Ajustes',
-                  selected: widget.selectedIndex == 5,
-                  extended: _extended,
-                  onTap: () => widget.onDestinationSelected(5),
-                  showLabels: _showLabels,
-                  railFg: railFg,
-                  selectedBg: selectedBg,
-                  hoverBg: hoverBg,
-                  selectedFg: selectedFg,
-                ),
-              ],
-            ),
-          ),
-
-          // Botón inferior (usuario - futuro)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 18),
-            child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () {},
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                child: Row(
-                  children: [
-                    // Icono/Avatar siempre visible
-                    CircleAvatar(
-                      radius: 16,
-                      backgroundColor: railFg,
-                      child: Icon(Icons.person, color: _onColor(railFg), size: 18),
-                    ),
-                    const SizedBox(width: 12),
-
-                    // Texto solo cuando _showLabels == true (no cuando _extended empieza)
-                    Expanded(
-                      child: ClipRect(
-                        child: AnimatedAlign(
-                          alignment: Alignment.centerLeft,
-                          duration: const Duration(milliseconds: 160),
-                          curve: Curves.easeOut,
-                          widthFactor: _showLabels ? 1 : 0,
-                          child: AnimatedOpacity(
-                            duration: const Duration(milliseconds: 120),
-                            opacity: _showLabels ? 1 : 0,
-                            child: Text(
-                              "Usuario",
-                              maxLines: 1,
-                              softWrap: false,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                fontSize: 16 * (settings.tamanoFuente),
-                                color: railFg,
-                              ),
-                            ),
-                          ),
+                      opacity: _extended ? 1 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Text(
+                        'Menú',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: railFg.withValues(alpha: 0.7),
+                          letterSpacing: 1.2,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-
-                    // Tooltip solo cuando está colapsado
-                    if (!_showLabels)
-                      Tooltip(
-                        message: "Cuenta de usuario",
-                        child: Icon(Icons.info_outline, color: railFg.withOpacity(0.7), size: 18),
+                  ),
+                  // Botón toggle, siempre centrado en la columna de iconos
+                  Positioned(
+                    right: 12,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: scheme.secondary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                  ],
-                ),
+                      child: IconButton(
+                        icon: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: Icon(
+                            _extended ? Icons.menu_open_rounded : Icons.menu_rounded,
+                            key: ValueKey(_extended),
+                            color: railFg,
+                          ),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _extended = !_extended;
+                            _lastManualExtended = _extended;
+                          });
+                        },
+                        tooltip: _extended ? "Contraer menú" : "Expandir menú",
+                        constraints: const BoxConstraints(minHeight: 40, minWidth: 40),
+                        splashRadius: 20,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
 
-          ),
-        ],
-      ),
+            // — Logo —
+            _LogoSection(
+              extended: _extended,
+              settings: settings,
+              scheme: scheme,
+              theme: theme,
+              railFg: railFg,
+            ),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: Divider(color: scheme.outlineVariant.withValues(alpha: 0.2), height: 1),
+            ),
+
+            // — Items de navegación —
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                children: [
+                  for (var i = 0; i < destinations.length; i++)
+                    _NavItem(
+                      icon: destinations[i].$1,
+                      label: destinations[i].$2,
+                      selected: widget.selectedIndex == i,
+                      extended: _extended,
+                      onTap: () => widget.onDestinationSelected(i),
+                      railFg: railFg,
+                      selectedBg: selectedBg,
+                      hoverBg: hoverBg,
+                      selectedFg: selectedFg,
+                      scheme: scheme,
+                    ),
+                ],
+              ),
+            ),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: Divider(color: scheme.outlineVariant.withValues(alpha: 0.2), height: 1),
+            ),
+
+            // — Usuario —
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
+              child: _UserChip(extended: _extended, railFg: railFg, scheme: scheme, theme: theme, settings: settings),
+            ),
+          ],
         ),
       ),
-    ),
-  );
-
+    );
   }
 }
 
-class _NavButton extends StatefulWidget {
+// ─── Logo ────────────────────────────────────────────────────────────────────
+
+class _LogoSection extends StatelessWidget {
+  final bool extended;
+  final SettingsProvider settings;
+  final ColorScheme scheme;
+  final ThemeData theme;
+  final Color railFg;
+
+  const _LogoSection({
+    required this.extended,
+    required this.settings,
+    required this.scheme,
+    required this.theme,
+    required this.railFg,
+  });
+
+  Color _onColor(Color bg) =>
+      bg.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasLogo = settings.logoPath.isNotEmpty && File(settings.logoPath).existsSync();
+    const double size = 52;
+
+    final logo = SizedBox(
+      width: size,
+      height: size,
+      child: hasLogo
+          ? Image.file(File(settings.logoPath), fit: BoxFit.contain)
+          : Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [scheme.primary, scheme.primary.withValues(alpha: 0.7)],
+                ),
+              ),
+              child: Icon(Icons.business_rounded, size: 26, color: scheme.onPrimary),
+            ),
+    );
+
+    return SizedBox(
+      height: 100,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AnimatedScale(
+            scale: extended ? 1.0 : 0.68,
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeInOut,
+            child: logo,
+          ),
+          const SizedBox(height: 8),
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 200),
+            firstCurve: Curves.easeIn,
+            secondCurve: Curves.easeOut,
+            crossFadeState: extended ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+            firstChild: Text(
+              settings.nombreEmpresa,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontFamily: settings.fuente,
+                fontSize: 13 * settings.tamanoFuente,
+                fontWeight: FontWeight.w700,
+                color: _onColor(settings.colorBase),
+                letterSpacing: 0.3,
+              ),
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+            ),
+            secondChild: const SizedBox(height: 18),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Nav Item ────────────────────────────────────────────────────────────────
+
+class _NavItem extends StatefulWidget {
   final IconData icon;
   final String label;
   final bool selected;
-  final bool extended; // lo puedes mantener aunque ya no lo uses
+  final bool extended;
   final VoidCallback onTap;
-  final bool showLabels;
-
   final Color railFg;
   final Color selectedBg;
   final Color hoverBg;
   final Color selectedFg;
+  final ColorScheme scheme;
 
-  const _NavButton({
+  const _NavItem({
     required this.icon,
     required this.label,
     required this.selected,
     required this.extended,
     required this.onTap,
-    required this.showLabels,
     required this.railFg,
     required this.selectedBg,
     required this.hoverBg,
     required this.selectedFg,
+    required this.scheme,
   });
 
   @override
-  State<_NavButton> createState() => _NavButtonState();
+  State<_NavItem> createState() => _NavItemState();
 }
 
-class _NavButtonState extends State<_NavButton> {
+class _NavItemState extends State<_NavItem> {
   bool _hover = false;
 
-  bool get _enableHover {
+  bool get _isDesktop {
     final p = Theme.of(context).platform;
-    return p == TargetPlatform.windows ||
-        p == TargetPlatform.macOS ||
-        p == TargetPlatform.linux;
+    return p == TargetPlatform.windows || p == TargetPlatform.macOS || p == TargetPlatform.linux;
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final fg = widget.selected ? widget.selectedFg : widget.railFg.withValues(alpha: 0.8);
+    final bg = widget.selected ? widget.selectedBg : (_hover ? widget.hoverBg : Colors.transparent);
 
-    final fg = widget.selected
-        ? widget.selectedFg
-        : widget.railFg.withOpacity(0.8);
-
-    // Fondo:
-    // - seleccionado: tu selectedBg
-    // - hover (no seleccionado): un toque del selectedBg
-    final Color bg = widget.selected
-        ? widget.selectedBg
-        : (_hover ? widget.hoverBg : Colors.transparent);
-
-
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: _enableHover ? (_) => setState(() => _hover = true) : null,
-      onExit: _enableHover ? (_) => setState(() => _hover = false) : null,
-      child: Material(
-        color: bg, // 👈 el fondo va aquí
-        borderRadius: BorderRadius.circular(10),
-        clipBehavior: Clip.antiAlias, // 👈 AQUÍ es donde va
-        child: ListTile(
-          leading: AnimatedScale(
-            scale: _hover ? 1.2 : 1.0,
-            duration: const Duration(milliseconds: 120),
+    // El item usa Stack: el icono siempre está en posición fija a la izquierda,
+    // el texto aparece a su derecha con animación de opacidad y slide.
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: _isDesktop ? (_) => setState(() => _hover = true) : null,
+        onExit: _isDesktop ? (_) => setState(() => _hover = false) : null,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
             curve: Curves.easeOut,
-            child: Icon(widget.icon, color: fg),
-          ),
-
-          title: ClipRect(
-            child: AnimatedAlign(
-              alignment: Alignment.centerLeft,
-              duration: const Duration(milliseconds: 160),
-              curve: Curves.easeOut,
-              widthFactor: widget.showLabels ? 1 : 0,
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 120),
-                opacity: widget.showLabels ? 1 : 0,
-                child: Text(
-                  widget.label,
-                  maxLines: 1,
-                  softWrap: false,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: fg,
-                    fontWeight: widget.selected ? FontWeight.w600 : FontWeight.normal,
-                  ),
+            height: 44,
+            decoration: BoxDecoration(
+              color: bg,
+              borderRadius: BorderRadius.circular(12),
+              border: widget.selected
+                  ? Border.all(color: widget.scheme.primary.withValues(alpha: 0.3), width: 1.5)
+                  : null,
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: widget.onTap,
+                borderRadius: BorderRadius.circular(12),
+                splashColor: widget.scheme.primary.withValues(alpha: 0.1),
+                hoverColor: Colors.transparent,
+                child: Stack(
+                  alignment: Alignment.centerLeft,
+                  children: [
+                    // Icono: siempre centrado en los primeros _kCollapsedWidth px
+                    Positioned(
+                      left: 0,
+                      width: _kCollapsedWidth - 16, // 56px
+                      child: Center(
+                        child: AnimatedScale(
+                          scale: _hover ? 1.15 : 1.0,
+                          duration: const Duration(milliseconds: 150),
+                          curve: Curves.easeOutCubic,
+                          child: Icon(widget.icon, color: fg, size: _kIconSize),
+                        ),
+                      ),
+                    ),
+                    // Texto: aparece a la derecha del área del icono
+                    Positioned(
+                      left: _kCollapsedWidth - 16,
+                      right: 8,
+                      child: AnimatedOpacity(
+                        opacity: widget.extended ? 1.0 : 0.0,
+                        duration: Duration(milliseconds: widget.extended ? 220 : 120),
+                        child: Text(
+                          widget.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: fg,
+                            fontWeight: widget.selected ? FontWeight.w700 : FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
-
-          onTap: widget.onTap,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-          minLeadingWidth: 0,
-          dense: true,
-
-          // ya no usamos estos
-          selected: false,
-          selectedTileColor: Colors.transparent,
         ),
       ),
     );
-
-
   }
 }
 
+// ─── User Chip ───────────────────────────────────────────────────────────────
+
+class _UserChip extends StatelessWidget {
+  final bool extended;
+  final Color railFg;
+  final ColorScheme scheme;
+  final ThemeData theme;
+  final SettingsProvider settings;
+
+  const _UserChip({
+    required this.extended,
+    required this.railFg,
+    required this.scheme,
+    required this.theme,
+    required this.settings,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.2)),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () {},
+          splashColor: scheme.primary.withValues(alpha: 0.1),
+          child: SizedBox(
+            height: 44,
+            child: Stack(
+              alignment: Alignment.centerLeft,
+              children: [
+                // Avatar, siempre centrado en la columna de iconos
+                Positioned(
+                  left: 0,
+                  width: _kCollapsedWidth - 16,
+                  child: Center(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(
+                          colors: [scheme.secondary, scheme.secondary.withValues(alpha: 0.7)],
+                        ),
+                      ),
+                      padding: const EdgeInsets.all(5),
+                      child: Icon(Icons.person_rounded, color: scheme.onSecondary, size: 16),
+                    ),
+                  ),
+                ),
+                // Nombre, sólo visible expandido
+                Positioned(
+                  left: _kCollapsedWidth - 16,
+                  right: 8,
+                  child: AnimatedOpacity(
+                    opacity: extended ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Text(
+                      "Usuario",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontSize: 13 * settings.tamanoFuente,
+                        color: railFg,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
