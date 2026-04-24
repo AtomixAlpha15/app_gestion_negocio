@@ -222,11 +222,11 @@ return Padding(
           // Botones de navegación
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.only(left: 8,right: 8),
+              padding: const EdgeInsets.only(left: 8, right: 8),
               children: [
                 _NavButton(
-                  icon: Icons.people,
-                  label: 'Clientes',
+                  icon: Icons.dashboard,
+                  label: 'Inicio',
                   selected: widget.selectedIndex == 0,
                   extended: _extended,
                   onTap: () => widget.onDestinationSelected(0),
@@ -237,8 +237,8 @@ return Padding(
                   selectedFg: selectedFg,
                 ),
                 _NavButton(
-                  icon: Icons.home_repair_service,
-                  label: 'Servicios',
+                  icon: Icons.people,
+                  label: 'Clientes',
                   selected: widget.selectedIndex == 1,
                   extended: _extended,
                   onTap: () => widget.onDestinationSelected(1),
@@ -249,8 +249,8 @@ return Padding(
                   selectedFg: selectedFg,
                 ),
                 _NavButton(
-                  icon: Icons.calendar_today,
-                  label: 'Agenda',
+                  icon: Icons.home_repair_service,
+                  label: 'Servicios',
                   selected: widget.selectedIndex == 2,
                   extended: _extended,
                   onTap: () => widget.onDestinationSelected(2),
@@ -261,8 +261,8 @@ return Padding(
                   selectedFg: selectedFg,
                 ),
                 _NavButton(
-                  icon: Icons.account_balance_wallet,
-                  label: 'Contabilidad',
+                  icon: Icons.calendar_today,
+                  label: 'Agenda',
                   selected: widget.selectedIndex == 3,
                   extended: _extended,
                   onTap: () => widget.onDestinationSelected(3),
@@ -273,11 +273,23 @@ return Padding(
                   selectedFg: selectedFg,
                 ),
                 _NavButton(
-                  icon: Icons.settings,
-                  label: 'Ajustes',
+                  icon: Icons.account_balance_wallet,
+                  label: 'Contabilidad',
                   selected: widget.selectedIndex == 4,
                   extended: _extended,
                   onTap: () => widget.onDestinationSelected(4),
+                  showLabels: _showLabels,
+                  railFg: railFg,
+                  selectedBg: selectedBg,
+                  hoverBg: hoverBg,
+                  selectedFg: selectedFg,
+                ),
+                _NavButton(
+                  icon: Icons.settings,
+                  label: 'Ajustes',
+                  selected: widget.selectedIndex == 5,
+                  extended: _extended,
+                  onTap: () => widget.onDestinationSelected(5),
                   showLabels: _showLabels,
                   railFg: railFg,
                   selectedBg: selectedBg,

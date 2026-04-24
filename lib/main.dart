@@ -9,7 +9,7 @@ import 'providers/gastos_provider.dart';
 import 'providers/extras_servicio_provider.dart';
 import 'providers/bonos_provider.dart';
 import 'package:app_gestion_negocio/providers/citas_provider.dart';
-import '../services/app_database.dart';
+import 'package:app_gestion_negocio/services/app_database.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

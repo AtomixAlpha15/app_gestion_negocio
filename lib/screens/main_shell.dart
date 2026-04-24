@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
+import 'dashboard_screen.dart';
 import 'clientes_screen.dart';
 import 'servicios_screen.dart';
 import 'agenda_screen.dart';
 import '../widgets/custom_nav.dart';
 import 'ajustes_screen.dart';
 import 'contabilidad_screen.dart';
-// Importa aquí los otros screens cuando los vayas creando
 
-enum AppSection { clientes, servicios, agenda, contabilidad, ajustes }
+enum AppSection { dashboard, clientes, servicios, agenda, contabilidad, ajustes }
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -17,22 +17,22 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  AppSection _selectedSection = AppSection.clientes;
+  AppSection _selectedSection = AppSection.dashboard;
 
   Widget _getSectionWidget(AppSection section) {
     switch (section) {
+      case AppSection.dashboard:
+        return const DashboardScreen();
       case AppSection.clientes:
         return const ClientesScreen();
       case AppSection.servicios:
-         return const ServiciosScreen();
-       case AppSection.agenda:
-         return const AgendaScreen();
-       case AppSection.contabilidad:
-         return const ContabilidadScreen();
-       case AppSection.ajustes:
-         return const AjustesScreen();
-      //default:
-      //  return const Center(child: Text('En desarrollo...'));
+        return const ServiciosScreen();
+      case AppSection.agenda:
+        return const AgendaScreen();
+      case AppSection.contabilidad:
+        return const ContabilidadScreen();
+      case AppSection.ajustes:
+        return const AjustesScreen();
     }
   }
 
