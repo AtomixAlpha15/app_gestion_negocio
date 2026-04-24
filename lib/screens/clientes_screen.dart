@@ -4,6 +4,7 @@ import '../providers/clientes_provider.dart';
 import '../providers/citas_provider.dart';
 import 'ficha_cliente_screen.dart';
 import '../widgets/entity_card.dart';
+import '../l10n/app_localizations.dart';
 
 
 class ClientesScreen extends StatefulWidget {
@@ -59,7 +60,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
 
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Clientes')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).clientsTitle)),
       body: Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -73,7 +74,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
               onChanged: (v) => setState(() => filtro = v.trim()),
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'Buscar cliente...',
+                hintText: AppLocalizations.of(context).clientsSearch,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: filtro.isEmpty
                     ? null
@@ -136,7 +137,7 @@ class _ClientesScreenState extends State<ClientesScreen> {
                       EntityCard(
                         isNew: true,
                         newIcon: Icons.person_add,
-                        newLabel: 'Añadir cliente',
+                        newLabel: AppLocalizations.of(context).clientsNew,
                         onTap: () async {
                           await Navigator.push(
                             context,

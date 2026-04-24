@@ -8,6 +8,7 @@ import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:path/path.dart' as p;
 import '../services/app_database.dart';
 import '../services/backup_services.dart';
+import '../l10n/app_localizations.dart';
 
 class AjustesScreen extends StatelessWidget {
   const AjustesScreen({super.key});
@@ -16,7 +17,7 @@ class AjustesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ajustes'),
+        title: Text(AppLocalizations.of(context).settingsTitle),
         centerTitle: false,
       ),
       body: const _AjustesBody(),
@@ -655,62 +656,48 @@ class _TileNotificaciones extends StatelessWidget {
 class _TileRegional extends StatelessWidget {
   const _TileRegional();
 
+  // Opciones de idioma: (languageCode, etiqueta nativa)
+  static const _idiomas = [
+    ('es', 'Español'),
+    ('en', 'English'),
+  ];
+
+  // Opciones de formato de fecha
+  static const _formatos = [
+    ('DD/MM/YYYY', 'DD/MM/YYYY  (31/12/2025)'),
+    ('MM/DD/YYYY', 'MM/DD/YYYY  (12/31/2025)'),
+    ('YYYY-MM-DD', 'YYYY-MM-DD  (2025-12-31)'),
+  ];
+
+  // Opciones de moneda: (símbolo, etiqueta)
+  static const _monedas = [
+    ('€',    'Euro (€)'),
+    ('\$',   'Dólar EE.UU. (\$)'),
+    ('£',    'Libra esterlina (£)'),
+    ('¥',    'Yen japonés (¥)'),
+    ('CHF',  'Franco suizo (CHF)'),
+    ('MX\$', 'Peso mexicano (MX\$)'),
+    ('C\$',  'Dólar canadiense (C\$)'),
+    ('R\$',  'Real brasileño (R\$)'),
+    ('₹',    'Rupia india (₹)'),
+    ('₩',    'Won surcoreano (₩)'),
+  ];
+
+  String _labelIdioma(String code) =>
+      _idiomas.firstWhere((e) => e.$1 == code, orElse: () => (code, code)).$2;
+
+  String _labelMoneda(String sym) =>
+      _monedas.firstWhere((e) => e.$1 == sym, orElse: () => (sym, sym)).$2;
+
   @override
   Widget build(BuildContext context) {
     final s = context.watch<SettingsProvider>();
     final cs = Theme.of(context).colorScheme;
 
-    String labelIdioma(String v) => v;
-    String labelFecha(String v) => v;
-    String labelMoneda(String v) => switch (v) {
-          '€' => 'Euro (€)',
-          '\$' => 'Dólar (\$)',
-          '£' => 'Libra (£)',
-          _ => v,
-        };
-
-    return _SettingsCard(children: [
-      ListTile(
-        leading: const Icon(Icons.language_outlined),
-        title: const Text('Idioma'),
-        subtitle: const Text('Próximamente'),
-        trailing: Row(
+    Widget trailingValue(String label) => Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(labelIdioma(s.idioma),
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: cs.onSurfaceVariant)),
-            const SizedBox(width: 4),
-            Icon(Icons.lock_outline, size: 16, color: cs.onSurfaceVariant),
-          ],
-        ),
-      ),
-      ListTile(
-        leading: const Icon(Icons.calendar_today_outlined),
-        title: const Text('Formato de fecha'),
-        subtitle: const Text('Próximamente'),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(labelFecha(s.formatoFecha),
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: cs.onSurfaceVariant)),
-            const SizedBox(width: 4),
-            Icon(Icons.lock_outline, size: 16, color: cs.onSurfaceVariant),
-          ],
-        ),
-      ),
-      ListTile(
-        leading: const Icon(Icons.attach_money_outlined),
-        title: const Text('Moneda'),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(labelMoneda(s.simboloMoneda),
+            Text(label,
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
@@ -718,29 +705,69 @@ class _TileRegional extends StatelessWidget {
             const SizedBox(width: 4),
             const Icon(Icons.chevron_right),
           ],
+        );
+
+    return _SettingsCard(children: [
+      // ── Idioma ──────────────────────────────────────────────────────────
+      ListTile(
+        leading: const Icon(Icons.language_outlined),
+        title: const Text('Idioma'),
+        trailing: trailingValue(_labelIdioma(s.idioma)),
+        onTap: () => _showOpcionesDialog<String>(
+          context: context,
+          title: 'Idioma',
+          opciones: _idiomas,
+          valorActual: s.idioma,
+          onSelected: s.setIdioma,
         ),
-        onTap: () => _showMonedaDialog(context, s),
+      ),
+      // ── Formato de fecha ─────────────────────────────────────────────────
+      ListTile(
+        leading: const Icon(Icons.calendar_today_outlined),
+        title: const Text('Formato de fecha'),
+        trailing: trailingValue(s.formatoFecha),
+        onTap: () => _showOpcionesDialog<String>(
+          context: context,
+          title: 'Formato de fecha',
+          opciones: _formatos,
+          valorActual: s.formatoFecha,
+          onSelected: s.setFormatoFecha,
+        ),
+      ),
+      // ── Moneda ───────────────────────────────────────────────────────────
+      ListTile(
+        leading: const Icon(Icons.attach_money_outlined),
+        title: const Text('Moneda'),
+        trailing: trailingValue(_labelMoneda(s.simboloMoneda)),
+        onTap: () => _showOpcionesDialog<String>(
+          context: context,
+          title: 'Moneda',
+          opciones: _monedas,
+          valorActual: s.simboloMoneda,
+          onSelected: s.setSimboloMoneda,
+        ),
       ),
     ]);
   }
 
-  void _showMonedaDialog(BuildContext context, SettingsProvider s) {
-    final opciones = [
-      ('€', 'Euro (€)'),
-      ('\$', 'Dólar (\$)'),
-      ('£', 'Libra (£)'),
-    ];
+  void _showOpcionesDialog<T>({
+    required BuildContext context,
+    required String title,
+    required List<(T, String)> opciones,
+    required T valorActual,
+    required void Function(T) onSelected,
+  }) {
     showDialog(
       context: context,
       builder: (_) => SimpleDialog(
-        title: const Text('Moneda'),
+        title: Text(title),
         children: opciones
-            .map((o) => RadioListTile<String>(
+            .map((o) => RadioListTile<T>(
                   value: o.$1,
-                  groupValue: s.simboloMoneda,
+                  groupValue: valorActual,
                   title: Text(o.$2),
                   onChanged: (v) {
-                    s.setSimboloMoneda(v!);
+                    onSelected(v as T);
                     Navigator.pop(context);
                   },
                 ))
@@ -761,7 +788,7 @@ class _TileDatos extends StatelessWidget {
 
     final ultimoBackup = s.ultimaFechaBackup == null
         ? 'Nunca'
-        : _formatDate(s.ultimaFechaBackup!.toLocal());
+        : _formatDate(s.ultimaFechaBackup!.toLocal(), context);
 
     return _SettingsCard(children: [
       // Exportar
@@ -819,9 +846,8 @@ class _TileDatos extends StatelessWidget {
     ]);
   }
 
-  String _formatDate(DateTime dt) =>
-      '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}'
-      '  ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  String _formatDate(DateTime dt, BuildContext context) =>
+      context.read<SettingsProvider>().formatDateTime(dt);
 
   Future<void> _exportar(BuildContext context) async {
     final db = context.read<AppDatabase>();

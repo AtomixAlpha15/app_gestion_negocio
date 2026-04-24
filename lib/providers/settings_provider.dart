@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
@@ -15,11 +16,14 @@ class SettingsProvider extends ChangeNotifier {
   String direccion = "";
   String telefono = "";
   String email = "";
-  int numeroEmpleados = 1; // nuevo (mínimo 1)
+  int numeroEmpleados = 1;
 
   // --- PREFERENCIAS DE INTERFAZ ---
-  String idioma = "Español";
+  // languageCode: 'es' | 'en' | ... (BCP-47)
+  String idioma = "es";
+  // formatoFecha: 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD'
   String formatoFecha = "DD/MM/YYYY";
+  // simboloMoneda: '€' | '$' | '£' | 'JPY' | ...
   String simboloMoneda = "€";
 
   // --- NOTIFICACIONES ---
@@ -29,22 +33,79 @@ class SettingsProvider extends ChangeNotifier {
   int diasInactividad = 30;
 
   // --- NUEVO MODELO DE COLORES ---
-  Color _colorBase = const Color(0xFF6750A4); // por defecto agradable M3
+  Color _colorBase = const Color(0xFF6750A4);
   bool _usarPaletaAuto = true;
-
-  // Colores manuales opcionales (modo avanzado)
   Color _colorSecundarioManual = const Color(0xFF625B71);
   Color _colorTerciarioManual = const Color(0xFF7D5260);
 
-  // Getters nuevos
   Color get colorBase => _colorBase;
   bool get usarPaletaAuto => _usarPaletaAuto;
   Color get colorSecundarioManual => _colorSecundarioManual;
   Color get colorTerciarioManual => _colorTerciarioManual;
 
   // ====== AUTO BACKUP LOCAL ======
-  int intervaloBackupDias = 7;      // cada cuántos días hacer copia
-  DateTime? ultimaFechaBackup;      // cuándo se hizo la última copia
+  int intervaloBackupDias = 7;
+  DateTime? ultimaFechaBackup;
+
+  // ── Helpers internacionales ──────────────────────────────────────────────
+
+  /// Locale activo derivado de [idioma]
+  Locale get locale => Locale(idioma);
+
+  /// Formatea [dt] según el formato de fecha elegido por el usuario.
+  String formatDate(DateTime dt) {
+    switch (formatoFecha) {
+      case 'MM/DD/YYYY':
+        return '${dt.month.toString().padLeft(2, '0')}/'
+            '${dt.day.toString().padLeft(2, '0')}/'
+            '${dt.year}';
+      case 'YYYY-MM-DD':
+        return '${dt.year}-'
+            '${dt.month.toString().padLeft(2, '0')}-'
+            '${dt.day.toString().padLeft(2, '0')}';
+      case 'DD/MM/YYYY':
+      default:
+        return '${dt.day.toString().padLeft(2, '0')}/'
+            '${dt.month.toString().padLeft(2, '0')}/'
+            '${dt.year}';
+    }
+  }
+
+  /// Formatea [dt] con fecha + hora (HH:mm) según el formato elegido.
+  String formatDateTime(DateTime dt) {
+    final time =
+        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    return '${formatDate(dt)}  $time';
+  }
+
+  /// Formatea [amount] con el símbolo de moneda elegido.
+  /// [decimals] controla los dígitos decimales (por defecto 2).
+  String formatCurrency(double amount, {int decimals = 2}) {
+    final formatted = amount.toStringAsFixed(decimals);
+    // Monedas que van delante del número
+    const prefixSymbols = {'\$', '¥', '₩', '₹', 'C\$', 'MX\$'};
+    if (prefixSymbols.contains(simboloMoneda)) {
+      return '$simboloMoneda$formatted';
+    }
+    return '$formatted $simboloMoneda';
+  }
+
+  /// Nombre abreviado del mes para el locale activo (ene, feb… / Jan, Feb…).
+  String monthAbbrev(int month) {
+    return DateFormat('MMM', idioma).format(DateTime(2000, month));
+  }
+
+  /// Nombre completo del mes para el locale activo.
+  String monthName(int month) {
+    return DateFormat('MMMM', idioma).format(DateTime(2000, month));
+  }
+
+  /// Nombre abreviado del día de la semana (lun, mar… / Mon, Tue…).
+  String weekdayAbbrev(int weekday) {
+    // weekday: 1=Monday … 7=Sunday
+    final date = DateTime(2000, 1, 2 + (weekday - 1)); // 2000-01-03 = lunes
+    return DateFormat('EEE', idioma).format(date);
+  }
 
   // ---- Claves SharedPreferences ----
   static const _kFuente                 = 'aj_fuente';
@@ -65,7 +126,6 @@ class SettingsProvider extends ChangeNotifier {
   static const _kNotifClientesInactivos = 'aj_notif_clientes_inactivos';
   static const _kDiasInactividad        = 'aj_dias_inactividad';
 
-  // Nuevas
   static const _kColorBase              = 'aj_color_base';
   static const _kUsarPaletaAuto         = 'aj_usar_paleta_auto';
   static const _kColorSecundarioManual  = 'aj_color_secundario_manual';
@@ -86,7 +146,10 @@ class SettingsProvider extends ChangeNotifier {
     direccion     = prefs.getString(_kDireccion)     ?? "";
     numeroEmpleados = prefs.getInt('numeroEmpleados') ?? 1;
 
-    idioma        = prefs.getString(_kIdioma)        ?? "Español";
+    // Migración: si se guardó el nombre completo ("Español") convertir a código BCP-47
+    final rawIdioma = prefs.getString(_kIdioma) ?? "es";
+    idioma = _migrarIdioma(rawIdioma);
+
     formatoFecha  = prefs.getString(_kFormatoFecha)  ?? "DD/MM/YYYY";
     simboloMoneda = prefs.getString(_kSimboloMoneda) ?? "€";
     alertasImpagos          = prefs.getBool(_kAlertasImpagos)          ?? true;
@@ -94,7 +157,6 @@ class SettingsProvider extends ChangeNotifier {
     notifClientesInactivos  = prefs.getBool(_kNotifClientesInactivos)  ?? false;
     diasInactividad         = prefs.getInt(_kDiasInactividad)          ?? 30;
 
-    // Nuevos colores
     final baseInt = prefs.getInt(_kColorBase);
     if (baseInt != null) _colorBase = Color(baseInt);
 
@@ -106,12 +168,20 @@ class SettingsProvider extends ChangeNotifier {
     final terManInt = prefs.getInt(_kColorTerciarioManual);
     if (terManInt != null) _colorTerciarioManual = Color(terManInt);
 
-    //Auto Backup
     intervaloBackupDias = prefs.getInt('intervaloBackupDias') ?? 7;
     final lastIso = prefs.getString('ultimaFechaBackup');
     ultimaFechaBackup = lastIso != null ? DateTime.tryParse(lastIso) : null;
 
     notifyListeners();
+  }
+
+  // Convierte valores legacy a códigos BCP-47
+  static String _migrarIdioma(String v) {
+    switch (v) {
+      case 'Español': return 'es';
+      case 'English': return 'en';
+      default: return v; // ya es código corto o desconocido → mantener
+    }
   }
 
   // ---------- GUARDAR ----------
@@ -137,20 +207,16 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setBool(_kNotifClientesInactivos, notifClientesInactivos);
     await prefs.setInt(_kDiasInactividad, diasInactividad);
 
-    // Nuevos colores
-    await prefs.setInt(_kColorBase, _colorBase.value);
+    await prefs.setInt(_kColorBase, _colorBase.toARGB32());
     await prefs.setBool(_kUsarPaletaAuto, _usarPaletaAuto);
-    await prefs.setInt(_kColorSecundarioManual, _colorSecundarioManual.value);
-    await prefs.setInt(_kColorTerciarioManual, _colorTerciarioManual.value);
-
-    //Auto Backup
+    await prefs.setInt(_kColorSecundarioManual, _colorSecundarioManual.toARGB32());
+    await prefs.setInt(_kColorTerciarioManual, _colorTerciarioManual.toARGB32());
 
     await prefs.setInt('intervaloBackupDias', intervaloBackupDias);
     await prefs.setString('ultimaFechaBackup', ultimaFechaBackup?.toIso8601String() ?? '');
-
   }
 
-  // --------- SETTERS REACTIVOS (nuevos) ---------
+  // --------- SETTERS REACTIVOS ---------
   Future<void> setColorBase(Color c) async {
     _colorBase = c;
     await guardarAjustes();
@@ -175,17 +241,18 @@ class SettingsProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // --------- SETTERS REACTIVOS (existentes) ---------
   void setFuente(String nuevaFuente) {
     fuente = nuevaFuente;
     guardarAjustes();
     notifyListeners();
   }
+
   void setTamanoFuente(double nuevoTamano) {
     tamanoFuente = nuevoTamano;
     guardarAjustes();
     notifyListeners();
   }
+
   void setOscuro(bool value) {
     oscuro = value;
     guardarAjustes();
@@ -203,103 +270,108 @@ class SettingsProvider extends ChangeNotifier {
     guardarAjustes();
     notifyListeners();
   }
+
   void setNombreEmpresa(String nombre) {
     nombreEmpresa = nombre;
     guardarAjustes();
     notifyListeners();
   }
+
   void setDireccion(String dir) {
     direccion = dir;
     guardarAjustes();
     notifyListeners();
   }
+
   void setTelefono(String tel) {
     telefono = tel;
     guardarAjustes();
     notifyListeners();
   }
+
   void setEmail(String mail) {
     email = mail;
     guardarAjustes();
     notifyListeners();
   }
+
   void setNumeroEmpleados(int n) {
     if (n < 1) n = 1;
     numeroEmpleados = n;
     guardarAjustes();
     notifyListeners();
   }
+
   void setIdioma(String id) {
     idioma = id;
     guardarAjustes();
     notifyListeners();
   }
+
   void setFormatoFecha(String f) {
     formatoFecha = f;
     guardarAjustes();
     notifyListeners();
   }
+
   void setSimboloMoneda(String sim) {
     simboloMoneda = sim;
     guardarAjustes();
     notifyListeners();
   }
+
   void setAlertasImpagos(bool v) {
     alertasImpagos = v;
     guardarAjustes();
     notifyListeners();
   }
+
   void setNotifCitas(bool v) {
     notifCitas = v;
     guardarAjustes();
     notifyListeners();
   }
+
   void setNotifClientesInactivos(bool v) {
     notifClientesInactivos = v;
     guardarAjustes();
     notifyListeners();
   }
+
   void setDiasInactividad(int v) {
     diasInactividad = v.clamp(7, 90);
     guardarAjustes();
     notifyListeners();
   }
+
   void setIntervaloBackupDias(int d) {
     intervaloBackupDias = d.clamp(1, 365);
     guardarAjustes();
     notifyListeners();
   }
+
   void setUltimaFechaBackup(DateTime dt) {
     ultimaFechaBackup = dt;
     guardarAjustes();
     notifyListeners();
   }
 
-  // ---------- SNAPSHOT A/B DEL PROVIDER (para backup) ----------
-
-  // -> Exporta todos los valores “duraderos” a un Map sencillo
+  // ---------- SNAPSHOT PARA BACKUP ----------
   Map<String, dynamic> toBackupMap() {
     return {
-      // Visual
       'fuente': fuente,
       'tamanoFuente': tamanoFuente,
       'oscuro': oscuro,
-      // Paleta
       'usarPaletaAuto': usarPaletaAuto,
-      'colorBase': colorBase.value,
-      'colorSecundarioManual': colorSecundarioManual.value,
-      'colorTerciarioManual': colorTerciarioManual.value,
-
-      // Empresa
-      // IMPORTANTE: guardamos SOLO el nombre de archivo del logo (lo mapearemos al path real al restaurar)
+      'colorBase': colorBase.toARGB32(),
+      'colorSecundarioManual': colorSecundarioManual.toARGB32(),
+      'colorTerciarioManual': colorTerciarioManual.toARGB32(),
       'logoFile': logoPath.isEmpty ? '' : logoPath.split(Platform.pathSeparator).last,
       'nombreEmpresa': nombreEmpresa,
       'direccion': direccion,
       'telefono': telefono,
       'email': email,
       'numeroEmpleados': numeroEmpleados,
-
-      // Interfaz
       'idioma': idioma,
       'formatoFecha': formatoFecha,
       'simboloMoneda': simboloMoneda,
@@ -307,27 +379,20 @@ class SettingsProvider extends ChangeNotifier {
     };
   }
 
-  // -> Aplica un Map (normalmente el settings.json del backup)
-  //    Si ya has copiado los assets y conoces el path real del logo,
-  //    pásalo en overrideLogoPath para almacenarlo tal cual.
   Future<void> applyBackupMap(Map<String, dynamic> m, {String? overrideLogoPath}) async {
-    // Visual
     fuente = (m['fuente'] ?? fuente) as String;
     tamanoFuente = (m['tamanoFuente'] ?? tamanoFuente) as double;
     oscuro = (m['oscuro'] ?? oscuro) as bool;
 
-    // Paleta
     await setUsarPaletaAuto(m['usarPaletaAuto'] ?? usarPaletaAuto);
-    await setColorBase(Color((m['colorBase'] ?? colorBase.value) as int));
-    await setColorSecundarioManual(Color((m['colorSecundarioManual'] ?? colorSecundarioManual.value) as int));
-    await setColorTerciarioManual(Color((m['colorTerciarioManual'] ?? colorTerciarioManual.value) as int));
+    await setColorBase(Color((m['colorBase'] ?? colorBase.toARGB32()) as int));
+    await setColorSecundarioManual(Color((m['colorSecundarioManual'] ?? colorSecundarioManual.toARGB32()) as int));
+    await setColorTerciarioManual(Color((m['colorTerciarioManual'] ?? colorTerciarioManual.toARGB32()) as int));
 
-    // Empresa
     final logoFileInJson = (m['logoFile'] ?? '') as String;
     if (overrideLogoPath != null && overrideLogoPath.isNotEmpty) {
-      logoPath = overrideLogoPath; // ya mapeado a ruta absoluta restaurada
+      logoPath = overrideLogoPath;
     } else if (logoFileInJson.isNotEmpty) {
-      // Si no nos pasaron override, intentamos resolverlo en Documentos
       final docs = await getApplicationDocumentsDirectory();
       logoPath = '${docs.path}${Platform.pathSeparator}$logoFileInJson';
     }
@@ -337,8 +402,8 @@ class SettingsProvider extends ChangeNotifier {
     email = (m['email'] ?? email) as String;
     numeroEmpleados = (m['numeroEmpleados'] ?? numeroEmpleados) as int;
 
-    // Interfaz
-    idioma = (m['idioma'] ?? idioma) as String;
+    final rawIdioma = (m['idioma'] ?? idioma) as String;
+    idioma = _migrarIdioma(rawIdioma);
     formatoFecha = (m['formatoFecha'] ?? formatoFecha) as String;
     simboloMoneda = (m['simboloMoneda'] ?? simboloMoneda) as String;
     alertasImpagos = (m['alertasImpagos'] ?? alertasImpagos) as bool;
@@ -353,7 +418,6 @@ class SettingsProvider extends ChangeNotifier {
     tamanoFuente = 1.0;
     oscuro = false;
 
-    // Reset nuevo modelo de colores
     _colorBase = const Color(0xFF6750A4);
     _usarPaletaAuto = true;
     _colorSecundarioManual = const Color(0xFF625B71);
@@ -364,7 +428,7 @@ class SettingsProvider extends ChangeNotifier {
     direccion = "";
     telefono = "";
     email = "";
-    idioma = "Español";
+    idioma = "es";
     formatoFecha = "DD/MM/YYYY";
     simboloMoneda = "€";
     alertasImpagos = true;

@@ -8,6 +8,8 @@ import '../providers/bonos_provider.dart';
 import '../providers/servicios_provider.dart';
 import 'package:drift/drift.dart' show OrderingTerm, OrderingMode;
 import 'package:image_picker/image_picker.dart';
+import '../providers/settings_provider.dart';
+import '../l10n/app_localizations.dart';
 import '../widgets/bonos_panel.dart';
 
 
@@ -264,13 +266,13 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                       children: [
                                         _totalChip(context,
                                           label: 'Total gastado',
-                                          value: '${data.totalGastado.toStringAsFixed(2)} €',
+                                          value: context.read<SettingsProvider>().formatCurrency(data.totalGastado),
                                           bg: scheme.secondaryContainer,
                                           fg: scheme.onSecondaryContainer,
                                         ),
                                         _totalChip(context,
                                           label: 'Impagos',
-                                          value: '${data.totalImpagos.toStringAsFixed(2)} €',
+                                          value: context.read<SettingsProvider>().formatCurrency(data.totalImpagos),
                                           bg: data.totalImpagos > 0 ? scheme.tertiaryContainer : scheme.surfaceVariant,
                                           fg: data.totalImpagos > 0 ? scheme.onTertiaryContainer : scheme.onSurfaceVariant,
                                         ),
@@ -392,17 +394,14 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                               itemBuilder: (_, i) {
                                                 final c = data.impagos[i];
                                                 final servicioNombre = serviciosMap[c.servicioId] ?? 'Servicio';
-                                                final fecha =
-                                                    '${c.inicio.day.toString().padLeft(2, '0')}/'
-                                                    '${c.inicio.month.toString().padLeft(2, '0')}/'
-                                                    '${c.inicio.year} '
-                                                    '${c.inicio.hour.toString().padLeft(2, '0')}:${c.inicio.minute.toString().padLeft(2, '0')}';
+                                                final s = context.read<SettingsProvider>();
+                                                final fecha = s.formatDateTime(c.inicio);
 
                                                 return ListTile(
                                                   dense: true,
                                                   contentPadding: EdgeInsets.zero,
                                                   title: Text(
-                                                    '$servicioNombre · ${c.precio.toStringAsFixed(2)} €',
+                                                    '$servicioNombre · ${s.formatCurrency(c.precio)}',
                                                     style: text.bodyMedium?.copyWith(color: scheme.onTertiaryContainer),
                                                   ),
                                                   subtitle: Text(
@@ -487,11 +486,8 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                     itemBuilder: (_, i) {
                                       final c = data.ultimas10[i];
                                       final servicioNombre = serviciosMap[c.servicioId] ?? 'Servicio';
-                                      final fecha =
-                                          '${c.inicio.day.toString().padLeft(2, '0')}/'
-                                          '${c.inicio.month.toString().padLeft(2, '0')}/'
-                                          '${c.inicio.year} '
-                                          '${c.inicio.hour.toString().padLeft(2, '0')}:${c.inicio.minute.toString().padLeft(2, '0')}';
+                                      final s = context.read<SettingsProvider>();
+                                      final fecha = s.formatDateTime(c.inicio);
                                       final pagado = (c.pagada == true) || ((c.metodoPago ?? '').isNotEmpty);
 
                                       return ListTile(
@@ -502,7 +498,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           crossAxisAlignment: CrossAxisAlignment.end,
                                           children: [
-                                            Text('${c.precio.toStringAsFixed(2)} €',
+                                            Text(s.formatCurrency(c.precio),
                                                 style: text.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
                                             const SizedBox(height: 2),
                                             Text(
@@ -618,7 +614,7 @@ class _DialogCrearBonoState extends State<_DialogCrearBono> {
             Row(
               children: [
                 Expanded(child: Text(caducaEl == null ? 'Sin caducidad' :
-                  'Caduca: ${caducaEl!.day.toString().padLeft(2,'0')}/${caducaEl!.month.toString().padLeft(2,'0')}/${caducaEl!.year}')),
+                  'Caduca: ${context.read<SettingsProvider>().formatDate(caducaEl!)}')),
                 TextButton(
                   onPressed: () async {
                     final picked = await showDatePicker(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/bonos_provider.dart';
 import '../providers/servicios_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/app_database.dart'; // Tipos Bono/BonoConsumo (generados por Drift)
 
 // PANEL DE BONOS
@@ -460,7 +461,7 @@ class _BonoFaceplate extends StatelessWidget {
                           Icon(Icons.event, size: 16, color: scheme.tertiary),
                           const SizedBox(width: 8),
                           Text(
-                            'Caduca: ${_fmtDate(bono.caducaEl!)}',
+                            'Caduca: ${_fmtDate(bono.caducaEl!, context)}',
                             style: text.bodyMedium?.copyWith(
                               color: scheme.tertiary,
                               fontWeight: FontWeight.w500,
@@ -546,14 +547,14 @@ class _BonoFaceplate extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    '${_fmtDate(p.fecha)} · ${p.metodo ?? '—'}',
+                                    '${_fmtDate(p.fecha, context)} · ${p.metodo ?? '—'}',
                                     style: text.bodyMedium?.copyWith(
                                       color: scheme.onSecondaryContainer,
                                     ),
                                   ),
                                 ),
                                 Text(
-                                  '${p.importe.toStringAsFixed(2)} €',
+                                  context.read<SettingsProvider>().formatCurrency(p.importe),
                                   style: text.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w700,
                                     color: scheme.primary,
@@ -597,7 +598,7 @@ class _BonoFaceplate extends StatelessWidget {
                             _buildFinancialRow(
                               context,
                               label: 'Cobrado',
-                              value: '${cobrado.toStringAsFixed(2)} €',
+                              value: context.read<SettingsProvider>().formatCurrency(cobrado),
                               icon: Icons.attach_money,
                               color: scheme.primary,
                             ),
@@ -605,7 +606,7 @@ class _BonoFaceplate extends StatelessWidget {
                             _buildFinancialRow(
                               context,
                               label: 'Ingresos reconocidos',
-                              value: '${reconocido.toStringAsFixed(2)} €',
+                              value: context.read<SettingsProvider>().formatCurrency(reconocido),
                               icon: Icons.check_circle,
                               color: scheme.tertiary,
                             ),
@@ -613,7 +614,7 @@ class _BonoFaceplate extends StatelessWidget {
                             _buildFinancialRow(
                               context,
                               label: 'Diferido',
-                              value: '${diferido.toStringAsFixed(2)} €',
+                              value: context.read<SettingsProvider>().formatCurrency(diferido),
                               icon: Icons.schedule,
                               color: scheme.outline,
                             ),
@@ -730,7 +731,7 @@ class _BonoListTile extends StatelessWidget {
           ),
           if (bono.caducaEl != null)
             Text(
-              'Caduca: ${_fmtDate(bono.caducaEl!)}',
+              'Caduca: ${_fmtDate(bono.caducaEl!, context)}',
               style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
         ],
@@ -827,7 +828,7 @@ class _CrearBonoDialogState extends State<_CrearBonoDialog> {
                     },
                     icon: const Icon(Icons.event),
                     label: Text(
-                      caducaEl == null ? 'Sin caducidad' : 'Caduca: ${_fmtDate(caducaEl!)}',
+                      caducaEl == null ? 'Sin caducidad' : 'Caduca: ${_fmtDate(caducaEl!, context)}',
                     ),
                   ),
                 ),
@@ -916,7 +917,7 @@ class _AnadirPagoDialogState extends State<_AnadirPagoDialog> {
                 Expanded(
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.event),
-                    label: Text('${_fmtDate(fecha)}'),
+                    label: Text(_fmtDate(fecha, context)),
                     onPressed: () async {
                       final now = DateTime.now();
                       final picked = await showDatePicker(
@@ -963,6 +964,6 @@ class _AnadirPagoDialogState extends State<_AnadirPagoDialog> {
 }
 
 
-// Utilidad de formateo de fecha
-String _fmtDate(DateTime d) =>
-    '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+// Utilidad de formateo de fecha — usa el formato elegido por el usuario
+String _fmtDate(DateTime d, BuildContext context) =>
+    context.read<SettingsProvider>().formatDate(d);

@@ -6,7 +6,9 @@ import '../providers/servicios_provider.dart';
 import '../providers/extras_servicio_provider.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import '../providers/settings_provider.dart';
 import '../widgets/entity_card.dart';
+import '../l10n/app_localizations.dart';
 
 class ServiciosScreen extends StatefulWidget {
   const ServiciosScreen({super.key});
@@ -76,7 +78,7 @@ void _mostrarDialogoServicio({dynamic servicio}) {
 
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Servicios')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context).servicesTitle)),
       body: Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
@@ -96,7 +98,7 @@ void _mostrarDialogoServicio({dynamic servicio}) {
               },
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'Buscar servicio...',
+                hintText: 'Buscar ${AppLocalizations.of(context).servicesTitle.toLowerCase()}...',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _query.isEmpty
                     ? null
@@ -171,7 +173,7 @@ void _mostrarDialogoServicio({dynamic servicio}) {
                       EntityCard(
                         isNew: true,
                         newIcon: Icons.add_box,
-                        newLabel: 'Añadir servicio',
+                        newLabel: AppLocalizations.of(context).servicesNew,
                         onTap: () => _mostrarDialogoServicio(),
                       ),
 
@@ -181,7 +183,7 @@ void _mostrarDialogoServicio({dynamic servicio}) {
                           child: EntityCard(
                             onTap: () => _mostrarDialogoServicio(servicio: s),
                             title: s.nombre,
-                            subtitle: '${s.precio.toStringAsFixed(2)} € · ${s.duracionMinutos} min',
+                            subtitle: '${context.read<SettingsProvider>().formatCurrency(s.precio)} · ${s.duracionMinutos} min',
                             imagePath: s.imagenPath, // String? en tu modelo
                           ),
                         ),
@@ -348,7 +350,7 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
                       style: text.bodyMedium,
                     ),
                     subtitle: Text(
-                      '+${extra.precio.toStringAsFixed(2)} €',
+                      '+${context.read<SettingsProvider>().formatCurrency(extra.precio)}',
                       style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                     ),
                     trailing: Row(

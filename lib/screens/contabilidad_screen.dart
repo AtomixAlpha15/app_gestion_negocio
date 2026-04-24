@@ -7,6 +7,8 @@ import '../providers/gastos_provider.dart';
 import '../services/app_database.dart';
 import '../models/movimiento_contable.dart';
 import '../providers/contabilidad_provider.dart';
+import '../providers/settings_provider.dart';
+import '../l10n/app_localizations.dart';
 
 // Helper para Dart < 3
 extension FirstWhereOrNullExtension<E> on List<E> {
@@ -95,7 +97,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Contabilidad'),
+        title: Text(AppLocalizations.of(context).accountingTitle),
         elevation: 0,
       ),
       body: Row(
@@ -397,7 +399,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(titulo, style: text.labelSmall?.copyWith(color: fgColor, fontWeight: FontWeight.w500)),
-                  Text('${valor.toStringAsFixed(2)} €',
+                  Text(context.read<SettingsProvider>().formatCurrency(valor),
                     style: text.titleSmall?.copyWith(color: fgColor, fontWeight: FontWeight.w700)),
                 ],
               ),
@@ -422,7 +424,8 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
           children: List.generate(12, (i) {
-            final meses = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+            final settings = context.read<SettingsProvider>();
+            final mesLabel = settings.monthAbbrev(i + 1).toUpperCase();
             final selected = (i + 1) == mesActual;
             final cardColor = selected ? scheme.primaryContainer : scheme.surfaceVariant;
             final titleColor = selected ? scheme.onPrimaryContainer : scheme.onSurfaceVariant;
@@ -437,9 +440,9 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(meses[i], style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600, color: titleColor)),
+                      Text(mesLabel, style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600, color: titleColor)),
                       const SizedBox(height: 4),
-                      Text('${beneficiosPorMes[i].toStringAsFixed(0)}€',
+                      Text(settings.formatCurrency(beneficiosPorMes[i], decimals: 0),
                         style: text.labelSmall?.copyWith(color: titleColor, fontWeight: FontWeight.w500)),
                     ],
                   ),
@@ -591,7 +594,7 @@ class IngresosTab extends StatelessWidget {
                       Expanded(
                         flex: 2,
                         child: Text(
-                          '${m.fecha.day.toString().padLeft(2, '0')}/${m.fecha.month.toString().padLeft(2, '0')}/${m.fecha.year}',
+                          context.read<SettingsProvider>().formatDate(m.fecha),
                           style: text.bodySmall?.copyWith(fontWeight: FontWeight.w500),
                         ),
                       ),
@@ -600,7 +603,7 @@ class IngresosTab extends StatelessWidget {
                       Expanded(
                         flex: 2,
                         child: Text(
-                          '${m.importe.toStringAsFixed(2)} €',
+                          context.read<SettingsProvider>().formatCurrency(m.importe),
                           style: text.bodySmall?.copyWith(fontWeight: FontWeight.w600),
                         ),
                       ),
@@ -779,7 +782,7 @@ class GastosTab extends StatelessWidget {
                               Expanded(
                                 flex: 2,
                                 child: Text(
-                                  '${gasto.precio.toStringAsFixed(2)} €',
+                                  context.read<SettingsProvider>().formatCurrency(gasto.precio),
                                   style: text.bodySmall?.copyWith(fontWeight: FontWeight.w600),
                                 ),
                               ),

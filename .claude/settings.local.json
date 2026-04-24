@@ -4,7 +4,9 @@
       "Bash(flutter analyze *)",
       "Bash(dart analyze *)",
       "Bash(timeout 120 flutter run -d windows)",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "Bash(flutter pub *)",
+      "Bash(flutter build *)"
     ]
   }
 }

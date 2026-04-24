@@ -7,7 +7,9 @@ import '../providers/servicios_provider.dart';
 import '../providers/citas_provider.dart';
 import '../providers/bonos_provider.dart';
 import '../providers/extras_servicio_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/app_database.dart';
+import '../l10n/app_localizations.dart';
 
 extension FirstWhereOrNullExtension<E> on List<E> {
   E? firstWhereOrNull(bool Function(E) test) {
@@ -162,7 +164,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }
 
   String _formatFecha(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+      context.read<SettingsProvider>().formatDate(d);
 
   AgendaVisual _panel(
     DateTime fecha,
@@ -199,7 +201,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Agenda'),
+        title: Text(AppLocalizations.of(context).agendaTitle),
         centerTitle: false,
         actions: [
           Container(
@@ -346,21 +348,17 @@ class _DiaHeader extends StatelessWidget {
   final DateTime fecha;
   const _DiaHeader({required this.fecha});
 
-  static const List<String> _diasSemana = [
-    'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'
-  ];
-  static const List<String> _meses = [
-    '', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
-  ];
-
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final settings = context.watch<SettingsProvider>();
     final esHoy = DateUtils.isSameDay(fecha, DateTime.now());
-    final diaSemana = _diasSemana[fecha.weekday - 1];
-    final label = '$diaSemana ${fecha.day} de ${_meses[fecha.month]}';
+    final diaSemana = settings.weekdayAbbrev(fecha.weekday);
+    final mesNombre = settings.monthName(fecha.month);
+    final label = settings.idioma == 'en'
+        ? '$diaSemana ${mesNombre[0].toUpperCase()}${mesNombre.substring(1)} ${fecha.day}'
+        : '$diaSemana ${fecha.day} de $mesNombre';
 
     return Container(
       width: double.infinity,
@@ -1083,7 +1081,7 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                                             style: text.bodyMedium,
                                           ),
                                           subtitle: Text(
-                                            '+${extra.precio.toStringAsFixed(2)} €',
+                                            '+${context.read<SettingsProvider>().formatCurrency(extra.precio)}',
                                             style: text.labelSmall?.copyWith(
                                               color: scheme.primary,
                                               fontWeight: FontWeight.bold,

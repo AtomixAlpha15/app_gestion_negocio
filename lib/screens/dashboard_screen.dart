@@ -8,6 +8,7 @@ import '../providers/clientes_provider.dart';
 import '../providers/servicios_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/app_database.dart';
+import '../l10n/app_localizations.dart';
 
 // ── Modelos internos ──────────────────────────────────────────────
 class _ClienteRank {
@@ -65,10 +66,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   late AnimationController _anim;
   late Future<_DashData> _dataFuture;
 
-  static const _mesesAbrev = [
-    '', 'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-    'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
-  ];
 
   @override
   void initState() {
@@ -90,6 +87,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     final clientesProv = context.read<ClientesProvider>();
     final serviciosProv = context.read<ServiciosProvider>();
     final db = context.read<AppDatabase>();
+    final settings = context.read<SettingsProvider>();
 
     await citasProv.cargarCitasAnio(now.year);
 
@@ -133,7 +131,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       final gas = gasRows.fold(0.0, (s, g) => s + g.precio);
       ingresosMeses.add(ing);
       gastosMeses.add(gas);
-      labelsMeses.add(_mesesAbrev[mes]);
+      labelsMeses.add(settings.monthAbbrev(mes));
     }
 
     // Top 3 clientes por gasto total
@@ -201,6 +199,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         }
         final data = snap.data!;
         final settings = ctx.watch<SettingsProvider>();
+        final l = AppLocalizations.of(ctx);
         final sim = settings.simboloMoneda;
         final scheme = Theme.of(ctx).colorScheme;
 
@@ -224,7 +223,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     anim: _interval(0.1, 0.45),
                     offsetY: 0.08,
                     child: _KpiCard(
-                      label: 'Ingresos del mes',
+                      label: l.dashMonthlyRevenue,
                       value: data.ingresosEsteMes,
                       icon: Icons.trending_up_rounded,
                       color: scheme.primary,
@@ -239,7 +238,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     anim: _interval(0.15, 0.5),
                     offsetY: 0.08,
                     child: _KpiCard(
-                      label: 'Citas hoy',
+                      label: l.dashAppointmentsToday,
                       value: data.citasHoy.length.toDouble(),
                       icon: Icons.event_rounded,
                       color: scheme.secondary,
@@ -254,7 +253,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     anim: _interval(0.2, 0.55),
                     offsetY: 0.08,
                     child: _KpiCard(
-                      label: 'Impagos',
+                      label: l.dashUnpaidTotal,
                       value: data.impagosTotal,
                       icon: Icons.warning_amber_rounded,
                       color: scheme.error,
@@ -269,7 +268,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     anim: _interval(0.25, 0.6),
                     offsetY: 0.08,
                     child: _KpiCard(
-                      label: 'Bonos activos',
+                      label: l.dashActiveBonuses,
                       value: data.bonosActivosCount.toDouble(),
                       icon: Icons.card_giftcard_rounded,
                       color: scheme.tertiary,
@@ -319,10 +318,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                       anim: _interval(0.5, 0.85),
                       offsetY: 0.06,
                       child: _TopCard(
-                        titulo: 'Mejores clientes',
+                        titulo: l.dashTopClients,
                         icon: Icons.emoji_events_rounded,
                         items: data.topClientes
-                            .map((c) => (c.nombre, '${c.total.toStringAsFixed(0)} $sim'))
+                            .map((c) => (c.nombre, settings.formatCurrency(c.total, decimals: 0)))
                             .toList(),
                       ),
                     ),
@@ -333,10 +332,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                       anim: _interval(0.55, 0.9),
                       offsetY: 0.06,
                       child: _TopCard(
-                        titulo: 'Servicios más pedidos',
+                        titulo: l.dashTopServices,
                         icon: Icons.auto_awesome_rounded,
                         items: data.topServicios
-                            .map((s) => (s.nombre, '${s.count} citas'))
+                            .map((s) => (s.nombre, '${s.count}'))
                             .toList(),
                       ),
                     ),
@@ -388,25 +387,33 @@ class _GreetingCard extends StatelessWidget {
   final String nombreEmpresa;
   const _GreetingCard({required this.nombreEmpresa});
 
-  String get _saludo {
+  String _saludo(String locale) {
     final h = DateTime.now().hour;
+    if (locale == 'en') {
+      if (h < 12) return 'Good morning';
+      if (h < 20) return 'Good afternoon';
+      return 'Good evening';
+    }
     if (h < 12) return 'Buenos días';
     if (h < 20) return 'Buenas tardes';
     return 'Buenas noches';
   }
 
-  String get _fechaLarga {
-    const dias = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
-    const meses = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-        'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  String _fechaLarga(SettingsProvider settings) {
     final now = DateTime.now();
-    return '${dias[now.weekday - 1]}, ${now.day} de ${meses[now.month]} de ${now.year}';
+    final dayName = settings.weekdayAbbrev(now.weekday);
+    final monthName = settings.monthName(now.month);
+    if (settings.idioma == 'en') {
+      return '$dayName, ${monthName[0].toUpperCase()}${monthName.substring(1)} ${now.day}, ${now.year}';
+    }
+    return '$dayName, ${now.day} de $monthName de ${now.year}';
   }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final settings = context.watch<SettingsProvider>();
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 22),
@@ -432,14 +439,16 @@ class _GreetingCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$_saludo,',
+                  '${_saludo(settings.idioma)},',
                   style: text.titleLarge?.copyWith(
                       color: Colors.white.withValues(alpha: 0.85),
                       fontWeight: FontWeight.w400),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  nombreEmpresa.isEmpty ? 'Bienvenido' : nombreEmpresa,
+                  nombreEmpresa.isEmpty
+                      ? AppLocalizations.of(context).appName
+                      : nombreEmpresa,
                   style: text.headlineMedium?.copyWith(
                       color: Colors.white, fontWeight: FontWeight.bold),
                 ),
@@ -453,7 +462,7 @@ class _GreetingCard extends StatelessWidget {
                   color: Colors.white.withValues(alpha: 0.85), size: 36),
               const SizedBox(height: 6),
               Text(
-                _fechaLarga,
+                _fechaLarga(settings),
                 style: text.bodySmall?.copyWith(
                     color: Colors.white.withValues(alpha: 0.75)),
               ),
@@ -558,13 +567,13 @@ class _ChartCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Text('Ingresos vs Gastos',
+            Text(AppLocalizations.of(context).dashRevenueVsExpenses,
                 style: text.titleMedium
                     ?.copyWith(fontWeight: FontWeight.bold)),
             const Spacer(),
-            _LegendDot(color: scheme.primary, label: 'Ingresos'),
+            _LegendDot(color: scheme.primary, label: AppLocalizations.of(context).accountingIncome),
             const SizedBox(width: 12),
-            _LegendDot(color: scheme.error, label: 'Gastos'),
+            _LegendDot(color: scheme.error, label: AppLocalizations.of(context).accountingExpenses),
           ]),
           const SizedBox(height: 16),
           AnimatedBuilder(
@@ -783,7 +792,7 @@ class _AgendaHoyCard extends StatelessWidget {
           Row(children: [
             Icon(Icons.today_rounded, size: 18, color: scheme.primary),
             const SizedBox(width: 8),
-            Text('Agenda de hoy',
+            Text(AppLocalizations.of(context).agendaTitle,
                 style:
                     text.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           ]),
@@ -796,7 +805,7 @@ class _AgendaHoyCard extends StatelessWidget {
                   Icon(Icons.event_available_rounded,
                       size: 40, color: scheme.outlineVariant),
                   const SizedBox(height: 8),
-                  Text('Sin citas hoy',
+                  Text(AppLocalizations.of(context).dashNoAppointmentsToday,
                       style: text.bodyMedium
                           ?.copyWith(color: scheme.onSurfaceVariant)),
                 ]),
@@ -874,7 +883,7 @@ class _AgendaHoyCard extends StatelessWidget {
                             color: scheme.primary,
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: Text('Ahora',
+                          child: Text(AppLocalizations.of(context).agendaStart,
                               style: text.labelSmall
                                   ?.copyWith(color: scheme.onPrimary)),
                         ),
@@ -930,7 +939,7 @@ class _TopCard extends StatelessWidget {
           ]),
           const SizedBox(height: 14),
           if (items.isEmpty)
-            Text('Sin datos',
+            Text(AppLocalizations.of(context).dashNoData,
                 style: text.bodySmall
                     ?.copyWith(color: scheme.onSurfaceVariant))
           else
@@ -996,7 +1005,7 @@ class _ImpagosPendientesCard extends StatelessWidget {
           Row(children: [
             Icon(Icons.receipt_long_rounded, size: 18, color: scheme.error),
             const SizedBox(width: 8),
-            Text('Impagos pendientes',
+            Text(AppLocalizations.of(context).dashUnpaidRecent,
                 style: text.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold, color: scheme.error)),
           ]),
@@ -1006,16 +1015,16 @@ class _ImpagosPendientesCard extends StatelessWidget {
               Icon(Icons.check_circle_rounded,
                   color: scheme.primary, size: 20),
               const SizedBox(width: 8),
-              Text('¡Todo al día!',
+              Text(AppLocalizations.of(context).dashNoData,
                   style: text.bodyMedium
                       ?.copyWith(color: scheme.onSurfaceVariant)),
             ])
           else
             ...impagos.map((c) {
+              final settings = context.read<SettingsProvider>();
               final cliente = clienteNombres[c.clienteId] ?? '';
               final servicio = servicioNombres[c.servicioId] ?? '';
-              final fecha =
-                  '${c.inicio.day.toString().padLeft(2, '0')}/${c.inicio.month.toString().padLeft(2, '0')}';
+              final fecha = settings.formatDate(c.inicio);
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(children: [
@@ -1037,7 +1046,7 @@ class _ImpagosPendientesCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${c.precio.toStringAsFixed(0)} $sim',
+                    settings.formatCurrency(c.precio, decimals: 0),
                     style: text.labelMedium
                         ?.copyWith(color: scheme.error, fontWeight: FontWeight.w600),
                   ),
