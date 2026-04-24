@@ -21,10 +21,12 @@ class SettingsProvider extends ChangeNotifier {
   String idioma = "Español";
   String formatoFecha = "DD/MM/YYYY";
   String simboloMoneda = "€";
-  double anchoMenu = 240.0;
 
-  // --- NOTIFICACIONES Y CAMPOS EXTRA ---
+  // --- NOTIFICACIONES ---
   bool alertasImpagos = true;
+  bool notifCitas = true;
+  bool notifClientesInactivos = false;
+  int diasInactividad = 30;
 
   // --- NUEVO MODELO DE COLORES ---
   Color _colorBase = const Color(0xFF6750A4); // por defecto agradable M3
@@ -58,8 +60,10 @@ class SettingsProvider extends ChangeNotifier {
   static const _kIdioma                 = 'aj_idioma';
   static const _kFormatoFecha           = 'aj_formato_fecha';
   static const _kSimboloMoneda          = 'aj_simbolo_moneda';
-  static const _kAnchoMenu              = 'aj_ancho_menu';
   static const _kAlertasImpagos         = 'aj_alertas_impagos';
+  static const _kNotifCitas             = 'aj_notif_citas';
+  static const _kNotifClientesInactivos = 'aj_notif_clientes_inactivos';
+  static const _kDiasInactividad        = 'aj_dias_inactividad';
 
   // Nuevas
   static const _kColorBase              = 'aj_color_base';
@@ -85,8 +89,10 @@ class SettingsProvider extends ChangeNotifier {
     idioma        = prefs.getString(_kIdioma)        ?? "Español";
     formatoFecha  = prefs.getString(_kFormatoFecha)  ?? "DD/MM/YYYY";
     simboloMoneda = prefs.getString(_kSimboloMoneda) ?? "€";
-    anchoMenu     = prefs.getDouble(_kAnchoMenu)     ?? 240.0;
-    alertasImpagos= prefs.getBool(_kAlertasImpagos)  ?? true;
+    alertasImpagos          = prefs.getBool(_kAlertasImpagos)          ?? true;
+    notifCitas              = prefs.getBool(_kNotifCitas)              ?? true;
+    notifClientesInactivos  = prefs.getBool(_kNotifClientesInactivos)  ?? false;
+    diasInactividad         = prefs.getInt(_kDiasInactividad)          ?? 30;
 
     // Nuevos colores
     final baseInt = prefs.getInt(_kColorBase);
@@ -126,8 +132,10 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setString(_kIdioma, idioma);
     await prefs.setString(_kFormatoFecha, formatoFecha);
     await prefs.setString(_kSimboloMoneda, simboloMoneda);
-    await prefs.setDouble(_kAnchoMenu, anchoMenu);
     await prefs.setBool(_kAlertasImpagos, alertasImpagos);
+    await prefs.setBool(_kNotifCitas, notifCitas);
+    await prefs.setBool(_kNotifClientesInactivos, notifClientesInactivos);
+    await prefs.setInt(_kDiasInactividad, diasInactividad);
 
     // Nuevos colores
     await prefs.setInt(_kColorBase, _colorBase.value);
@@ -236,13 +244,23 @@ class SettingsProvider extends ChangeNotifier {
     guardarAjustes();
     notifyListeners();
   }
-  void setAnchoMenu(double ancho) {
-    anchoMenu = ancho;
+  void setAlertasImpagos(bool v) {
+    alertasImpagos = v;
     guardarAjustes();
     notifyListeners();
   }
-  void setAlertasImpagos(bool v) {
-    alertasImpagos = v;
+  void setNotifCitas(bool v) {
+    notifCitas = v;
+    guardarAjustes();
+    notifyListeners();
+  }
+  void setNotifClientesInactivos(bool v) {
+    notifClientesInactivos = v;
+    guardarAjustes();
+    notifyListeners();
+  }
+  void setDiasInactividad(int v) {
+    diasInactividad = v.clamp(7, 90);
     guardarAjustes();
     notifyListeners();
   }
@@ -285,7 +303,6 @@ class SettingsProvider extends ChangeNotifier {
       'idioma': idioma,
       'formatoFecha': formatoFecha,
       'simboloMoneda': simboloMoneda,
-      'anchoMenu': anchoMenu,
       'alertasImpagos': alertasImpagos,
     };
   }
@@ -324,7 +341,6 @@ class SettingsProvider extends ChangeNotifier {
     idioma = (m['idioma'] ?? idioma) as String;
     formatoFecha = (m['formatoFecha'] ?? formatoFecha) as String;
     simboloMoneda = (m['simboloMoneda'] ?? simboloMoneda) as String;
-    anchoMenu = (m['anchoMenu'] ?? anchoMenu) as double;
     alertasImpagos = (m['alertasImpagos'] ?? alertasImpagos) as bool;
 
     await guardarAjustes();
@@ -351,8 +367,10 @@ class SettingsProvider extends ChangeNotifier {
     idioma = "Español";
     formatoFecha = "DD/MM/YYYY";
     simboloMoneda = "€";
-    anchoMenu = 240.0;
     alertasImpagos = true;
+    notifCitas = true;
+    notifClientesInactivos = false;
+    diasInactividad = 30;
 
     guardarAjustes();
     notifyListeners();

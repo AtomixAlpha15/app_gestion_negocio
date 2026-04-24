@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
-import 'package:path/path.dart' as p; // <- rutas seguras multiplataforma
+import 'package:path/path.dart' as p;
 import '../services/app_database.dart';
 import '../services/backup_services.dart';
 
@@ -14,604 +14,910 @@ class AjustesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 4, // Visual / Empresa / Avanzado / Datos
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Ajustes"),
-          bottom: const TabBar(
-            tabs: [
-              Tab(icon: Icon(Icons.format_paint), text: "Visual"),
-              Tab(icon: Icon(Icons.business), text: "Empresa"),
-              Tab(icon: Icon(Icons.build), text: "Avanzado"),
-              Tab(icon: Icon(Icons.security), text: "Datos"),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Ajustes'),
+        centerTitle: false,
+      ),
+      body: const _AjustesBody(),
+    );
+  }
+}
+
+class _AjustesBody extends StatelessWidget {
+  const _AjustesBody();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      children: const [
+        _SectionHeader(icon: Icons.palette_outlined, label: 'Apariencia'),
+        _TileApariencia(),
+        SizedBox(height: 8),
+        _SectionHeader(icon: Icons.business_outlined, label: 'Empresa'),
+        _TileEmpresa(),
+        SizedBox(height: 8),
+        _SectionHeader(icon: Icons.notifications_outlined, label: 'Notificaciones'),
+        _TileNotificaciones(),
+        SizedBox(height: 8),
+        _SectionHeader(icon: Icons.tune_outlined, label: 'Regional'),
+        _TileRegional(),
+        SizedBox(height: 8),
+        _SectionHeader(icon: Icons.save_outlined, label: 'Datos y backup'),
+        _TileDatos(),
+        SizedBox(height: 8),
+        _SectionHeader(icon: Icons.settings_backup_restore_outlined, label: 'Sistema'),
+        _TileSistema(),
+        SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
+/* ─── Header de sección ─────────────────────────────────────────────────── */
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.icon, required this.label});
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 16, 0, 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: cs.primary),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: cs.primary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
           ),
-        ),
-        body: const TabBarView(
+        ],
+      ),
+    );
+  }
+}
+
+/* ─── Card wrapper ──────────────────────────────────────────────────────── */
+class _SettingsCard extends StatelessWidget {
+  const _SettingsCard({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Card(
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: cs.surfaceContainerLow,
+      elevation: 0,
+      child: Column(
+        children: [
+          for (int i = 0; i < children.length; i++) ...[
+            children[i],
+            if (i < children.length - 1)
+              Divider(
+                height: 1,
+                indent: 56,
+                endIndent: 16,
+                color: cs.outlineVariant.withOpacity(0.5),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/* ─── 1. APARIENCIA ─────────────────────────────────────────────────────── */
+class _TileApariencia extends StatelessWidget {
+  const _TileApariencia();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<SettingsProvider>();
+    final cs = Theme.of(context).colorScheme;
+
+    return _SettingsCard(children: [
+      // Tema oscuro
+      SwitchListTile(
+        secondary: const Icon(Icons.dark_mode_outlined),
+        title: const Text('Tema oscuro'),
+        value: s.oscuro,
+        onChanged: s.setOscuro,
+      ),
+
+      // Fuente
+      ListTile(
+        leading: const Icon(Icons.font_download_outlined),
+        title: const Text('Tipografía'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            _TabVisual(),
-            _TabEmpresa(),
-            _TabAvanzado(),
-            _TabDatos(),
+            Text(s.fuente,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: cs.onSurfaceVariant)),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right),
           ],
         ),
+        onTap: () => _showFuenteDialog(context, s),
       ),
-    );
-  }
-}
 
-/* =========================
- *   1) Pestaña: VISUAL
- * ========================= */
-class _TabVisual extends StatelessWidget {
-  const _TabVisual();
-
-  @override
-  Widget build(BuildContext context) {
-    final settings = context.watch<SettingsProvider>();
-    final text = Theme.of(context).textTheme;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Título principal
-          Text("Personalización visual",
-              style: text.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 20),
-
-          // ---- Subtítulo: Fuente ----
-          Padding(
-            padding: const EdgeInsets.only(left: 4.0),
-            child: Text("Fuente",
-                style: text.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-          ),
-          const SizedBox(height: 12),
-
-          // Tipo de letra
-          DropdownButtonFormField<String>(
-            value: settings.fuente,
-            items: const [
-              DropdownMenuItem(value: "Roboto", child: Text("Roboto")),
-              DropdownMenuItem(value: "Arial", child: Text("Arial")),
-              DropdownMenuItem(value: "Montserrat", child: Text("Montserrat")),
-              DropdownMenuItem(value: "Inter", child: Text("Inter")),
-              DropdownMenuItem(value: "Bitter", child: Text("Bitter")),
-              DropdownMenuItem(value: "DMSerifText", child: Text("DMSerifText")),
-              DropdownMenuItem(value: "Faustina", child: Text("Faustina")),
-              DropdownMenuItem(value: "GreatVibes", child: Text("GreatVibes")),
-              DropdownMenuItem(value: "MeowScript", child: Text("MeowScript")),
-              DropdownMenuItem(value: "SourGummy", child: Text("SourGummy")),
-              DropdownMenuItem(value: "Tangerine", child: Text("Tangerine")),
-            ],
-            onChanged: (val) => settings.setFuente(val ?? "Roboto"),
-            decoration: const InputDecoration(labelText: "Tipo de letra"),
-          ),
-          const SizedBox(height: 12),
-
-          // Tamaño de fuente
-          DropdownButtonFormField<double>(
-            value: settings.tamanoFuente,
-            items: const [
-              DropdownMenuItem(value: 0.85, child: Text("Pequeño")),
-              DropdownMenuItem(value: 1.0, child: Text("Mediano")),
-              DropdownMenuItem(value: 1.25, child: Text("Grande")),
-            ],
-            onChanged: (val) => settings.setTamanoFuente(val ?? 1.0),
-            decoration: const InputDecoration(labelText: "Tamaño de fuente"),
-          ),
-          const SizedBox(height: 20),
-
-          // ---- Subtítulo: Colores ----
-          Padding(
-            padding: const EdgeInsets.only(left: 4.0),
-            child: Text("Colores",
-                style: text.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-          ),
-          const SizedBox(height: 12),
-
-          // Panel de colores con el orden solicitado
-          const _PanelColoresOrdenCorrecto(),
-        ],
+      // Tamaño de fuente
+      ListTile(
+        leading: const Icon(Icons.format_size_outlined),
+        title: const Text('Tamaño de texto'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              s.tamanoFuente == 0.85
+                  ? 'Pequeño'
+                  : s.tamanoFuente == 1.25
+                      ? 'Grande'
+                      : 'Mediano',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: cs.onSurfaceVariant),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
+        onTap: () => _showTamanoDialog(context, s),
       ),
-    );
+
+      // Color de marca
+      ListTile(
+        leading: const Icon(Icons.color_lens_outlined),
+        title: const Text('Color de marca'),
+        subtitle: Text(
+          s.usarPaletaAuto ? 'Paleta automática' : 'Colores personalizados',
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: cs.onSurfaceVariant),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ColorDot(color: s.colorBase),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
+        onTap: () => _showColorPanel(context, s),
+      ),
+    ]);
   }
-}
 
-/* =========================
- *   2) Pestaña: EMPRESA
- * ========================= */
-class _TabEmpresa extends StatelessWidget {
-  const _TabEmpresa();
-
-  @override
-  Widget build(BuildContext context) {
-    final settings = context.watch<SettingsProvider>();
-    final text = Theme.of(context).textTheme;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Datos de empresa",
-              style: text.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 20),
-
-          // ---- Subtítulo: Logo de empresa ----
-          Padding(
-            padding: const EdgeInsets.only(left: 4.0, bottom: 8),
-            child: Text("Logo de empresa",
-                style: text.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-          ),
-
-          Row(
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: settings.logoPath.isEmpty
-                    ? const Icon(Icons.business, size: 40)
-                    : ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: Image.file(
-                          File(settings.logoPath),
-                          width: 72,
-                          height: 72,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              const Icon(Icons.broken_image, size: 40),
-                        ),
-                      ),
-              ),
-              const SizedBox(width: 16),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.upload),
-                label: const Text("Seleccionar logo"),
-                onPressed: () async {
-                  final picker = ImagePicker();
-                  final picked = await picker.pickImage(source: ImageSource.gallery);
-                  if (picked != null) {
-                    final appDir = await getApplicationDocumentsDirectory();
-                    final ext = p.extension(picked.path);         // .png / .jpg
-                    final fileName = 'logo_empresa$ext';
-                    final target = File(p.join(appDir.path, fileName));
-                    await File(picked.path).copy(target.path);
-                    settings.setLogoPath(target.path);
-                  }
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Nombre de la empresa
-          TextFormField(
-            initialValue: settings.nombreEmpresa,
-            decoration: const InputDecoration(labelText: "Nombre de la empresa"),
-            onChanged: settings.setNombreEmpresa,
-          ),
-          const SizedBox(height: 12),
-
-          // Dirección
-          TextFormField(
-            initialValue: settings.direccion,
-            decoration: const InputDecoration(labelText: "Dirección"),
-            onChanged: settings.setDireccion,
-          ),
-          const SizedBox(height: 12),
-
-          // Teléfono
-          TextFormField(
-            initialValue: settings.telefono,
-            decoration: const InputDecoration(labelText: "Teléfono"),
-            onChanged: settings.setTelefono,
-          ),
-          const SizedBox(height: 12),
-
-          // Email
-          TextFormField(
-            initialValue: settings.email,
-            decoration: const InputDecoration(labelText: "Email"),
-            onChanged: settings.setEmail,
-          ),
-          const SizedBox(height: 12),
-
-          // Número de empleados (mínimo 1)
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  initialValue: '${settings.numeroEmpleados}',
-                  decoration: const InputDecoration(labelText: "Número de empleados"),
-                  keyboardType: TextInputType.number,
+  void _showFuenteDialog(BuildContext context, SettingsProvider s) {
+    const fuentes = [
+      'Roboto', 'Arial', 'Montserrat', 'Inter', 'Bitter',
+      'DMSerifText', 'Faustina', 'GreatVibes', 'MeowScript',
+      'SourGummy', 'Tangerine',
+    ];
+    showDialog(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: const Text('Tipografía'),
+        children: fuentes
+            .map((f) => RadioListTile<String>(
+                  value: f,
+                  groupValue: s.fuente,
+                  title: Text(f),
                   onChanged: (v) {
-                    final n = int.tryParse(v) ?? 1;
-                    settings.setNumeroEmpleados(n < 1 ? 1 : n);
+                    s.setFuente(v!);
+                    Navigator.pop(context);
                   },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Tooltip(
-                message: 'Se usará para crear agendas por empleado más adelante',
-                child: const Icon(Icons.info_outline),
-              ),
-            ],
-          ),
-        ],
+                ))
+            .toList(),
+      ),
+    );
+  }
+
+  void _showTamanoDialog(BuildContext context, SettingsProvider s) {
+    const opciones = [
+      (label: 'Pequeño', value: 0.85),
+      (label: 'Mediano', value: 1.0),
+      (label: 'Grande', value: 1.25),
+    ];
+    showDialog(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: const Text('Tamaño de texto'),
+        children: opciones
+            .map((o) => RadioListTile<double>(
+                  value: o.value,
+                  groupValue: s.tamanoFuente,
+                  title: Text(o.label),
+                  onChanged: (v) {
+                    s.setTamanoFuente(v!);
+                    Navigator.pop(context);
+                  },
+                ))
+            .toList(),
+      ),
+    );
+  }
+
+  void _showColorPanel(BuildContext context, SettingsProvider s) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => ChangeNotifierProvider.value(
+        value: s,
+        child: const _ColorPanelSheet(),
       ),
     );
   }
 }
 
-/* =========================
- *   3) Pestaña: AVANZADO
- * ========================= */
-class _TabAvanzado extends StatelessWidget {
-  const _TabAvanzado();
+/* ─── Color panel como bottom sheet ─────────────────────────────────────── */
+class _ColorPanelSheet extends StatelessWidget {
+  const _ColorPanelSheet();
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<SettingsProvider>();
-    final text = Theme.of(context).textTheme;
+    final s = context.watch<SettingsProvider>();
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+          24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 24),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Ajustes avanzados",
-              style: text.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 20),
-
-          // Idioma
-          DropdownButtonFormField<String>(
-            value: settings.idioma,
-            items: const [
-              DropdownMenuItem(value: "Español", child: Text("Español")),
-              DropdownMenuItem(value: "Inglés", child: Text("Inglés")),
-            ],
-            onChanged: (_) {/* futura i18n */},
-            decoration: const InputDecoration(labelText: "Idioma"),
-          ),
-          const SizedBox(height: 12),
-
-          // Formato fecha
-          DropdownButtonFormField<String>(
-            value: settings.formatoFecha,
-            items: const [
-              DropdownMenuItem(value: "DD/MM/YYYY", child: Text("DD/MM/YYYY")),
-              DropdownMenuItem(value: "MM/DD/YYYY", child: Text("MM/DD/YYYY")),
-            ],
-            onChanged: (_) {/* futura i18n */},
-            decoration: const InputDecoration(labelText: "Formato de fecha"),
-          ),
-          const SizedBox(height: 12),
-
-          // Símbolo de moneda
-          DropdownButtonFormField<String>(
-            value: settings.simboloMoneda,
-            items: const [
-              DropdownMenuItem(value: "€", child: Text("Euro (€)")),
-              DropdownMenuItem(value: "\$", child: Text("Dólar (\$)")),
-              DropdownMenuItem(value: "£", child: Text("Libra (£)")),
-            ],
-            onChanged: (_) {/* futura i18n */},
-            decoration: const InputDecoration(labelText: "Símbolo de moneda"),
-          ),
-          const SizedBox(height: 12),
-
-          // Selector de tamaño del menú lateral
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Ancho del menú lateral",
-                  style: text.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
-              Slider(
-                value: settings.anchoMenu,
-                min: 180,
-                max: 380,
-                divisions: 10,
-                label: "${settings.anchoMenu.toInt()} px",
-                onChanged: (v) => settings.setAnchoMenu(v),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Personalización de iconos (placeholder)
-          ListTile(
-            title: const Text("Personalización de iconos del menú"),
-            trailing: const Icon(Icons.edit),
-            onTap: () {/* futuro */},
-          ),
-          const SizedBox(height: 12),
-
-          // Campos extra personalizables (placeholder)
-          ListTile(
-            title: const Text("Campos extra personalizables"),
-            trailing: const Icon(Icons.add_box),
-            onTap: () {/* futuro */},
-          ),
-          const SizedBox(height: 12),
-
-          // Notificaciones/alertas
-          SwitchListTile(
-            value: settings.alertasImpagos,
-            onChanged: (v) => settings.setAlertasImpagos(v),
-            title: const Text("Mostrar alertas de impagos"),
-          ),
-
-          const SizedBox(height: 24),
-
-          // Botón de restablecer a valores por defecto (aquí)
           Center(
-            child: OutlinedButton.icon(
-              icon: const Icon(Icons.restore),
-              label: const Text("Volver a valores por defecto"),
-              onPressed: () {
-                settings.restablecerAjustes();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Ajustes restablecidos')),
-                );
-              },
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: cs.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
+          const SizedBox(height: 16),
+          Text('Color de marca', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 16),
 
-/* =========================
- *   4) Pestaña: DATOS
- * ========================= */
-class _TabDatos extends StatelessWidget {
-  const _TabDatos();
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    final settings = context.watch<SettingsProvider>();
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Datos, backup y usuarios",
-              style: text.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.file_upload),
-            label: const Text("Importar datos de empresa"),
-            onPressed: () async {
-              final db = context.read<AppDatabase>();
-              final settings = context.read<SettingsProvider>();
-              final backup = BackupService(db: db, settings: settings);
-
-              final ok = await backup.importFullBackup();
-              if (!context.mounted) return;
-
-              if (ok) {
-                // confirmación
-                showDialog(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: const Text('Copia restaurada'),
-                    content: const Text(
-                      'Se ha restaurado la copia de seguridad.\n'
-                      'Para aplicar todos los cambios, reinicia la aplicación.'
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('OK'),
-                      )
-                    ],
-                  ),
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('No se pudo importar el backup')),
-                );
-              }
-            },
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.file_download),
-            label: const Text("Exportar datos de empresa"),
-            onPressed: () async {
-              final db = context.read<AppDatabase>();
-              final settings = context.read<SettingsProvider>();
-              final backup = BackupService(db: db, settings: settings);
-
-              final savedPath = await backup.exportFullBackup();
-              if (!context.mounted) return;
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(savedPath == null
-                      ? 'Exportación cancelada'
-                      : 'Copia guardada en:\n$savedPath'),
-                  duration: const Duration(seconds: 4),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.backup),
-            label: const Text("Respaldo automático en la nube"),
-            onPressed: () {/* Lógica futura */},
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.person),
-            label: const Text("Gestión de usuarios y permisos"),
-            onPressed: () {/* Lógica futura */},
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.business),
-            label: const Text("Gestionar varias empresas"),
-            onPressed: () {/* Lógica futura */},
-          ),
-          // Intervalo
-          Row(
-            children: [
-              Expanded(
-                child: Slider(
-                  value: settings.intervaloBackupDias.toDouble(),
-                  min: 1,
-                  max: 30,
-                  divisions: 29,
-                  label: '${settings.intervaloBackupDias} días',
-                  onChanged: (v) => settings.setIntervaloBackupDias(v.round()),
-                ),
-              ),
-              SizedBox(width: 12),
-              Text('${settings.intervaloBackupDias} días'),
-            ],
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Paleta automática'),
+            subtitle: const Text('Genera secundario y terciario desde el color base'),
+            value: s.usarPaletaAuto,
+            onChanged: s.setUsarPaletaAuto,
           ),
           const SizedBox(height: 8),
-          Text(
-            'Último backup: ${settings.ultimaFechaBackup == null ? '—' : settings.ultimaFechaBackup!.toLocal().toString().split(".").first}',
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.save),
-            label: const Text('Crear backup ahora'),
-            onPressed: () async {
-              final db = context.read<AppDatabase>();
-              final s  = context.read<SettingsProvider>();
-              final backup = BackupService(db: db, settings: s);
-              await backup.autoBackupIfDue(); // fuerza uno (está preparado para crear igualmente)
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Backup local creado (carpeta Backups).')),
-              );
-            },
+
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Color base'),
+            trailing: _ColorDot(color: s.colorBase, size: 32),
+            onTap: () => _pickColor(context, s.colorBase, s.setColorBase),
           ),
 
+          if (!s.usarPaletaAuto) ...[
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Color secundario'),
+              trailing: _ColorDot(color: s.colorSecundarioManual, size: 32),
+              onTap: () => _pickColor(
+                  context, s.colorSecundarioManual, s.setColorSecundarioManual),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Color terciario'),
+              trailing: _ColorDot(color: s.colorTerciarioManual, size: 32),
+              onTap: () => _pickColor(
+                  context, s.colorTerciarioManual, s.setColorTerciarioManual),
+            ),
+          ],
+
+          const SizedBox(height: 12),
+          Text('Vista previa', style: tt.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _PreviewChip(bg: cs.primaryContainer, fg: cs.onPrimaryContainer, label: 'Primario'),
+              _PreviewChip(bg: cs.secondaryContainer, fg: cs.onSecondaryContainer, label: 'Secundario'),
+              _PreviewChip(bg: cs.tertiaryContainer, fg: cs.onTertiaryContainer, label: 'Terciario'),
+              _PreviewChip(bg: cs.surfaceContainerHighest, fg: cs.onSurface, label: 'Surface'),
+            ],
+          ),
         ],
       ),
     );
   }
 }
 
-/* =========================
- *   Panel de Colores (orden solicitado)
- * ========================= */
-class _PanelColoresOrdenCorrecto extends StatelessWidget {
-  const _PanelColoresOrdenCorrecto();
+class _ColorDot extends StatelessWidget {
+  const _ColorDot({required this.color, this.size = 24});
+  final Color color;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<SettingsProvider>();
-    final scheme   = Theme.of(context).colorScheme;
-    final text     = Theme.of(context).textTheme;
-
-    Widget chipColor(Color bg, String label, Color fg) => Chip(
-      backgroundColor: bg,
-      label: Text(label, style: text.labelLarge?.copyWith(color: fg)),
-      side: BorderSide(color: scheme.outlineVariant),
-    );
-
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 1) Paleta automática
-            SwitchListTile(
-              title: const Text('Paleta automática (recomendado)'),
-              subtitle: const Text('Generar secundarios/terciario a partir del color de marca'),
-              value: settings.usarPaletaAuto,
-              onChanged: (v) => settings.setUsarPaletaAuto(v),
-            ),
-            const SizedBox(height: 8),
-
-            // 2) Tema oscuro
-            SwitchListTile(
-              value: settings.oscuro,
-              onChanged: (val) => settings.setOscuro(val),
-              title: const Text("Tema oscuro"),
-            ),
-            const SizedBox(height: 8),
-
-            // 3) Color de marca (base)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Color de marca'),
-              subtitle: const Text('Base para todo el esquema de color'),
-              trailing: CircleAvatar(backgroundColor: settings.colorBase),
-              onTap: () => _pickColor(
-                context,
-                settings.colorBase,
-                (c) => settings.setColorBase(c),
-              ),
-            ),
-
-            // 4) Avanzado (secundario/terciario) si NO es paleta auto
-            if (!settings.usarPaletaAuto) ...[
-              const SizedBox(height: 8),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Color secundario (avanzado)'),
-                trailing: CircleAvatar(backgroundColor: settings.colorSecundarioManual),
-                onTap: () => _pickColor(
-                  context,
-                  settings.colorSecundarioManual,
-                  (c) => settings.setColorSecundarioManual(c),
-                ),
-              ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Color terciario (avanzado)'),
-                trailing: CircleAvatar(backgroundColor: settings.colorTerciarioManual),
-                onTap: () => _pickColor(
-                  context,
-                  settings.colorTerciarioManual,
-                  (c) => settings.setColorTerciarioManual(c),
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 12),
-            // 5) Vista previa
-            Text('Vista previa',
-                style: text.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                chipColor(scheme.primaryContainer,  'Primario',   scheme.onPrimaryContainer),
-                chipColor(scheme.secondaryContainer,'Secundario', scheme.onSecondaryContainer),
-                chipColor(scheme.tertiaryContainer, 'Terciario',  scheme.onTertiaryContainer),
-                chipColor(scheme.surfaceVariant,    'Surface',    scheme.onSurfaceVariant),
-              ],
-            ),
-          ],
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
+          width: 1.5,
         ),
       ),
     );
   }
 }
 
-/* =========================
- *   Utilidad: Color picker
- * ========================= */
+class _PreviewChip extends StatelessWidget {
+  const _PreviewChip({required this.bg, required this.fg, required this.label});
+  final Color bg, fg;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      backgroundColor: bg,
+      label: Text(label, style: TextStyle(color: fg, fontSize: 12)),
+      side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+}
+
+/* ─── 2. EMPRESA ────────────────────────────────────────────────────────── */
+class _TileEmpresa extends StatelessWidget {
+  const _TileEmpresa();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<SettingsProvider>();
+    final cs = Theme.of(context).colorScheme;
+
+    return _SettingsCard(children: [
+      // Logo
+      ListTile(
+        leading: const Icon(Icons.image_outlined),
+        title: const Text('Logo de empresa'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (s.logoPath.isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: Image.file(
+                  File(s.logoPath),
+                  width: 36,
+                  height: 36,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      Icon(Icons.broken_image, color: cs.onSurfaceVariant),
+                ),
+              )
+            else
+              Icon(Icons.business, color: cs.onSurfaceVariant),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
+        onTap: () => _pickLogo(context, s),
+      ),
+
+      // Nombre
+      _EditableTile(
+        icon: Icons.badge_outlined,
+        title: 'Nombre',
+        value: s.nombreEmpresa,
+        onSave: s.setNombreEmpresa,
+      ),
+
+      // Dirección
+      _EditableTile(
+        icon: Icons.location_on_outlined,
+        title: 'Dirección',
+        value: s.direccion,
+        hint: 'Sin dirección',
+        onSave: s.setDireccion,
+      ),
+
+      // Teléfono
+      _EditableTile(
+        icon: Icons.phone_outlined,
+        title: 'Teléfono',
+        value: s.telefono,
+        hint: 'Sin teléfono',
+        keyboardType: TextInputType.phone,
+        onSave: s.setTelefono,
+      ),
+
+      // Email
+      _EditableTile(
+        icon: Icons.email_outlined,
+        title: 'Email',
+        value: s.email,
+        hint: 'Sin email',
+        keyboardType: TextInputType.emailAddress,
+        onSave: s.setEmail,
+      ),
+
+      // Nº empleados
+      ListTile(
+        leading: const Icon(Icons.people_outline),
+        title: const Text('Número de empleados'),
+        subtitle: const Text('Para agendas por empleado (próximamente)'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('${s.numeroEmpleados}',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: cs.onSurfaceVariant)),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
+        onTap: () => _editNumeroEmpleados(context, s),
+      ),
+    ]);
+  }
+
+  Future<void> _pickLogo(BuildContext context, SettingsProvider s) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      final appDir = await getApplicationDocumentsDirectory();
+      final ext = p.extension(picked.path);
+      final target = File(p.join(appDir.path, 'logo_empresa$ext'));
+      await File(picked.path).copy(target.path);
+      s.setLogoPath(target.path);
+    }
+  }
+
+  void _editNumeroEmpleados(BuildContext context, SettingsProvider s) {
+    final ctrl = TextEditingController(text: '${s.numeroEmpleados}');
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Número de empleados'),
+        content: TextField(
+          controller: ctrl,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Empleados'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () {
+              final n = int.tryParse(ctrl.text) ?? 1;
+              s.setNumeroEmpleados(n < 1 ? 1 : n);
+              Navigator.pop(context);
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/* ─── Tile editable inline ───────────────────────────────────────────────── */
+class _EditableTile extends StatelessWidget {
+  const _EditableTile({
+    required this.icon,
+    required this.title,
+    required this.value,
+    required this.onSave,
+    this.hint = '',
+    this.keyboardType = TextInputType.text,
+  });
+
+  final IconData icon;
+  final String title;
+  final String value;
+  final String hint;
+  final TextInputType keyboardType;
+  final ValueChanged<String> onSave;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+      subtitle: Text(
+        value.isEmpty ? hint : value,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: value.isEmpty
+                  ? cs.onSurfaceVariant.withOpacity(0.5)
+                  : cs.onSurfaceVariant,
+            ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: const Icon(Icons.edit_outlined, size: 18),
+      onTap: () {
+        final ctrl = TextEditingController(text: value);
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: Text(title),
+            content: TextField(
+              controller: ctrl,
+              keyboardType: keyboardType,
+              autofocus: true,
+              decoration: InputDecoration(labelText: title),
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar')),
+              FilledButton(
+                onPressed: () {
+                  onSave(ctrl.text.trim());
+                  Navigator.pop(context);
+                },
+                child: const Text('Guardar'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/* ─── 3. NOTIFICACIONES ─────────────────────────────────────────────────── */
+class _TileNotificaciones extends StatelessWidget {
+  const _TileNotificaciones();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<SettingsProvider>();
+
+    return _SettingsCard(children: [
+      SwitchListTile(
+        secondary: const Icon(Icons.warning_amber_outlined),
+        title: const Text('Alertas de impagos'),
+        subtitle: const Text('Avisar cuando un cliente tiene pagos pendientes'),
+        value: s.alertasImpagos,
+        onChanged: s.setAlertasImpagos,
+      ),
+      SwitchListTile(
+        secondary: const Icon(Icons.event_outlined),
+        title: const Text('Recordatorios de citas'),
+        subtitle: const Text('Notificar antes de cada cita programada'),
+        value: s.notifCitas,
+        onChanged: s.setNotifCitas,
+      ),
+      SwitchListTile(
+        secondary: const Icon(Icons.person_off_outlined),
+        title: const Text('Clientes inactivos'),
+        subtitle: Text(
+            'Avisar si un cliente no visita en más de ${s.diasInactividad} días'),
+        value: s.notifClientesInactivos,
+        onChanged: s.setNotifClientesInactivos,
+      ),
+      if (s.notifClientesInactivos)
+        ListTile(
+          leading: const SizedBox(width: 24),
+          title: const Text('Días sin visita'),
+          trailing: SizedBox(
+            width: 200,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Slider(
+                    value: s.diasInactividad.toDouble(),
+                    min: 7,
+                    max: 90,
+                    divisions: 83,
+                    label: '${s.diasInactividad} días',
+                    onChanged: (v) => s.setDiasInactividad(v.round()),
+                  ),
+                ),
+                Text('${s.diasInactividad}d'),
+              ],
+            ),
+          ),
+        ),
+    ]);
+  }
+}
+
+/* ─── 4. REGIONAL ───────────────────────────────────────────────────────── */
+class _TileRegional extends StatelessWidget {
+  const _TileRegional();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<SettingsProvider>();
+    final cs = Theme.of(context).colorScheme;
+
+    String labelIdioma(String v) => v;
+    String labelFecha(String v) => v;
+    String labelMoneda(String v) => switch (v) {
+          '€' => 'Euro (€)',
+          '\$' => 'Dólar (\$)',
+          '£' => 'Libra (£)',
+          _ => v,
+        };
+
+    return _SettingsCard(children: [
+      ListTile(
+        leading: const Icon(Icons.language_outlined),
+        title: const Text('Idioma'),
+        subtitle: const Text('Próximamente'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(labelIdioma(s.idioma),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: cs.onSurfaceVariant)),
+            const SizedBox(width: 4),
+            Icon(Icons.lock_outline, size: 16, color: cs.onSurfaceVariant),
+          ],
+        ),
+      ),
+      ListTile(
+        leading: const Icon(Icons.calendar_today_outlined),
+        title: const Text('Formato de fecha'),
+        subtitle: const Text('Próximamente'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(labelFecha(s.formatoFecha),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: cs.onSurfaceVariant)),
+            const SizedBox(width: 4),
+            Icon(Icons.lock_outline, size: 16, color: cs.onSurfaceVariant),
+          ],
+        ),
+      ),
+      ListTile(
+        leading: const Icon(Icons.attach_money_outlined),
+        title: const Text('Moneda'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(labelMoneda(s.simboloMoneda),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(color: cs.onSurfaceVariant)),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right),
+          ],
+        ),
+        onTap: () => _showMonedaDialog(context, s),
+      ),
+    ]);
+  }
+
+  void _showMonedaDialog(BuildContext context, SettingsProvider s) {
+    final opciones = [
+      ('€', 'Euro (€)'),
+      ('\$', 'Dólar (\$)'),
+      ('£', 'Libra (£)'),
+    ];
+    showDialog(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: const Text('Moneda'),
+        children: opciones
+            .map((o) => RadioListTile<String>(
+                  value: o.$1,
+                  groupValue: s.simboloMoneda,
+                  title: Text(o.$2),
+                  onChanged: (v) {
+                    s.setSimboloMoneda(v!);
+                    Navigator.pop(context);
+                  },
+                ))
+            .toList(),
+      ),
+    );
+  }
+}
+
+/* ─── 5. DATOS Y BACKUP ─────────────────────────────────────────────────── */
+class _TileDatos extends StatelessWidget {
+  const _TileDatos();
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<SettingsProvider>();
+    final cs = Theme.of(context).colorScheme;
+
+    final ultimoBackup = s.ultimaFechaBackup == null
+        ? 'Nunca'
+        : _formatDate(s.ultimaFechaBackup!.toLocal());
+
+    return _SettingsCard(children: [
+      // Exportar
+      ListTile(
+        leading: const Icon(Icons.file_download_outlined),
+        title: const Text('Exportar copia de seguridad'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => _exportar(context),
+      ),
+
+      // Importar
+      ListTile(
+        leading: const Icon(Icons.file_upload_outlined),
+        title: const Text('Importar copia de seguridad'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => _importar(context),
+      ),
+
+      // Último backup (informativo)
+      ListTile(
+        leading: const Icon(Icons.history_outlined),
+        title: const Text('Último backup'),
+        trailing: Text(ultimoBackup,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: cs.onSurfaceVariant)),
+      ),
+
+      // Intervalo backup
+      ListTile(
+        leading: const Icon(Icons.schedule_outlined),
+        title: const Text('Frecuencia de backup automático'),
+        subtitle: Text('Cada ${s.intervaloBackupDias} días'),
+        trailing: SizedBox(
+          width: 160,
+          child: Slider(
+            value: s.intervaloBackupDias.toDouble(),
+            min: 1,
+            max: 30,
+            divisions: 29,
+            label: '${s.intervaloBackupDias} días',
+            onChanged: (v) => s.setIntervaloBackupDias(v.round()),
+          ),
+        ),
+      ),
+
+      // Backup ahora
+      ListTile(
+        leading: const Icon(Icons.save_outlined),
+        title: const Text('Crear backup ahora'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => _backupAhora(context),
+      ),
+    ]);
+  }
+
+  String _formatDate(DateTime dt) =>
+      '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}'
+      '  ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+
+  Future<void> _exportar(BuildContext context) async {
+    final db = context.read<AppDatabase>();
+    final s = context.read<SettingsProvider>();
+    final backup = BackupService(db: db, settings: s);
+    final path = await backup.exportFullBackup();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(path == null ? 'Exportación cancelada' : 'Guardado en:\n$path'),
+      duration: const Duration(seconds: 4),
+    ));
+  }
+
+  Future<void> _importar(BuildContext context) async {
+    final db = context.read<AppDatabase>();
+    final s = context.read<SettingsProvider>();
+    final backup = BackupService(db: db, settings: s);
+    final ok = await backup.importFullBackup();
+    if (!context.mounted) return;
+    if (ok) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Copia restaurada'),
+          content: const Text(
+              'Se restauró la copia correctamente.\nReinicia la app para aplicar todos los cambios.'),
+          actions: [
+            FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK')),
+          ],
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo importar el backup')));
+    }
+  }
+
+  Future<void> _backupAhora(BuildContext context) async {
+    final db = context.read<AppDatabase>();
+    final s = context.read<SettingsProvider>();
+    final backup = BackupService(db: db, settings: s);
+    await backup.autoBackupIfDue();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Backup local creado (carpeta Backups).')));
+  }
+}
+
+/* ─── 6. SISTEMA ────────────────────────────────────────────────────────── */
+class _TileSistema extends StatelessWidget {
+  const _TileSistema();
+
+  @override
+  Widget build(BuildContext context) {
+    return _SettingsCard(children: [
+      ListTile(
+        leading: Icon(Icons.restore, color: Theme.of(context).colorScheme.error),
+        title: Text('Restablecer valores por defecto',
+            style: TextStyle(color: Theme.of(context).colorScheme.error)),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => _confirmarReset(context),
+      ),
+    ]);
+  }
+
+  void _confirmarReset(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('¿Restablecer ajustes?'),
+        content: const Text(
+            'Se perderán todos tus ajustes visuales, de empresa y notificaciones. Los datos (clientes, citas, etc.) no se verán afectados.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar')),
+          FilledButton(
+            style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error),
+            onPressed: () {
+              context.read<SettingsProvider>().restablecerAjustes();
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Ajustes restablecidos')));
+            },
+            child: const Text('Restablecer'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/* ─── Utilidad: color picker ─────────────────────────────────────────────── */
 Future<void> _pickColor(
   BuildContext context,
   Color current,
@@ -631,7 +937,9 @@ Future<void> _pickColor(
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar')),
         FilledButton(
           onPressed: () {
             onPicked(temp);

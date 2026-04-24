@@ -3,7 +3,8 @@
     "allow": [
       "Bash(flutter analyze *)",
       "Bash(dart analyze *)",
-      "Bash(timeout 120 flutter run -d windows)"
+      "Bash(timeout 120 flutter run -d windows)",
+      "Bash(grep -v \"^$\")"
     ]
   }
 }
