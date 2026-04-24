@@ -200,53 +200,103 @@ class _AgendaScreenState extends State<AgendaScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Agenda'),
+        centerTitle: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            onPressed: () => cambiarFecha(fechaSeleccionada.subtract(const Duration(days: 1))),
-            tooltip: 'Día anterior',
-          ),
-          TextButton(
-            onPressed: () async {
-              final fecha = await showDatePicker(
-                context: context,
-                initialDate: fechaSeleccionada,
-                firstDate: DateTime(2020),
-                lastDate: DateTime(2100),
-              );
-              if (fecha != null) cambiarFecha(fecha);
-            },
-            child: Text(
-              '${_formatFecha(fechaSeleccionada)}  –  ${_formatFecha(fechaDer)}',
-              style: text.titleMedium?.copyWith(color: scheme.onSurface),
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: () => cambiarFecha(fechaSeleccionada.subtract(const Duration(days: 1))),
+                  tooltip: 'Día anterior',
+                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                ),
+                InkWell(
+                  onTap: () async {
+                    final fecha = await showDatePicker(
+                      context: context,
+                      initialDate: fechaSeleccionada,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2100),
+                    );
+                    if (fecha != null) cambiarFecha(fecha);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _formatFecha(fechaSeleccionada),
+                          style: text.labelSmall?.copyWith(
+                            color: scheme.onSurface,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'a ${_formatFecha(fechaDer)}',
+                          style: text.labelSmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: () => cambiarFecha(fechaSeleccionada.add(const Duration(days: 1))),
+                  tooltip: 'Día siguiente',
+                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                ),
+              ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            onPressed: () => cambiarFecha(fechaSeleccionada.add(const Duration(days: 1))),
-            tooltip: 'Día siguiente',
+          const SizedBox(width: 16),
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHigh,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 12),
+                  child: Text('Horario:', style: text.labelSmall?.copyWith(color: scheme.onSurface)),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    final hora = await showTimePicker(context: context, initialTime: horaInicio);
+                    if (hora != null) setState(() => horaInicio = hora);
+                  },
+                  child: Text(
+                    horaInicio.format(context),
+                    style: text.labelMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Text('–', style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
+                TextButton(
+                  onPressed: () async {
+                    final hora = await showTimePicker(context: context, initialTime: horaFin);
+                    if (hora != null) setState(() => horaFin = hora);
+                  },
+                  child: Text(
+                    horaFin.format(context),
+                    style: text.labelMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(width: 16),
-          Row(
-            children: [
-              Text('De:', style: text.bodyMedium?.copyWith(color: scheme.onSurface)),
-              TextButton(
-                onPressed: () async {
-                  final hora = await showTimePicker(context: context, initialTime: horaInicio);
-                  if (hora != null) setState(() => horaInicio = hora);
-                },
-                child: Text(horaInicio.format(context)),
-              ),
-              Text('a', style: text.bodyMedium?.copyWith(color: scheme.onSurface)),
-              TextButton(
-                onPressed: () async {
-                  final hora = await showTimePicker(context: context, initialTime: horaFin);
-                  if (hora != null) setState(() => horaFin = hora);
-                },
-                child: Text(horaFin.format(context)),
-              ),
-            ],
-          ),
         ],
       ),
       body: cargandoCitas
@@ -314,18 +364,39 @@ class _DiaHeader extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       decoration: BoxDecoration(
-        color: esHoy ? scheme.primaryContainer : scheme.surfaceContainerLow,
-        border: Border(bottom: BorderSide(color: scheme.outlineVariant)),
-      ),
-      child: Text(
-        label,
-        style: text.labelLarge?.copyWith(
-          color: esHoy ? scheme.onPrimaryContainer : scheme.onSurface,
-          fontWeight: esHoy ? FontWeight.bold : FontWeight.normal,
+        color: esHoy
+            ? scheme.primary.withValues(alpha: 0.08)
+            : scheme.surfaceContainerHigh,
+        border: Border(
+          bottom: BorderSide(
+            color: esHoy ? scheme.primary.withValues(alpha: 0.3) : scheme.outlineVariant,
+            width: esHoy ? 2 : 1,
+          ),
         ),
-        textAlign: TextAlign.center,
+      ),
+      child: Row(
+        children: [
+          if (esHoy)
+            Container(
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: scheme.primary,
+                shape: BoxShape.circle,
+              ),
+            ),
+          Text(
+            label,
+            style: text.titleSmall?.copyWith(
+              color: esHoy ? scheme.primary : scheme.onSurface,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -554,16 +625,30 @@ class _AgendaVisualState extends State<AgendaVisual> {
                                     widget.onCrearCita?.call(ini, fin),
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: scheme.primary.withValues(alpha: 0.12),
+                                    color: scheme.primary.withValues(alpha: 0.15),
                                     border: Border.all(
-                                      color: scheme.primary.withValues(alpha: 0.45),
-                                      width: 1.5,
+                                      color: scheme.primary.withValues(alpha: 0.6),
+                                      width: 2,
                                     ),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: Center(
-                                    child: Icon(Icons.add,
-                                        color: scheme.primary, size: 28),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.add_circle_outline,
+                                        color: scheme.primary,
+                                        size: 32,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Nueva cita',
+                                        style: text.labelSmall?.copyWith(
+                                          color: scheme.primary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -603,6 +688,7 @@ class _AgendaVisualState extends State<AgendaVisual> {
                               : scheme.onSecondaryContainer;
 
                           final bool esDragActual = _citaDrag?.id == cita.id;
+                          final horaFormato = '${cita.inicio.hour.toString().padLeft(2, '0')}:${cita.inicio.minute.toString().padLeft(2, '0')} - ${cita.fin.hour.toString().padLeft(2, '0')}:${cita.fin.minute.toString().padLeft(2, '0')}';
 
                           return Positioned(
                             left: _labelW,
@@ -649,27 +735,66 @@ class _AgendaVisualState extends State<AgendaVisual> {
                               child: MouseRegion(
                                 cursor: SystemMouseCursors.grab,
                                 child: Opacity(
-                                  opacity: esDragActual ? 0.3 : 1.0,
+                                  opacity: esDragActual ? 0.4 : 1.0,
                                   child: Card(
                                     color: bg,
-                                    elevation: 1,
+                                    elevation: esDragActual ? 2 : 1,
                                     margin: EdgeInsets.zero,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(12),
                                       side: BorderSide(
-                                          color: scheme.outlineVariant),
+                                        color: scheme.outlineVariant.withValues(alpha: 0.5),
+                                        width: 0.5,
+                                      ),
                                     ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(6.0),
-                                      child: Text(
-                                        '$nombreCliente\n'
-                                        '$nombreServicioYExtras\n'
-                                        '${cita.inicio.hour.toString().padLeft(2, '0')}:${cita.inicio.minute.toString().padLeft(2, '0')}'
-                                        ' - '
-                                        '${cita.fin.hour.toString().padLeft(2, '0')}:${cita.fin.minute.toString().padLeft(2, '0')}',
-                                        style: text.bodySmall?.copyWith(color: fg),
-                                        maxLines: 3,
-                                        overflow: TextOverflow.ellipsis,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                          colors: [
+                                            bg,
+                                            bg.withValues(alpha: 0.8),
+                                          ],
+                                        ),
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 8,
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              nombreCliente,
+                                              style: text.labelMedium?.copyWith(
+                                                color: fg,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            if (nombreServicioYExtras.isNotEmpty)
+                                              Text(
+                                                nombreServicioYExtras,
+                                                style: text.labelSmall?.copyWith(
+                                                  color: fg.withValues(alpha: 0.85),
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            Text(
+                                              horaFormato,
+                                              style: text.labelSmall?.copyWith(
+                                                color: fg.withValues(alpha: 0.7),
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -797,205 +922,329 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
     final servicios = context.read<ServiciosProvider>().servicios;
     final extrasProvider = context.read<ExtrasServicioProvider>();
 
-    return AlertDialog(
-      title: Text(widget.cita == null ? 'Nueva cita' : 'Editar cita'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<String>(
-              value: clienteId,
-              items: clientes
-                  .map((c) => DropdownMenuItem(value: c.id, child: Text(c.nombre)))
-                  .toList(),
-              onChanged: (val) => setState(() => clienteId = val),
-              decoration: const InputDecoration(labelText: 'Cliente'),
-            ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              value: servicioId,
-              items: servicios
-                  .map((s) => DropdownMenuItem(value: s.id, child: Text(s.nombre)))
-                  .toList(),
-              onChanged: (val) => setState(() {
-                servicioId = val;
-                extrasSeleccionados.clear();
-              }),
-              decoration: const InputDecoration(labelText: 'Servicio'),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () async {
-                      final picked = await showTimePicker(
-                          context: context, initialTime: horaInicio!);
-                      if (picked != null) setState(() => horaInicio = picked);
-                    },
-                    child: Text('Inicio: ${horaInicio?.format(context) ?? ''}'),
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                ),
+                child: Text(
+                  widget.cita == null ? 'Nueva cita' : 'Editar cita',
+                  style: text.headlineSmall?.copyWith(
+                    color: scheme.onPrimaryContainer,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                Expanded(
-                  child: TextButton(
-                    onPressed: () async {
-                      final picked = await showTimePicker(
-                          context: context, initialTime: horaFin!);
-                      if (picked != null) setState(() => horaFin = picked);
-                    },
-                    child: Text('Fin: ${horaFin?.format(context) ?? ''}'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            if (servicioId != null)
-              FutureBuilder<List<ExtrasServicioData>>(
-                future: extrasProvider.obtenerExtrasPorServicio(servicioId!),
-                builder: (context, snapshot) {
-                  final extras = snapshot.data ?? [];
-                  if (extras.isEmpty) return const SizedBox();
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Extras:', style: text.titleSmall),
-                      ...extras.map((extra) => CheckboxListTile(
-                            value: extrasSeleccionados.contains(extra.id),
-                            onChanged: (val) {
-                              setState(() {
-                                if (val == true) {
-                                  extrasSeleccionados.add(extra.id);
-                                } else {
-                                  extrasSeleccionados.remove(extra.id);
-                                }
-                              });
-                            },
-                            title: Text(
-                                '${extra.nombre} (+${extra.precio.toStringAsFixed(2)} €)'),
-                          )),
-                    ],
-                  );
-                },
               ),
-            TextField(
-              controller: TextEditingController(text: notas ?? ''),
-              onChanged: (v) => notas = v,
-              decoration: const InputDecoration(labelText: 'Notas'),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        if (widget.cita != null)
-          TextButton(
-            onPressed: () async {
-              final bonosProv = context.read<BonosProvider>();
-              final citasProv = context.read<CitasProvider>();
-
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (_) => AlertDialog(
-                  title: const Text('¿Eliminar cita?'),
-                  content: const Text('Esta acción no se puede deshacer.'),
-                  actions: [
-                    TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancelar')),
-                    TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Eliminar')),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      initialValue: clienteId,
+                      items: clientes
+                          .map((c) => DropdownMenuItem(value: c.id, child: Text(c.nombre)))
+                          .toList(),
+                      onChanged: (val) => setState(() => clienteId = val),
+                      decoration: InputDecoration(
+                        labelText: 'Cliente',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      initialValue: servicioId,
+                      items: servicios
+                          .map((s) => DropdownMenuItem(value: s.id, child: Text(s.nombre)))
+                          .toList(),
+                      onChanged: (val) => setState(() {
+                        servicioId = val;
+                        extrasSeleccionados.clear();
+                      }),
+                      decoration: InputDecoration(
+                        labelText: 'Servicio',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () async {
+                              final picked = await showTimePicker(
+                                  context: context, initialTime: horaInicio!);
+                              if (picked != null) setState(() => horaInicio = picked);
+                            },
+                            style: OutlinedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('Inicio', style: text.labelSmall),
+                                const SizedBox(height: 4),
+                                Text(
+                                  horaInicio?.format(context) ?? '',
+                                  style: text.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () async {
+                              final picked = await showTimePicker(
+                                  context: context, initialTime: horaFin!);
+                              if (picked != null) setState(() => horaFin = picked);
+                            },
+                            style: OutlinedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('Fin', style: text.labelSmall),
+                                const SizedBox(height: 4),
+                                Text(
+                                  horaFin?.format(context) ?? '',
+                                  style: text.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (servicioId != null) ...[
+                      const SizedBox(height: 16),
+                      FutureBuilder<List<ExtrasServicioData>>(
+                        future: extrasProvider.obtenerExtrasPorServicio(servicioId!),
+                        builder: (context, snapshot) {
+                          final extras = snapshot.data ?? [];
+                          if (extras.isEmpty) return const SizedBox();
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Extras disponibles', style: text.labelLarge),
+                              const SizedBox(height: 8),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: scheme.surfaceContainerLow,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Column(
+                                  children: extras.asMap().entries.map((entry) {
+                                    final extra = entry.value;
+                                    final isLast = entry.key == extras.length - 1;
+                                    return Column(
+                                      children: [
+                                        CheckboxListTile(
+                                          value: extrasSeleccionados.contains(extra.id),
+                                          onChanged: (val) {
+                                            setState(() {
+                                              if (val == true) {
+                                                extrasSeleccionados.add(extra.id);
+                                              } else {
+                                                extrasSeleccionados.remove(extra.id);
+                                              }
+                                            });
+                                          },
+                                          title: Text(
+                                            extra.nombre,
+                                            style: text.bodyMedium,
+                                          ),
+                                          subtitle: Text(
+                                            '+${extra.precio.toStringAsFixed(2)} €',
+                                            style: text.labelSmall?.copyWith(
+                                              color: scheme.primary,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                                        ),
+                                        if (!isLast)
+                                          Divider(height: 1, indent: 16, endIndent: 16),
+                                      ],
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: TextEditingController(text: notas ?? ''),
+                      onChanged: (v) => notas = v,
+                      decoration: InputDecoration(
+                        labelText: 'Notas (opcional)',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                      maxLines: 3,
+                    ),
                   ],
                 ),
-              );
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (widget.cita != null) ...[
+                      TextButton(
+                        onPressed: () async {
+                          final bonosProv = context.read<BonosProvider>();
+                          final citasProv = context.read<CitasProvider>();
 
-              if (confirm == true) {
-                final citaId = widget.cita!.id;
-                final anio = widget.cita!.inicio.year;
-                await citasProv.eliminarCita(citaId, anio: anio);
-                await bonosProv.eliminarConsumoPorCita(citaId);
-                if (context.mounted) Navigator.pop(context, true);
-              }
-            },
-            child: Text('Eliminar cita', style: TextStyle(color: scheme.error)),
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              title: const Text('¿Eliminar cita?'),
+                              content: const Text('Esta acción no se puede deshacer.'),
+                              actions: [
+                                TextButton(
+                                    onPressed: () => Navigator.pop(context, false),
+                                    child: const Text('Cancelar')),
+                                TextButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    child: const Text('Eliminar')),
+                              ],
+                            ),
+                          );
+
+                          if (confirm == true) {
+                            final citaId = widget.cita!.id;
+                            final anio = widget.cita!.inicio.year;
+                            await citasProv.eliminarCita(citaId, anio: anio);
+                            await bonosProv.eliminarConsumoPorCita(citaId);
+                            if (context.mounted) Navigator.pop(context, true);
+                          }
+                        },
+                        child: Text('Eliminar', style: TextStyle(color: scheme.error)),
+                      ),
+                      const Spacer(),
+                    ],
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancelar'),
+                    ),
+                    const SizedBox(width: 12),
+                    FilledButton(
+                      onPressed: () async {
+                        if (clienteId == null ||
+                            servicioId == null ||
+                            horaInicio == null ||
+                            horaFin == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Faltan datos')),
+                          );
+                          return;
+                        }
+
+                        final inicio = DateTime(widget.fecha.year, widget.fecha.month,
+                            widget.fecha.day, horaInicio!.hour, horaInicio!.minute);
+                        final fin = DateTime(widget.fecha.year, widget.fecha.month,
+                            widget.fecha.day, horaFin!.hour, horaFin!.minute);
+
+                        final servicios = context.read<ServiciosProvider>().servicios;
+                        final precioBase =
+                            servicios.firstWhere((s) => s.id == servicioId).precio;
+
+                        final citasProv = context.read<CitasProvider>();
+                        final bonosProv = context.read<BonosProvider>();
+
+                        double precioFinal = precioBase;
+                        String? metodoPagoFinal = metodoPago;
+
+                        final bonoActivo = await bonosProv.bonoActivoPara(clienteId!, servicioId!);
+                        final hayBonoDisponible = bonoActivo != null &&
+                            (await bonosProv.sesionesAsignadasBono(bonoActivo.id)) <
+                                bonoActivo.sesionesTotales;
+
+                        if (hayBonoDisponible) {
+                          metodoPagoFinal = 'Bono';
+                          precioFinal = 0.0;
+                        }
+
+                        final editando = widget.cita != null;
+                        String citaId;
+
+                        if (editando) {
+                          citaId = widget.cita!.id;
+                          await citasProv.actualizarCita(
+                            id: citaId,
+                            clienteId: clienteId!,
+                            servicioId: servicioId!,
+                            inicio: inicio,
+                            fin: fin,
+                            metodoPago: metodoPagoFinal,
+                            precio: precioFinal,
+                            pagada: (metodoPagoFinal != null && metodoPagoFinal.isNotEmpty),
+                            notas: notas,
+                          );
+                        } else {
+                          citaId = await citasProv.insertarCita(
+                            clienteId: clienteId!,
+                            servicioId: servicioId!,
+                            inicio: inicio,
+                            fin: fin,
+                            precio: precioFinal,
+                            metodoPago: metodoPagoFinal,
+                            notas: notas,
+                            pagada: (metodoPagoFinal != null && metodoPagoFinal.isNotEmpty),
+                          );
+
+                          if (hayBonoDisponible) {
+                            await bonosProv.consumirSesion(bonoActivo.id, citaId, DateTime.now());
+                          }
+                        }
+
+                        await citasProv.cargarCitasAnio(widget.fecha.year);
+                        if (context.mounted) Navigator.pop(context, true);
+                      },
+                      child: Text(widget.cita == null ? 'Guardar' : 'Guardar cambios'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        TextButton(
-            onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-        FilledButton(
-          onPressed: () async {
-            if (clienteId == null ||
-                servicioId == null ||
-                horaInicio == null ||
-                horaFin == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Faltan datos')),
-              );
-              return;
-            }
-
-            final inicio = DateTime(widget.fecha.year, widget.fecha.month,
-                widget.fecha.day, horaInicio!.hour, horaInicio!.minute);
-            final fin = DateTime(widget.fecha.year, widget.fecha.month,
-                widget.fecha.day, horaFin!.hour, horaFin!.minute);
-
-            final servicios = context.read<ServiciosProvider>().servicios;
-            final precioBase =
-                servicios.firstWhere((s) => s.id == servicioId).precio;
-
-            final citasProv = context.read<CitasProvider>();
-            final bonosProv = context.read<BonosProvider>();
-
-            double precioFinal = precioBase;
-            String? metodoPagoFinal = metodoPago;
-
-            final bonoActivo = await bonosProv.bonoActivoPara(clienteId!, servicioId!);
-            final hayBonoDisponible = bonoActivo != null &&
-                (await bonosProv.sesionesAsignadasBono(bonoActivo.id)) <
-                    bonoActivo.sesionesTotales;
-
-            if (hayBonoDisponible) {
-              metodoPagoFinal = 'Bono';
-              precioFinal = 0.0;
-            }
-
-            final editando = widget.cita != null;
-            String citaId;
-
-            if (editando) {
-              citaId = widget.cita!.id;
-              await citasProv.actualizarCita(
-                id: citaId,
-                clienteId: clienteId!,
-                servicioId: servicioId!,
-                inicio: inicio,
-                fin: fin,
-                metodoPago: metodoPagoFinal,
-                precio: precioFinal,
-                pagada: (metodoPagoFinal != null && metodoPagoFinal.isNotEmpty),
-                notas: notas,
-              );
-            } else {
-              citaId = await citasProv.insertarCita(
-                clienteId: clienteId!,
-                servicioId: servicioId!,
-                inicio: inicio,
-                fin: fin,
-                precio: precioFinal,
-                metodoPago: metodoPagoFinal,
-                notas: notas,
-                pagada: (metodoPagoFinal != null && metodoPagoFinal.isNotEmpty),
-              );
-
-              if (hayBonoDisponible) {
-                await bonosProv.consumirSesion(bonoActivo.id, citaId, DateTime.now());
-              }
-            }
-
-            await citasProv.cargarCitasAnio(widget.fecha.year);
-            if (context.mounted) Navigator.pop(context, true);
-          },
-          child: Text(widget.cita == null ? 'Guardar' : 'Guardar cambios'),
         ),
-      ],
+      ),
     );
   }
 }
