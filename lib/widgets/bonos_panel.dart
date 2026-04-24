@@ -81,7 +81,7 @@ class _BonosPanelState extends State<BonosPanel> {
                       Text(
                         'No hay bonos activos.',
                         style: text.bodyMedium?.copyWith(
-                          color: scheme.onSurface.withOpacity(0.8),
+                          color: scheme.onSurface.withValues(alpha:0.8),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -132,7 +132,7 @@ class _BonosPanelState extends State<BonosPanel> {
                     Text(
                       'No hay bonos activos.',
                       style: text.bodyMedium?.copyWith(
-                        color: scheme.onSurface.withOpacity(0.8),
+                        color: scheme.onSurface.withValues(alpha:0.8),
                       ),
                     ),
                   );
@@ -279,9 +279,7 @@ class _BonoFaceplate extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final text   = Theme.of(context).textTheme;
 
-
     final totales  = bono.sesionesTotales;
-
 
     final nombreServicio = context.select<ServiciosProvider, String?>(
       (sp) => sp.nombreServicioPorId(bono.servicioId),
@@ -290,251 +288,399 @@ class _BonoFaceplate extends StatelessWidget {
     return FutureBuilder<int>(
       future: context.read<BonosProvider>().sesionesAsignadasBono(bono.id),
       builder: (context, snap) {
-        // usadas reales (contando consumos)
-        final usadas = snap.data ?? bono.sesionesUsadas; // fallback mientras carga
+        final usadas = snap.data ?? bono.sesionesUsadas;
         final restante = (totales - usadas).clamp(0, totales);
+        final progreso = totales > 0 ? usadas / totales : 0.0;
 
         return Container(
-          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: scheme.secondaryContainer,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: scheme.outlineVariant),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                scheme.secondaryContainer,
+                scheme.secondaryContainer.withValues(alpha: 0.85),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: scheme.outlineVariant, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: scheme.shadow.withValues(alpha: 0.1),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                bono.nombre ,
-                style: text.titleSmall?.copyWith(
-                  color: scheme.onSecondaryContainer,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                nombreServicio ?? 'Servicio',
-                style: text.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: scheme.onSecondaryContainer,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-
-              Row(
-                children: [
-                  Text(
-                    'Sesiones: ',
-                    style: text.bodyMedium?.copyWith(color: scheme.onSecondaryContainer),
-                  ),
-                  Text(
-                    '$usadas / $totales',
-                    style: text.bodyMedium?.copyWith(
-                      color: scheme.onSecondaryContainer,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  if (bono.caducaEl != null) ...[
-                    const SizedBox(width: 12),
-                    Text(
-                      'Caduca: ${_fmtDate(bono.caducaEl!)}',
-                      style: text.bodySmall?.copyWith(
-                        color: scheme.onSecondaryContainer.withOpacity(0.9),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Encabezado con nombre y botón eliminar
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            bono.nombre,
+                            style: text.headlineSmall?.copyWith(
+                              color: scheme.onSecondaryContainer,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            nombreServicio ?? 'Servicio',
+                            style: text.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: scheme.onSecondaryContainer.withValues(alpha:0.85),
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
+                    ),
+                    IconButton(
+                      tooltip: 'Eliminar bono',
+                      icon: const Icon(Icons.delete_outline),
+                      color: Theme.of(context).colorScheme.error,
+                      onPressed: () async {
+                        final ctx = context;
+                        final ok = await showDialog<bool>(
+                          context: ctx,
+                          builder: (_) => AlertDialog(
+                            title: const Text('Eliminar bono'),
+                            content: const Text('Esta acción no se puede deshacer.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx, false),
+                                child: const Text('Cancelar'),
+                              ),
+                              FilledButton(
+                                onPressed: () => Navigator.pop(ctx, true),
+                                child: const Text('Eliminar'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (ok == true && ctx.mounted) {
+                          await ctx.read<BonosProvider>().eliminarBono(bono.id);
+                          ScaffoldMessenger.of(ctx)
+                              .showSnackBar(const SnackBar(content: Text('Bono eliminado')));
+                          onChanged?.call();
+                        }
+                      },
                     ),
                   ],
-                  const Spacer(),
-                  IconButton(
-                    tooltip: 'Eliminar bono',
-                    icon: const Icon(Icons.delete),
-                    color: Theme.of(context).colorScheme.error,
-                    onPressed: () async {
-                      final ok = await showDialog<bool>(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          title: const Text('Eliminar bono'),
-                          content: const Text('Esta acción no se puede deshacer.'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('Cancelar'),
-                            ),
-                            FilledButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text('Eliminar'),
-                            ),
-                          ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // Indicador de progreso circular
+                Center(
+                  child: SizedBox(
+                    width: 140,
+                    height: 140,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          value: progreso,
+                          strokeWidth: 8,
+                          backgroundColor: scheme.surface.withValues(alpha:0.3),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            restante > 0 ? scheme.primary : scheme.tertiary,
+                          ),
+                          strokeCap: StrokeCap.round,
                         ),
-                      );
-                      if (ok == true && context.mounted) {
-                        await context.read<BonosProvider>().eliminarBono(bono.id);
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(content: Text('Bono eliminado')));
-                        onChanged?.call();
-                      }
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              // Tiras de progreso (chips) usando "usadas" real
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: List.generate(totales, (i) {
-                  final isUsed = i < usadas;
-                  return Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: isUsed ? scheme.primary : scheme.surface,
-                      border: Border.all(color: scheme.outlineVariant),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  );
-                }),
-              ),
-
-              // Botón para añadir pago
-              TextButton.icon(
-                onPressed: () async {
-                  final ok = await showDialog<bool>(
-                    context: context,
-                    builder: (_) => _AnadirPagoDialog(bonoId: bono.id),
-                  );
-                  if (ok == true && context.mounted) {
-                    (context.findAncestorStateOfType<_BonosPanelState>())?.setState(() {});
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Pago registrado')),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Añadir pago'),
-              ),
-
-              const SizedBox(height: 12),
-
-              // === Sección Pagos === (lo de abajo lo dejas tal cual en tu código)
-              FutureBuilder<List<BonoPago>>(
-                future: context.read<BonosProvider>().pagosDeBono(bono.id),
-                builder: (context, snap) {
-                  if (snap.connectionState == ConnectionState.waiting) {
-                    return const _Loader();
-                  }
-                  final pagos = snap.data ?? [];
-                  if (pagos.isEmpty) {
-                    return Text(
-                      'Sin pagos registrados.',
-                      style: text.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSecondaryContainer.withOpacity(0.8),
-                      ),
-                    );
-                  }
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Pagos',
-                        style: text.titleSmall?.copyWith(
-                          color: scheme.onSecondaryContainer,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ...pagos.map(
-                        (p) => Row(
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Expanded(
-                              child: Text(
-                                '${_fmtDate(p.fecha)} · ${p.metodo ?? '—'}',
-                                style: text.bodyMedium?.copyWith(
-                                  color: scheme.onSecondaryContainer,
-                                ),
+                            Text(
+                              '$usadas',
+                              style: text.displaySmall?.copyWith(
+                                color: scheme.onSecondaryContainer,
+                                fontWeight: FontWeight.w800,
                               ),
                             ),
                             Text(
-                              '${p.importe.toStringAsFixed(2)} €',
-                              style: text.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: scheme.onSecondaryContainer,
+                              'de $totales',
+                              style: text.bodySmall?.copyWith(
+                                color: scheme.onSecondaryContainer.withValues(alpha:0.8),
                               ),
                             ),
                           ],
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Info de sesiones restantes
+                if (restante > 0 && bono.activo)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: scheme.primary.withValues(alpha:0.15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: scheme.primary.withValues(alpha:0.3)),
+                    ),
+                    child: Text(
+                      '✓ Quedan $restante sesión${restante != 1 ? 'es' : ''} disponible${restante != 1 ? 's' : ''}',
+                      style: text.bodyMedium?.copyWith(
+                        color: scheme.primary,
+                        fontWeight: FontWeight.w600,
                       ),
-                    ],
-                  );
-                },
-              ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
 
-              const SizedBox(height: 12),
-
-              // === Totales === (lo dejas tal cual)
-              FutureBuilder<double>(
-                future: context.read<BonosProvider>().totalCobradoBono(bono.id),
-                builder: (context, cobroSnap) {
-                  final cobrado = cobroSnap.data ?? 0.0;
-                  return FutureBuilder<double>(
-                    future: context.read<BonosProvider>().ingresoReconocidoBono(bono.id),
-                    builder: (context, ingSnap) {
-                      final reconocido = ingSnap.data ?? 0.0;
-                      final diferido = (cobrado - reconocido);
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                // Fecha de caducidad
+                if (bono.caducaEl != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: scheme.tertiary.withValues(alpha:0.15),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: scheme.tertiary.withValues(alpha:0.3)),
+                      ),
+                      child: Row(
                         children: [
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              Expanded(child: Text('Cobrado', style: text.bodyMedium?.copyWith(color: scheme.onSecondaryContainer))),
-                              Text('${cobrado.toStringAsFixed(2)} €', style: text.bodyMedium?.copyWith(color: scheme.onSecondaryContainer, fontWeight: FontWeight.w700)),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              Expanded(child: Text('Ingresos reconocidos', style: text.bodyMedium?.copyWith(color: scheme.onSecondaryContainer))),
-                              Text('${reconocido.toStringAsFixed(2)} €', style: text.bodyMedium?.copyWith(color: scheme.onSecondaryContainer, fontWeight: FontWeight.w700)),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              Expanded(child: Text('Diferido', style: text.bodyMedium?.copyWith(color: scheme.onSecondaryContainer))),
-                              Text('${diferido.toStringAsFixed(2)} €', style: text.bodyMedium?.copyWith(color: scheme.onSecondaryContainer, fontWeight: FontWeight.w700)),
-                            ],
+                          Icon(Icons.event, size: 16, color: scheme.tertiary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Caduca: ${_fmtDate(bono.caducaEl!)}',
+                            style: text.bodyMedium?.copyWith(
+                              color: scheme.tertiary,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+
+                const SizedBox(height: 16),
+
+                // Botón para añadir pago (destacado)
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.add_circle_outline),
+                    onPressed: () async {
+                      final ctx = context;
+                      final ok = await showDialog<bool>(
+                        context: ctx,
+                        builder: (_) => _AnadirPagoDialog(bonoId: bono.id),
                       );
+                      if (ok == true && ctx.mounted) {
+                        // ignore: use_build_context_synchronously
+                        (ctx.findAncestorStateOfType<_BonosPanelState>())?.setState(() {});
+                        // ignore: use_build_context_synchronously
+                        ScaffoldMessenger.of(ctx).showSnackBar(
+                          const SnackBar(content: Text('Pago registrado')),
+                        );
+                      }
                     },
-                  );
-                },
-              ),
-
-              if (!bono.activo) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'Bono agotado o inactivo',
-                  style: text.bodySmall?.copyWith(
-                    color: scheme.onSecondaryContainer.withOpacity(0.8),
+                    label: const Text('Añadir pago'),
                   ),
                 ),
-              ],
 
-              if (restante > 0 && bono.activo) ...[
-                const SizedBox(height: 12),
-                Text(
-                  'Quedan $restante sesión(es).',
-                  style: text.bodySmall?.copyWith(
-                    color: scheme.onSecondaryContainer.withOpacity(0.95),
-                  ),
+                const SizedBox(height: 16),
+                Divider(color: scheme.outlineVariant.withValues(alpha:0.5), height: 1),
+                const SizedBox(height: 16),
+
+                // === Sección Pagos ===
+                FutureBuilder<List<BonoPago>>(
+                  future: context.read<BonosProvider>().pagosDeBono(bono.id),
+                  builder: (context, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return const _Loader();
+                    }
+                    final pagos = snap.data ?? [];
+                    if (pagos.isEmpty) {
+                      return Text(
+                        'Sin pagos registrados.',
+                        style: text.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSecondaryContainer.withValues(alpha:0.7),
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Pagos registrados',
+                          style: text.titleSmall?.copyWith(
+                            color: scheme.onSecondaryContainer,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ...pagos.map((p) {
+                          final bgColor = pagos.indexOf(p) % 2 == 0
+                              ? scheme.surface.withValues(alpha:0.2)
+                              : Colors.transparent;
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 6),
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: bgColor,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.payments, size: 16, color: scheme.primary.withValues(alpha:0.7)),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    '${_fmtDate(p.fecha)} · ${p.metodo ?? '—'}',
+                                    style: text.bodyMedium?.copyWith(
+                                      color: scheme.onSecondaryContainer,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  '${p.importe.toStringAsFixed(2)} €',
+                                  style: text.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: scheme.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                      ],
+                    );
+                  },
                 ),
+
+                const SizedBox(height: 16),
+                Divider(color: scheme.outlineVariant.withValues(alpha:0.5), height: 1),
+                const SizedBox(height: 16),
+
+                // === Totales ===
+                FutureBuilder<double>(
+                  future: context.read<BonosProvider>().totalCobradoBono(bono.id),
+                  builder: (context, cobroSnap) {
+                    final cobrado = cobroSnap.data ?? 0.0;
+                    return FutureBuilder<double>(
+                      future: context.read<BonosProvider>().ingresoReconocidoBono(bono.id),
+                      builder: (context, ingSnap) {
+                        final reconocido = ingSnap.data ?? 0.0;
+                        final diferido = (cobrado - reconocido);
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Resumen económico',
+                              style: text.titleSmall?.copyWith(
+                                color: scheme.onSecondaryContainer,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            _buildFinancialRow(
+                              context,
+                              label: 'Cobrado',
+                              value: '${cobrado.toStringAsFixed(2)} €',
+                              icon: Icons.attach_money,
+                              color: scheme.primary,
+                            ),
+                            const SizedBox(height: 8),
+                            _buildFinancialRow(
+                              context,
+                              label: 'Ingresos reconocidos',
+                              value: '${reconocido.toStringAsFixed(2)} €',
+                              icon: Icons.check_circle,
+                              color: scheme.tertiary,
+                            ),
+                            const SizedBox(height: 8),
+                            _buildFinancialRow(
+                              context,
+                              label: 'Diferido',
+                              value: '${diferido.toStringAsFixed(2)} €',
+                              icon: Icons.schedule,
+                              color: scheme.outline,
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
+
+                if (!bono.activo) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: scheme.errorContainer.withValues(alpha:0.2),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: scheme.error.withValues(alpha:0.3)),
+                    ),
+                    child: Text(
+                      '⚠ Bono agotado o inactivo',
+                      style: text.bodySmall?.copyWith(
+                        color: scheme.error,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildFinancialRow(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: text.bodyMedium?.copyWith(
+              color: scheme.onSecondaryContainer,
+            ),
+          ),
+        ),
+        Text(
+          value,
+          style: text.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -565,7 +711,7 @@ class _BonoListTile extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       selected: seleccionado,
-      selectedTileColor: scheme.secondaryContainer.withOpacity(0.15),
+      selectedTileColor: scheme.secondaryContainer.withValues(alpha:0.15),
       contentPadding: EdgeInsets.zero,
       title: Text(
         bono.nombre,
@@ -576,11 +722,11 @@ class _BonoListTile extends StatelessWidget {
         children: [
           Text(
             nombreServicio ?? 'Servicio',
-            style: text.bodyMedium?.copyWith(color: scheme.onSurface.withOpacity(0.8)),
+            style: text.bodyMedium?.copyWith(color: scheme.onSurface.withValues(alpha:0.8)),
           ),
           Text(
             'Sesiones: $usadas / $totales',
-            style: text.bodyMedium?.copyWith(color: scheme.onSurface.withOpacity(0.8)),
+            style: text.bodyMedium?.copyWith(color: scheme.onSurface.withValues(alpha:0.8)),
           ),
           if (bono.caducaEl != null)
             Text(

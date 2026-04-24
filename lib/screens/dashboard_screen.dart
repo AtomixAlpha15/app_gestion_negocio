@@ -100,11 +100,12 @@ class _DashboardScreenState extends State<DashboardScreen>
     final ingresosEsteMes =
         await citasProv.totalCobradoMes(now.year, now.month);
 
-    // Total impagos global
+    // Total impagos global (solo citas pasadas, no de hoy)
+    final hoy = DateTime(now.year, now.month, now.day);
     final impRow = await db.customSelect(
       "SELECT COALESCE(SUM(precio), 0.0) AS t FROM citas "
       "WHERE inicio < ? AND (metodo_pago IS NULL OR metodo_pago = '')",
-      variables: [d.Variable<DateTime>(now)],
+      variables: [d.Variable<DateTime>(hoy)],
     ).get();
     final impagosTotal = impRow.isNotEmpty
         ? ((impRow.first.data['t'] as num?) ?? 0.0).toDouble()
@@ -158,8 +159,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       return _ServicioRank(servicioNombres[id] ?? 'Servicio', count);
     }).toList();
 
-    // Impagos recientes
-    final hoy = DateTime(now.year, now.month, now.day);
+    // Impagos recientes (solo citas pasadas, no de hoy)
     final impagosRecientes = await (db.select(db.citas)
           ..where((c) =>
               c.inicio.isSmallerThanValue(hoy) &
@@ -647,6 +647,22 @@ class _BarChartPainter extends CustomPainter {
     final maxVal = allVals.isEmpty ? 1.0 : allVals.reduce(max);
     if (maxVal <= 0) return;
 
+    // Calcular intervalo redondeado
+    double _roundInterval(double max) {
+      if (max <= 0) return 100;
+      final exp = (log(max) / ln10).floor();
+      final base = pow(10, exp).toDouble();
+      final normalized = max / base;
+
+      if (normalized <= 1) return base / 10;
+      if (normalized <= 2) return base / 5;
+      if (normalized <= 5) return base / 2;
+      return base;
+    }
+
+    final interval = _roundInterval(maxVal);
+    final roundedMax = ((maxVal / interval).ceil() * interval);
+
     final gridP = Paint()
       ..color = colorGrid
       ..strokeWidth = 1;
@@ -657,18 +673,22 @@ class _BarChartPainter extends CustomPainter {
       ..color = colorGastos
       ..style = PaintingStyle.fill;
 
-    // Grid lines (4 horizontal)
-    for (int i = 0; i <= 4; i++) {
-      final y = padT + H * (1 - i / 4);
-      canvas.drawLine(Offset(padL, y), Offset(padL + W, y), gridP);
-      final val = maxVal * i / 4;
-      _drawText(
-          canvas,
-          val >= 1000 ? '${(val / 1000).toStringAsFixed(1)}k' : val.toInt().toString(),
-          Offset(padL - 6, y),
-          colorLabel,
-          10,
-          align: TextAlign.right);
+    // Grid lines con escala redonda
+    int gridCount = ((roundedMax / interval) + 1).toInt();
+    for (int i = 0; i < gridCount; i++) {
+      final val = i * interval;
+      final ratio = val / roundedMax;
+      final y = padT + H * (1 - ratio);
+      if (y >= padT && y <= padT + H) {
+        canvas.drawLine(Offset(padL, y), Offset(padL + W, y), gridP);
+        _drawText(
+            canvas,
+            val >= 1000 ? '${(val / 1000).toStringAsFixed(0)}k' : val.toInt().toString(),
+            Offset(padL - 6, y),
+            colorLabel,
+            10,
+            align: TextAlign.right);
+      }
     }
 
     // Bars
@@ -682,13 +702,13 @@ class _BarChartPainter extends CustomPainter {
     for (int i = 0; i < n; i++) {
       final gx = padL + i * groupW + groupPad;
 
-      final ingH = (ingresos[i] / maxVal) * H * progress;
+      final ingH = (ingresos[i] / roundedMax) * H * progress;
       final ingRect = Rect.fromLTWH(gx, padT + H - ingH, barW, ingH);
       canvas.drawRRect(
           RRect.fromRectAndCorners(ingRect, topLeft: radius, topRight: radius),
           ingP);
 
-      final gasH = (gastos[i] / maxVal) * H * progress;
+      final gasH = (gastos[i] / roundedMax) * H * progress;
       final gasRect =
           Rect.fromLTWH(gx + barW + barGap, padT + H - gasH, barW, gasH);
       canvas.drawRRect(
@@ -783,79 +803,86 @@ class _AgendaHoyCard extends StatelessWidget {
               ),
             )
           else
-            ...citas.map((c) {
-              final isPast = c.fin.isBefore(now);
-              final isNow = c.inicio.isBefore(now) && c.fin.isAfter(now);
-              final hIni =
-                  '${c.inicio.hour.toString().padLeft(2, '0')}:${c.inicio.minute.toString().padLeft(2, '0')}';
-              final hFin =
-                  '${c.fin.hour.toString().padLeft(2, '0')}:${c.fin.minute.toString().padLeft(2, '0')}';
-              final cliente = clienteNombres[c.clienteId] ?? '';
-              final servicio = servicioNombres[c.servicioId] ?? '';
+            SizedBox(
+              height: 280,
+              child: ListView.builder(
+                itemCount: citas.length,
+                itemBuilder: (_, idx) {
+                  final c = citas[idx];
+                  final isPast = c.fin.isBefore(now);
+                  final isNow = c.inicio.isBefore(now) && c.fin.isAfter(now);
+                  final hIni =
+                      '${c.inicio.hour.toString().padLeft(2, '0')}:${c.inicio.minute.toString().padLeft(2, '0')}';
+                  final hFin =
+                      '${c.fin.hour.toString().padLeft(2, '0')}:${c.fin.minute.toString().padLeft(2, '0')}';
+                  final cliente = clienteNombres[c.clienteId] ?? '';
+                  final servicio = servicioNombres[c.servicioId] ?? '';
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isNow
-                      ? scheme.primaryContainer
-                      : isPast
-                          ? scheme.surfaceContainerHighest
-                          : scheme.secondaryContainer.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(10),
-                  border: isNow
-                      ? Border.all(color: scheme.primary, width: 1.5)
-                      : null,
-                ),
-                child: Row(children: [
-                  Text('$hIni\n$hFin',
-                      style: text.labelSmall?.copyWith(
-                        color: isNow
-                            ? scheme.onPrimaryContainer
-                            : scheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      textAlign: TextAlign.center),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(cliente,
-                            style: text.bodySmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: isNow
-                                    ? scheme.onPrimaryContainer
-                                    : scheme.onSurface),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis),
-                        Text(servicio,
-                            style: text.labelSmall?.copyWith(
-                                color: isNow
-                                    ? scheme.onPrimaryContainer
-                                        .withValues(alpha: 0.7)
-                                    : scheme.onSurfaceVariant),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis),
-                      ],
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isNow
+                          ? scheme.primaryContainer
+                          : isPast
+                              ? scheme.surfaceContainerHighest
+                              : scheme.secondaryContainer.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(10),
+                      border: isNow
+                          ? Border.all(color: scheme.primary, width: 1.5)
+                          : null,
                     ),
-                  ),
-                  if (isNow)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: scheme.primary,
-                        borderRadius: BorderRadius.circular(6),
+                    child: Row(children: [
+                      Text('$hIni\n$hFin',
+                          style: text.labelSmall?.copyWith(
+                            color: isNow
+                                ? scheme.onPrimaryContainer
+                                : scheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(cliente,
+                                style: text.bodySmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: isNow
+                                        ? scheme.onPrimaryContainer
+                                        : scheme.onSurface),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis),
+                            Text(servicio,
+                                style: text.labelSmall?.copyWith(
+                                    color: isNow
+                                        ? scheme.onPrimaryContainer
+                                            .withValues(alpha: 0.7)
+                                        : scheme.onSurfaceVariant),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
                       ),
-                      child: Text('Ahora',
-                          style: text.labelSmall
-                              ?.copyWith(color: scheme.onPrimary)),
-                    ),
-                ]),
-              );
-            }),
+                      if (isNow)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: scheme.primary,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text('Ahora',
+                              style: text.labelSmall
+                                  ?.copyWith(color: scheme.onPrimary)),
+                        ),
+                    ]),
+                  );
+                },
+              ),
+            ),
         ],
       ),
     );
