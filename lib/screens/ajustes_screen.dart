@@ -30,27 +30,28 @@ class _AjustesBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      children: const [
-        _SectionHeader(icon: Icons.palette_outlined, label: 'Apariencia'),
-        _TileApariencia(),
-        SizedBox(height: 8),
-        _SectionHeader(icon: Icons.business_outlined, label: 'Empresa'),
-        _TileEmpresa(),
-        SizedBox(height: 8),
-        _SectionHeader(icon: Icons.notifications_outlined, label: 'Notificaciones'),
-        _TileNotificaciones(),
-        SizedBox(height: 8),
-        _SectionHeader(icon: Icons.tune_outlined, label: 'Regional'),
-        _TileRegional(),
-        SizedBox(height: 8),
-        _SectionHeader(icon: Icons.save_outlined, label: 'Datos y backup'),
-        _TileDatos(),
-        SizedBox(height: 8),
-        _SectionHeader(icon: Icons.settings_backup_restore_outlined, label: 'Sistema'),
-        _TileSistema(),
-        SizedBox(height: 24),
+      children: [
+        _SectionHeader(icon: Icons.palette_outlined, label: loc.settingsAppearance),
+        const _TileApariencia(),
+        const SizedBox(height: 8),
+        _SectionHeader(icon: Icons.business_outlined, label: loc.settingsCompany),
+        const _TileEmpresa(),
+        const SizedBox(height: 8),
+        _SectionHeader(icon: Icons.notifications_outlined, label: loc.settingsNotifications),
+        const _TileNotificaciones(),
+        const SizedBox(height: 8),
+        _SectionHeader(icon: Icons.tune_outlined, label: loc.settingsRegional),
+        const _TileRegional(),
+        const SizedBox(height: 8),
+        _SectionHeader(icon: Icons.save_outlined, label: loc.settingsDataBackup),
+        const _TileDatos(),
+        const SizedBox(height: 8),
+        _SectionHeader(icon: Icons.settings_backup_restore_outlined, label: loc.settingsSystem),
+        const _TileSistema(),
+        const SizedBox(height: 24),
       ],
     );
   }
@@ -124,12 +125,13 @@ class _TileApariencia extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<SettingsProvider>();
     final cs = Theme.of(context).colorScheme;
+    final loc = AppLocalizations.of(context);
 
     return _SettingsCard(children: [
       // Tema oscuro
       SwitchListTile(
         secondary: const Icon(Icons.dark_mode_outlined),
-        title: const Text('Tema oscuro'),
+        title: Text(loc.settingsDarkTheme),
         value: s.oscuro,
         onChanged: s.setOscuro,
       ),
@@ -137,7 +139,7 @@ class _TileApariencia extends StatelessWidget {
       // Fuente
       ListTile(
         leading: const Icon(Icons.font_download_outlined),
-        title: const Text('Tipografía'),
+        title: Text(loc.settingsFont),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -150,22 +152,22 @@ class _TileApariencia extends StatelessWidget {
             const Icon(Icons.chevron_right),
           ],
         ),
-        onTap: () => _showFuenteDialog(context, s),
+        onTap: () => _showFuenteDialog(context, s, loc),
       ),
 
       // Tamaño de fuente
       ListTile(
         leading: const Icon(Icons.format_size_outlined),
-        title: const Text('Tamaño de texto'),
+        title: Text(loc.settingsTextSize),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               s.tamanoFuente == 0.85
-                  ? 'Pequeño'
+                  ? loc.settingsTextSmall
                   : s.tamanoFuente == 1.25
-                      ? 'Grande'
-                      : 'Mediano',
+                      ? loc.settingsTextLarge
+                      : loc.settingsTextMedium,
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
@@ -175,15 +177,15 @@ class _TileApariencia extends StatelessWidget {
             const Icon(Icons.chevron_right),
           ],
         ),
-        onTap: () => _showTamanoDialog(context, s),
+        onTap: () => _showTamanoDialog(context, s, loc),
       ),
 
       // Color de marca
       ListTile(
         leading: const Icon(Icons.color_lens_outlined),
-        title: const Text('Color de marca'),
+        title: Text(loc.settingsColorBrand),
         subtitle: Text(
-          s.usarPaletaAuto ? 'Paleta automática' : 'Colores personalizados',
+          s.usarPaletaAuto ? loc.settingsColorAuto : loc.settingsColorManual,
           style: Theme.of(context)
               .textTheme
               .bodySmall
@@ -197,12 +199,12 @@ class _TileApariencia extends StatelessWidget {
             const Icon(Icons.chevron_right),
           ],
         ),
-        onTap: () => _showColorPanel(context, s),
+        onTap: () => _showColorPanel(context, s, loc),
       ),
     ]);
   }
 
-  void _showFuenteDialog(BuildContext context, SettingsProvider s) {
+  void _showFuenteDialog(BuildContext context, SettingsProvider s, AppLocalizations loc) {
     const fuentes = [
       'Roboto', 'Arial', 'Montserrat', 'Inter', 'Bitter',
       'DMSerifText', 'Faustina', 'GreatVibes', 'MeowScript',
@@ -211,7 +213,7 @@ class _TileApariencia extends StatelessWidget {
     showDialog(
       context: context,
       builder: (_) => SimpleDialog(
-        title: const Text('Tipografía'),
+        title: Text(loc.settingsFont),
         children: fuentes
             .map((f) => RadioListTile<String>(
                   value: f,
@@ -227,16 +229,16 @@ class _TileApariencia extends StatelessWidget {
     );
   }
 
-  void _showTamanoDialog(BuildContext context, SettingsProvider s) {
-    const opciones = [
-      (label: 'Pequeño', value: 0.85),
-      (label: 'Mediano', value: 1.0),
-      (label: 'Grande', value: 1.25),
+  void _showTamanoDialog(BuildContext context, SettingsProvider s, AppLocalizations loc) {
+    final opciones = [
+      (label: loc.settingsTextSmall, value: 0.85),
+      (label: loc.settingsTextMedium, value: 1.0),
+      (label: loc.settingsTextLarge, value: 1.25),
     ];
     showDialog(
       context: context,
       builder: (_) => SimpleDialog(
-        title: const Text('Tamaño de texto'),
+        title: Text(loc.settingsTextSize),
         children: opciones
             .map((o) => RadioListTile<double>(
                   value: o.value,
@@ -252,7 +254,7 @@ class _TileApariencia extends StatelessWidget {
     );
   }
 
-  void _showColorPanel(BuildContext context, SettingsProvider s) {
+  void _showColorPanel(BuildContext context, SettingsProvider s, AppLocalizations loc) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -261,7 +263,7 @@ class _TileApariencia extends StatelessWidget {
       ),
       builder: (_) => ChangeNotifierProvider.value(
         value: s,
-        child: const _ColorPanelSheet(),
+        child: _ColorPanelSheet(loc: loc),
       ),
     );
   }
@@ -269,7 +271,8 @@ class _TileApariencia extends StatelessWidget {
 
 /* ─── Color panel como bottom sheet ─────────────────────────────────────── */
 class _ColorPanelSheet extends StatelessWidget {
-  const _ColorPanelSheet();
+  final AppLocalizations loc;
+  const _ColorPanelSheet({required this.loc});
 
   @override
   Widget build(BuildContext context) {
@@ -295,13 +298,13 @@ class _ColorPanelSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Text('Color de marca', style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+          Text(loc.settingsColorBrand, style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 16),
 
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Paleta automática'),
-            subtitle: const Text('Genera secundario y terciario desde el color base'),
+            title: Text(loc.settingsColorAuto),
+            subtitle: Text(loc.settingsColorAutoDesc),
             value: s.usarPaletaAuto,
             onChanged: s.setUsarPaletaAuto,
           ),
@@ -309,39 +312,39 @@ class _ColorPanelSheet extends StatelessWidget {
 
           ListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Color base'),
+            title: Text(loc.settingsColorPrimary),
             trailing: _ColorDot(color: s.colorBase, size: 32),
-            onTap: () => _pickColor(context, s.colorBase, s.setColorBase),
+            onTap: () => _pickColor(context, s.colorBase, s.setColorBase, loc),
           ),
 
           if (!s.usarPaletaAuto) ...[
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Color secundario'),
+              title: Text(loc.settingsColorSecondary),
               trailing: _ColorDot(color: s.colorSecundarioManual, size: 32),
               onTap: () => _pickColor(
-                  context, s.colorSecundarioManual, s.setColorSecundarioManual),
+                  context, s.colorSecundarioManual, s.setColorSecundarioManual, loc),
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Color terciario'),
+              title: Text(loc.settingsColorTertiary),
               trailing: _ColorDot(color: s.colorTerciarioManual, size: 32),
               onTap: () => _pickColor(
-                  context, s.colorTerciarioManual, s.setColorTerciarioManual),
+                  context, s.colorTerciarioManual, s.setColorTerciarioManual, loc),
             ),
           ],
 
           const SizedBox(height: 12),
-          Text('Vista previa', style: tt.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
+          Text(loc.settingsPreviewLabel, style: tt.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              _PreviewChip(bg: cs.primaryContainer, fg: cs.onPrimaryContainer, label: 'Primario'),
-              _PreviewChip(bg: cs.secondaryContainer, fg: cs.onSecondaryContainer, label: 'Secundario'),
-              _PreviewChip(bg: cs.tertiaryContainer, fg: cs.onTertiaryContainer, label: 'Terciario'),
-              _PreviewChip(bg: cs.surfaceContainerHighest, fg: cs.onSurface, label: 'Surface'),
+              _PreviewChip(bg: cs.primaryContainer, fg: cs.onPrimaryContainer, label: loc.settingsPrimaryPreview),
+              _PreviewChip(bg: cs.secondaryContainer, fg: cs.onSecondaryContainer, label: loc.settingsSecondaryPreview),
+              _PreviewChip(bg: cs.tertiaryContainer, fg: cs.onTertiaryContainer, label: loc.settingsTertiaryPreview),
+              _PreviewChip(bg: cs.surfaceContainerHighest, fg: cs.onSurface, label: loc.settingsSurfacePreview),
             ],
           ),
         ],
@@ -396,12 +399,13 @@ class _TileEmpresa extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<SettingsProvider>();
     final cs = Theme.of(context).colorScheme;
+    final loc = AppLocalizations.of(context);
 
     return _SettingsCard(children: [
       // Logo
       ListTile(
         leading: const Icon(Icons.image_outlined),
-        title: const Text('Logo de empresa'),
+        title: Text(loc.settingsCompanyLogo),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -429,7 +433,7 @@ class _TileEmpresa extends StatelessWidget {
       // Nombre
       _EditableTile(
         icon: Icons.badge_outlined,
-        title: 'Nombre',
+        title: loc.settingsCompanyName,
         value: s.nombreEmpresa,
         onSave: s.setNombreEmpresa,
       ),
@@ -437,18 +441,18 @@ class _TileEmpresa extends StatelessWidget {
       // Dirección
       _EditableTile(
         icon: Icons.location_on_outlined,
-        title: 'Dirección',
+        title: loc.settingsAddress,
         value: s.direccion,
-        hint: 'Sin dirección',
+        hint: loc.settingsNoAddress,
         onSave: s.setDireccion,
       ),
 
       // Teléfono
       _EditableTile(
         icon: Icons.phone_outlined,
-        title: 'Teléfono',
+        title: loc.settingsPhone,
         value: s.telefono,
-        hint: 'Sin teléfono',
+        hint: loc.settingsNoPhone,
         keyboardType: TextInputType.phone,
         onSave: s.setTelefono,
       ),
@@ -456,9 +460,9 @@ class _TileEmpresa extends StatelessWidget {
       // Email
       _EditableTile(
         icon: Icons.email_outlined,
-        title: 'Email',
+        title: loc.settingsEmail,
         value: s.email,
-        hint: 'Sin email',
+        hint: loc.settingsNoEmail,
         keyboardType: TextInputType.emailAddress,
         onSave: s.setEmail,
       ),
@@ -466,8 +470,8 @@ class _TileEmpresa extends StatelessWidget {
       // Nº empleados
       ListTile(
         leading: const Icon(Icons.people_outline),
-        title: const Text('Número de empleados'),
-        subtitle: const Text('Para agendas por empleado (próximamente)'),
+        title: Text(loc.settingsEmployees),
+        subtitle: Text(loc.settingsEmployeesDesc),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -480,7 +484,7 @@ class _TileEmpresa extends StatelessWidget {
             const Icon(Icons.chevron_right),
           ],
         ),
-        onTap: () => _editNumeroEmpleados(context, s),
+        onTap: () => _editNumeroEmpleados(context, s, loc),
       ),
     ]);
   }
@@ -497,29 +501,29 @@ class _TileEmpresa extends StatelessWidget {
     }
   }
 
-  void _editNumeroEmpleados(BuildContext context, SettingsProvider s) {
+  void _editNumeroEmpleados(BuildContext context, SettingsProvider s, AppLocalizations loc) {
     final ctrl = TextEditingController(text: '${s.numeroEmpleados}');
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Número de empleados'),
+        title: Text(loc.settingsEditEmployees),
         content: TextField(
           controller: ctrl,
           keyboardType: TextInputType.number,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'Empleados'),
+          decoration: InputDecoration(labelText: loc.settingsEmployeeInput),
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar')),
+              child: Text(loc.actionCancel)),
           FilledButton(
             onPressed: () {
               final n = int.tryParse(ctrl.text) ?? 1;
               s.setNumeroEmpleados(n < 1 ? 1 : n);
               Navigator.pop(context);
             },
-            child: const Text('Guardar'),
+            child: Text(loc.actionSave),
           ),
         ],
       ),
@@ -564,6 +568,7 @@ class _EditableTile extends StatelessWidget {
       trailing: const Icon(Icons.edit_outlined, size: 18),
       onTap: () {
         final ctrl = TextEditingController(text: value);
+        final loc = AppLocalizations.of(context);
         showDialog(
           context: context,
           builder: (_) => AlertDialog(
@@ -577,13 +582,13 @@ class _EditableTile extends StatelessWidget {
             actions: [
               TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar')),
+                  child: Text(loc.actionCancel)),
               FilledButton(
                 onPressed: () {
                   onSave(ctrl.text.trim());
                   Navigator.pop(context);
                 },
-                child: const Text('Guardar'),
+                child: Text(loc.actionSave),
               ),
             ],
           ),
@@ -600,25 +605,26 @@ class _TileNotificaciones extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = context.watch<SettingsProvider>();
+    final loc = AppLocalizations.of(context);
 
     return _SettingsCard(children: [
       SwitchListTile(
         secondary: const Icon(Icons.warning_amber_outlined),
-        title: const Text('Alertas de impagos'),
-        subtitle: const Text('Avisar cuando un cliente tiene pagos pendientes'),
+        title: Text(loc.settingsAlertUnpaid),
+        subtitle: Text(loc.settingsAlertUnpaidDesc),
         value: s.alertasImpagos,
         onChanged: s.setAlertasImpagos,
       ),
       SwitchListTile(
         secondary: const Icon(Icons.event_outlined),
-        title: const Text('Recordatorios de citas'),
-        subtitle: const Text('Notificar antes de cada cita programada'),
+        title: Text(loc.settingsAlertAppointments),
+        subtitle: Text(loc.settingsAlertAppointmentsDesc),
         value: s.notifCitas,
         onChanged: s.setNotifCitas,
       ),
       SwitchListTile(
         secondary: const Icon(Icons.person_off_outlined),
-        title: const Text('Clientes inactivos'),
+        title: Text(loc.settingsAlertInactiveClients),
         subtitle: Text(
             'Avisar si un cliente no visita en más de ${s.diasInactividad} días'),
         value: s.notifClientesInactivos,
@@ -627,7 +633,7 @@ class _TileNotificaciones extends StatelessWidget {
       if (s.notifClientesInactivos)
         ListTile(
           leading: const SizedBox(width: 24),
-          title: const Text('Días sin visita'),
+          title: Text(loc.settingsDaysWithoutVisit),
           trailing: SizedBox(
             width: 200,
             child: Row(
@@ -639,7 +645,7 @@ class _TileNotificaciones extends StatelessWidget {
                     min: 7,
                     max: 90,
                     divisions: 83,
-                    label: '${s.diasInactividad} días',
+                    label: '${s.diasInactividad} ${loc.settingsDaysSliderLabel}',
                     onChanged: (v) => s.setDiasInactividad(v.round()),
                   ),
                 ),
@@ -707,15 +713,16 @@ class _TileRegional extends StatelessWidget {
           ],
         );
 
+    final loc = AppLocalizations.of(context);
     return _SettingsCard(children: [
       // ── Idioma ──────────────────────────────────────────────────────────
       ListTile(
         leading: const Icon(Icons.language_outlined),
-        title: const Text('Idioma'),
+        title: Text(loc.settingsLanguage),
         trailing: trailingValue(_labelIdioma(s.idioma)),
         onTap: () => _showOpcionesDialog<String>(
           context: context,
-          title: 'Idioma',
+          title: loc.settingsLanguage,
           opciones: _idiomas,
           valorActual: s.idioma,
           onSelected: s.setIdioma,
@@ -724,11 +731,11 @@ class _TileRegional extends StatelessWidget {
       // ── Formato de fecha ─────────────────────────────────────────────────
       ListTile(
         leading: const Icon(Icons.calendar_today_outlined),
-        title: const Text('Formato de fecha'),
+        title: Text(loc.settingsDateFormat),
         trailing: trailingValue(s.formatoFecha),
         onTap: () => _showOpcionesDialog<String>(
           context: context,
-          title: 'Formato de fecha',
+          title: loc.settingsDateFormat,
           opciones: _formatos,
           valorActual: s.formatoFecha,
           onSelected: s.setFormatoFecha,
@@ -737,11 +744,11 @@ class _TileRegional extends StatelessWidget {
       // ── Moneda ───────────────────────────────────────────────────────────
       ListTile(
         leading: const Icon(Icons.attach_money_outlined),
-        title: const Text('Moneda'),
+        title: Text(loc.settingsCurrency),
         trailing: trailingValue(_labelMoneda(s.simboloMoneda)),
         onTap: () => _showOpcionesDialog<String>(
           context: context,
-          title: 'Moneda',
+          title: loc.settingsCurrency,
           opciones: _monedas,
           valorActual: s.simboloMoneda,
           onSelected: s.setSimboloMoneda,
@@ -785,16 +792,17 @@ class _TileDatos extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = context.watch<SettingsProvider>();
     final cs = Theme.of(context).colorScheme;
+    final loc = AppLocalizations.of(context);
 
     final ultimoBackup = s.ultimaFechaBackup == null
-        ? 'Nunca'
+        ? loc.labelNever
         : _formatDate(s.ultimaFechaBackup!.toLocal(), context);
 
     return _SettingsCard(children: [
       // Exportar
       ListTile(
         leading: const Icon(Icons.file_download_outlined),
-        title: const Text('Exportar copia de seguridad'),
+        title: Text(loc.settingsExportBackup),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _exportar(context),
       ),
@@ -802,7 +810,7 @@ class _TileDatos extends StatelessWidget {
       // Importar
       ListTile(
         leading: const Icon(Icons.file_upload_outlined),
-        title: const Text('Importar copia de seguridad'),
+        title: Text(loc.settingsImportBackup),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _importar(context),
       ),
@@ -810,7 +818,7 @@ class _TileDatos extends StatelessWidget {
       // Último backup (informativo)
       ListTile(
         leading: const Icon(Icons.history_outlined),
-        title: const Text('Último backup'),
+        title: Text(loc.settingsLastBackup),
         trailing: Text(ultimoBackup,
             style: Theme.of(context)
                 .textTheme
@@ -821,8 +829,8 @@ class _TileDatos extends StatelessWidget {
       // Intervalo backup
       ListTile(
         leading: const Icon(Icons.schedule_outlined),
-        title: const Text('Frecuencia de backup automático'),
-        subtitle: Text('Cada ${s.intervaloBackupDias} días'),
+        title: Text(loc.settingsBackupFrequency),
+        subtitle: Text(loc.settingsBackupFrequencyLabel(s.intervaloBackupDias)),
         trailing: SizedBox(
           width: 160,
           child: Slider(
@@ -830,7 +838,7 @@ class _TileDatos extends StatelessWidget {
             min: 1,
             max: 30,
             divisions: 29,
-            label: '${s.intervaloBackupDias} días',
+            label: '${s.intervaloBackupDias} ${loc.settingsDaysSliderLabel}',
             onChanged: (v) => s.setIntervaloBackupDias(v.round()),
           ),
         ),
@@ -839,7 +847,7 @@ class _TileDatos extends StatelessWidget {
       // Backup ahora
       ListTile(
         leading: const Icon(Icons.save_outlined),
-        title: const Text('Crear backup ahora'),
+        title: Text(loc.settingsBackupNow),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _backupAhora(context),
       ),
@@ -852,11 +860,12 @@ class _TileDatos extends StatelessWidget {
   Future<void> _exportar(BuildContext context) async {
     final db = context.read<AppDatabase>();
     final s = context.read<SettingsProvider>();
+    final loc = AppLocalizations.of(context);
     final backup = BackupService(db: db, settings: s);
     final path = await backup.exportFullBackup();
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(path == null ? 'Exportación cancelada' : 'Guardado en:\n$path'),
+      content: Text(path == null ? loc.settingsBackupCancelled : '${loc.settingsSavedAt}\n$path'),
       duration: const Duration(seconds: 4),
     ));
   }
@@ -864,6 +873,7 @@ class _TileDatos extends StatelessWidget {
   Future<void> _importar(BuildContext context) async {
     final db = context.read<AppDatabase>();
     final s = context.read<SettingsProvider>();
+    final loc = AppLocalizations.of(context);
     final backup = BackupService(db: db, settings: s);
     final ok = await backup.importFullBackup();
     if (!context.mounted) return;
@@ -871,9 +881,8 @@ class _TileDatos extends StatelessWidget {
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
-          title: const Text('Copia restaurada'),
-          content: const Text(
-              'Se restauró la copia correctamente.\nReinicia la app para aplicar todos los cambios.'),
+          title: Text(loc.settingsImportSuccess),
+          content: Text(loc.settingsImportSuccessMessage),
           actions: [
             FilledButton(
                 onPressed: () => Navigator.pop(context),
@@ -883,18 +892,19 @@ class _TileDatos extends StatelessWidget {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo importar el backup')));
+          SnackBar(content: Text(loc.settingsImportError)));
     }
   }
 
   Future<void> _backupAhora(BuildContext context) async {
     final db = context.read<AppDatabase>();
     final s = context.read<SettingsProvider>();
+    final loc = AppLocalizations.of(context);
     final backup = BackupService(db: db, settings: s);
     await backup.autoBackupIfDue();
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Backup local creado (carpeta Backups).')));
+        SnackBar(content: Text(loc.settingsBackupSuccess)));
   }
 }
 
@@ -904,10 +914,11 @@ class _TileSistema extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return _SettingsCard(children: [
       ListTile(
         leading: Icon(Icons.restore, color: Theme.of(context).colorScheme.error),
-        title: Text('Restablecer valores por defecto',
+        title: Text(loc.settingsRestoreDefaults,
             style: TextStyle(color: Theme.of(context).colorScheme.error)),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _confirmarReset(context),
@@ -916,16 +927,16 @@ class _TileSistema extends StatelessWidget {
   }
 
   void _confirmarReset(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('¿Restablecer ajustes?'),
-        content: const Text(
-            'Se perderán todos tus ajustes visuales, de empresa y notificaciones. Los datos (clientes, citas, etc.) no se verán afectados.'),
+        title: Text(loc.settingsResetTitle),
+        content: Text(loc.settingsRestoreDefaultsWarning),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar')),
+              child: Text(loc.actionCancel)),
           FilledButton(
             style: FilledButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.error),
@@ -933,9 +944,9 @@ class _TileSistema extends StatelessWidget {
               context.read<SettingsProvider>().restablecerAjustes();
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Ajustes restablecidos')));
+                  SnackBar(content: Text(loc.settingsRestoreDefaultsSuccess)));
             },
-            child: const Text('Restablecer'),
+            child: Text(loc.settingsResetConfirm),
           ),
         ],
       ),
@@ -948,12 +959,13 @@ Future<void> _pickColor(
   BuildContext context,
   Color current,
   ValueChanged<Color> onPicked,
+  AppLocalizations loc,
 ) async {
   Color temp = current;
   await showDialog(
     context: context,
     builder: (_) => AlertDialog(
-      title: const Text('Seleccionar color'),
+      title: Text(loc.settingsPickColor),
       content: SingleChildScrollView(
         child: ColorPicker(
           pickerColor: temp,
@@ -965,13 +977,13 @@ Future<void> _pickColor(
       actions: [
         TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar')),
+            child: Text(loc.actionCancel)),
         FilledButton(
           onPressed: () {
             onPicked(temp);
             Navigator.pop(context);
           },
-          child: const Text('Aceptar'),
+          child: Text(loc.actionAccept),
         ),
       ],
     ),

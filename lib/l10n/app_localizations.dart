@@ -106,6 +106,14 @@ abstract class AppLocalizations {
   String get clientsTotalSpent;
   String get clientsHistory;
   String get clientsBonos;
+  String get clientsCardTitle;
+  String get clientsCardData;
+  String get clientsSummary;
+  String get clientsUnpaidAppointments;
+  String get clientsNoHistoryYet;
+  String get clientsNoAppointmentsRecorded;
+  String get clientsChangeImage;
+  String get clientsRemoveImage;
 
   // ── Services ─────────────────────────────────────────────────────────────
   String get servicesTitle;
@@ -118,6 +126,20 @@ abstract class AppLocalizations {
   String get servicesDeleted;
   String get servicesDuration;
   String get servicesNoResults;
+  String get servicesSearch;
+  String get servicesAddImage;
+  String get servicesChangeImage;
+  String get servicesRemoveImage;
+  String get servicesPrice;
+  String get servicesDescription;
+  String get servicesExtrasSection;
+  String get servicesAddExtra;
+  String get servicesEditExtra;
+  String get servicesExtraName;
+  String get servicesExtraPrice;
+  String get servicesInvalidPrice;
+  String get servicesInvalidDuration;
+  String get servicesInvalidData;
 
   // ── Accounting ───────────────────────────────────────────────────────────
   String get accountingTitle;
@@ -144,6 +166,17 @@ abstract class AppLocalizations {
   String get bonosSessions;
   // ignore: non_constant_identifier_names
   String bonosSessionsUsed(int used, int total);
+  String get bonosCreateTitle;
+  String get bonosServiceLabel;
+  String get bonosNameLabel;
+  String get bonosNameOptional;
+  String get bonosSessionsLabel;
+  String get bonosPriceLabel;
+  String get bonosNoDueDate;
+  String get bonosDueDate;
+  String get bonosChooseDate;
+  String get bonosSelectService;
+  String get bonosCreateButton;
 
   // ── Settings ─────────────────────────────────────────────────────────────
   String get settingsTitle;
@@ -184,9 +217,50 @@ abstract class AppLocalizations {
   String get settingsResetBody;
   String get settingsColorBrand;
   String get settingsColorAuto;
+  String get settingsColorAutoDesc;
   String get settingsColorManual;
   String get settingsColorSecondary;
   String get settingsColorTertiary;
+  String get settingsColorPrimary;
+  String get settingsPrimaryPreview;
+  String get settingsSecondaryPreview;
+  String get settingsTertiaryPreview;
+  String get settingsSurfacePreview;
+  String get settingsEmployeesDesc;
+  String get settingsInactiveDaysLabel;
+  String get settingsInactiveClientsDesc;
+  String get settingsAlertUnpaidDesc;
+  String get settingsAlertAppointmentsDesc;
+  String get settingsDaysInactivity;
+  String get settingsCancelButton;
+  String get settingsSaveButton;
+  String get settingsLogoDontHave;
+  String get settingsLogoUploaded;
+  String get settingsLogoUploadedDesc;
+  String get settingsUnsavedChanges;
+  String get settingsDiscardConfirm;
+  String get settingsBackupFrequencyDays;
+  String get settingsResetConfirmMsg;
+  String get settingsRestoreDefaults;
+  String get settingsRestoreDefaultsWarning;
+  String get settingsRestoreDefaultsSuccess;
+  String get settingsPickColor;
+  String get settingsPreviewLabel;
+  String get settingsCompanyLogo;
+  String get settingsNoAddress;
+  String get settingsNoPhone;
+  String get settingsNoEmail;
+  String get settingsDaysWithoutVisit;
+  String get settingsDaysSliderLabel;
+  String get settingsBackupCancelled;
+  String get settingsSavedAt;
+  String get settingsBackupSuccess;
+  String get settingsBackupError;
+  String get settingsImportSuccess;
+  String get settingsImportSuccessMessage;
+  String get settingsImportError;
+  String get settingsEditEmployees;
+  String get settingsEmployeeInput;
   // ignore: non_constant_identifier_names
   String settingsBackupFrequencyLabel(int days);
 

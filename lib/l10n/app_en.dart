@@ -99,6 +99,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override String get clientsTotalSpent => 'Total spent';
   @override String get clientsHistory => 'History';
   @override String get clientsBonos => 'Packages';
+  @override String get clientsCardTitle => 'Client profile';
+  @override String get clientsCardData => 'Client data';
+  @override String get clientsSummary => 'Client summary';
+  @override String get clientsUnpaidAppointments => 'Unpaid appointments';
+  @override String get clientsNoHistoryYet => 'No history yet.';
+  @override String get clientsNoAppointmentsRecorded => 'No appointments recorded.';
+  @override String get clientsChangeImage => 'Change image';
+  @override String get clientsRemoveImage => 'Remove image';
 
   // ── Services ─────────────────────────────────────────────────────────────
   @override String get servicesTitle => 'Services';
@@ -111,6 +119,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override String get servicesDeleted => 'Service deleted';
   @override String get servicesDuration => 'Duration (min)';
   @override String get servicesNoResults => 'No services';
+  @override String get servicesSearch => 'Search service...';
+  @override String get servicesAddImage => 'Add image';
+  @override String get servicesChangeImage => 'Change image';
+  @override String get servicesRemoveImage => 'Remove image';
+  @override String get servicesPrice => 'Price (€)';
+  @override String get servicesDescription => 'Description';
+  @override String get servicesExtrasSection => 'Extras for this service:';
+  @override String get servicesAddExtra => 'Add extra';
+  @override String get servicesEditExtra => 'Edit Extra';
+  @override String get servicesExtraName => 'Extra name';
+  @override String get servicesExtraPrice => 'Price (€)';
+  @override String get servicesInvalidPrice => 'Invalid price';
+  @override String get servicesInvalidDuration => 'Invalid duration';
+  @override String get servicesInvalidData => 'Invalid data';
 
   // ── Accounting ───────────────────────────────────────────────────────────
   @override String get accountingTitle => 'Accounting';
@@ -136,6 +158,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override String get bonosDiferido => 'Deferred';
   @override String get bonosSessions => 'Sessions';
   @override String bonosSessionsUsed(int used, int total) => '$used / $total sessions';
+  @override String get bonosCreateTitle => 'Create package';
+  @override String get bonosServiceLabel => 'Service';
+  @override String get bonosNameLabel => 'Name';
+  @override String get bonosNameOptional => 'Name (optional)';
+  @override String get bonosSessionsLabel => 'Sessions:';
+  @override String get bonosPriceLabel => 'Package price (€) (optional)';
+  @override String get bonosNoDueDate => 'No expiration';
+  @override String get bonosDueDate => 'Expires:';
+  @override String get bonosChooseDate => 'Choose date';
+  @override String get bonosSelectService => 'Select a service';
+  @override String get bonosCreateButton => 'Create';
 
   // ── Settings ─────────────────────────────────────────────────────────────
   @override String get settingsTitle => 'Settings';
@@ -176,8 +209,49 @@ class AppLocalizationsEn extends AppLocalizations {
   @override String get settingsResetBody => 'All settings will be reset to their default values. This action cannot be undone.';
   @override String get settingsColorBrand => 'Brand color';
   @override String get settingsColorAuto => 'Auto palette';
+  @override String get settingsColorAutoDesc => 'Generates secondary and tertiary from base color';
   @override String get settingsColorManual => 'Manual colors';
   @override String get settingsColorSecondary => 'Secondary color';
   @override String get settingsColorTertiary => 'Tertiary color';
+  @override String get settingsColorPrimary => 'Base color';
+  @override String get settingsPrimaryPreview => 'Primary';
+  @override String get settingsSecondaryPreview => 'Secondary';
+  @override String get settingsTertiaryPreview => 'Tertiary';
+  @override String get settingsSurfacePreview => 'Surface';
+  @override String get settingsEmployeesDesc => 'For per-employee scheduling (coming soon)';
+  @override String get settingsInactiveDaysLabel => 'Days without visit';
+  @override String get settingsInactiveClientsDesc => '';
+  @override String get settingsAlertUnpaidDesc => 'Alert when a client has pending payments';
+  @override String get settingsAlertAppointmentsDesc => 'Notify before each scheduled appointment';
+  @override String get settingsDaysInactivity => 'Days without visit';
+  @override String get settingsCancelButton => 'Cancel';
+  @override String get settingsSaveButton => 'Save';
+  @override String get settingsLogoDontHave => 'No logo';
+  @override String get settingsLogoUploaded => 'Logo uploaded';
+  @override String get settingsLogoUploadedDesc => 'Uploaded successfully';
+  @override String get settingsUnsavedChanges => 'Unsaved changes';
+  @override String get settingsDiscardConfirm => 'Discard changes?';
+  @override String get settingsBackupFrequencyDays => '${0} days';
+  @override String get settingsResetConfirmMsg => 'All settings will be reset to their default values.';
+  @override String get settingsRestoreDefaults => 'Restore defaults';
+  @override String get settingsRestoreDefaultsWarning => 'You will lose all your visual, company and notification settings. Data (clients, appointments, etc.) will not be affected.';
+  @override String get settingsRestoreDefaultsSuccess => 'Settings restored';
+  @override String get settingsPickColor => 'Select color';
+  @override String get settingsPreviewLabel => 'Preview';
+  @override String get settingsCompanyLogo => 'Company logo';
+  @override String get settingsNoAddress => 'No address';
+  @override String get settingsNoPhone => 'No phone';
+  @override String get settingsNoEmail => 'No email';
+  @override String get settingsDaysWithoutVisit => 'Days without visit';
+  @override String get settingsDaysSliderLabel => 'days';
+  @override String get settingsBackupCancelled => 'Export cancelled';
+  @override String get settingsSavedAt => 'Saved at:';
+  @override String get settingsBackupSuccess => 'Local backup created (Backups folder).';
+  @override String get settingsBackupError => 'Could not import backup';
+  @override String get settingsImportSuccess => 'Backup restored';
+  @override String get settingsImportSuccessMessage => 'The backup was restored successfully.\nRestart the app to apply all changes.';
+  @override String get settingsImportError => 'Could not import backup';
+  @override String get settingsEditEmployees => 'Number of employees';
+  @override String get settingsEmployeeInput => 'Employees';
   @override String settingsBackupFrequencyLabel(int days) => 'Every $days day${days == 1 ? '' : 's'}';
 }

@@ -98,12 +98,12 @@ void _mostrarDialogoServicio({dynamic servicio}) {
               },
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'Buscar ${AppLocalizations.of(context).servicesTitle.toLowerCase()}...',
+                hintText: AppLocalizations.of(context).servicesSearch,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _query.isEmpty
                     ? null
                     : IconButton(
-                        tooltip: 'Limpiar',
+                        tooltip: AppLocalizations.of(context).actionClose,
                         icon: const Icon(Icons.close),
                         onPressed: () {
                           setState(() {
@@ -269,25 +269,25 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
     final precioStr = precioController.text.trim().replaceAll(',', '.');
     final duracionStr = duracionController.text.trim();
     final descripcion = descripcionController.text.trim();
-    
+    final localized = AppLocalizations.of(context);
 
     if (nombre.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('El nombre es obligatorio')),
+        SnackBar(content: Text(localized.validationRequired)),
       );
       return;
     }
     final precio = double.tryParse(precioStr);
     if (precio == null || precio <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Precio inválido')),
+        SnackBar(content: Text(localized.servicesInvalidPrice)),
       );
       return;
     }
     final duracion = int.tryParse(duracionStr);
     if (duracion == null || duracion <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Duración inválida')),
+        SnackBar(content: Text(localized.servicesInvalidDuration)),
       );
       return;
     }
@@ -303,7 +303,7 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Servicio creado')),
+          SnackBar(content: Text(localized.servicesCreated)),
         );
       }
     } else {
@@ -317,7 +317,7 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cambios guardados')),
+          SnackBar(content: Text(localized.servicesUpdated)),
         );
       }
     }
@@ -327,6 +327,7 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
   Widget _extrasSection(String servicioId) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final localized = AppLocalizations.of(context);
 
     return Consumer<ExtrasServicioProvider>(
       builder: (context, extrasProvider, child) {
@@ -339,7 +340,7 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
               children: [
                 const SizedBox(height: 16),
                 Text(
-                  'Extras para este servicio:',
+                  localized.servicesExtrasSection,
                   style: text.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 ...extras.map(
@@ -379,7 +380,7 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
                     _mostrarDialogoExtra(context, servicioId);
                   },
                   icon: const Icon(Icons.add),
-                  label: const Text('Añadir extra'),
+                  label: Text(AppLocalizations.of(context).servicesAddExtra),
                 ),
               ],
             );
@@ -393,30 +394,31 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
     final nombreController = TextEditingController(text: extra?.nombre ?? '');
     final precioController = TextEditingController(text: extra?.precio.toString() ?? '');
     final text = Theme.of(context).textTheme;
+    final localized = AppLocalizations.of(context);
 
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(extra == null ? 'Nuevo Extra' : 'Editar Extra'),
+        title: Text(extra == null ? localized.servicesAddExtra : localized.servicesEditExtra),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nombreController,
-              decoration: const InputDecoration(labelText: 'Nombre del extra'),
+              decoration: InputDecoration(labelText: localized.servicesExtraName),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: precioController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Precio (€)'),
+              decoration: InputDecoration(labelText: localized.servicesExtraPrice),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
+            child: Text(localized.actionCancel),
           ),
           FilledButton(
             onPressed: () async {
@@ -424,7 +426,7 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
               final precio = double.tryParse(precioController.text.trim().replaceAll(',', '.')) ?? 0.0;
               if (nombre.isEmpty || precio <= 0) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Datos inválidos')),
+                  SnackBar(content: Text(localized.servicesInvalidData)),
                 );
                 return;
               }
@@ -444,7 +446,7 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
               }
               if (context.mounted) Navigator.pop(context);
             },
-            child: Text(extra == null ? 'Crear' : 'Guardar', style: text.labelLarge),
+            child: Text(extra == null ? localized.actionAdd : localized.actionSave, style: text.labelLarge),
           ),
         ],
       ),
@@ -455,9 +457,10 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
   Widget build(BuildContext context) {
     final s = widget.servicio;
     final esNuevo = s == null;
+    final localized = AppLocalizations.of(context);
 
     return AlertDialog(
-      title: Text(esNuevo ? 'Nuevo Servicio' : 'Editar Servicio'),
+      title: Text(esNuevo ? localized.servicesNew : localized.servicesEdit),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -490,14 +493,14 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
                   icon: const Icon(Icons.image),
                   label: Text(
                     imagenPath == null || imagenPath!.isEmpty
-                        ? 'Añadir imagen'
-                        : 'Cambiar imagen',
+                        ? localized.servicesAddImage
+                        : localized.servicesChangeImage,
                   ),
                 ),
                 if (imagenPath != null && imagenPath!.isNotEmpty) ...[
                   const SizedBox(width: 8),
                   IconButton(
-                    tooltip: 'Quitar imagen',
+                    tooltip: localized.servicesRemoveImage,
                     onPressed: () => setState(() => imagenPath = null),
                     icon: const Icon(Icons.close),
                   ),
@@ -508,24 +511,24 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
 
             TextField(
               controller: nombreController,
-              decoration: const InputDecoration(labelText: 'Nombre'),
+              decoration: InputDecoration(labelText: localized.labelName),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: precioController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Precio (€)'),
+              decoration: InputDecoration(labelText: localized.servicesPrice),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: duracionController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Duración (minutos)'),
+              decoration: InputDecoration(labelText: localized.servicesDuration),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: descripcionController,
-              decoration: const InputDecoration(labelText: 'Descripción'),
+              decoration: InputDecoration(labelText: localized.servicesDescription),
               maxLines: 2,
             ),
             if (!esNuevo) _extrasSection(s.id),
@@ -536,17 +539,17 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
 
         if (!esNuevo)
           IconButton(
-            tooltip: 'Eliminar servicio',
+            tooltip: localized.servicesDelete,
             icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
             onPressed: () async {
               final ok = await showDialog<bool>(
                 context: context,
                 builder: (_) => AlertDialog(
-                  title: const Text('¿Eliminar servicio?'),
-                  content: const Text('Esta acción no se puede deshacer.'),
+                  title: Text(localized.servicesDelete),
+                  content: Text(localized.servicesConfirmDelete),
                   actions: [
-                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-                    FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Eliminar')),
+                    TextButton(onPressed: () => Navigator.pop(context, false), child: Text(localized.actionCancel)),
+                    FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(localized.actionDelete)),
                   ],
                 ),
               );
@@ -559,13 +562,13 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
 
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancelar'),
+          child: Text(localized.actionCancel),
         ),
 
 
         FilledButton(
           onPressed: _guardar,
-          child: Text(esNuevo ? 'Crear' : 'Guardar'),
+          child: Text(esNuevo ? localized.actionAdd : localized.actionSave),
         ),
 
       ],

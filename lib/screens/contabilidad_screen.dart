@@ -185,7 +185,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
               width: double.infinity,
               child: FilledButton.icon(
                 icon: const Icon(Icons.refresh),
-                label: const Text('Limpiar filtros'),
+                label: Text(AppLocalizations.of(context).actionCancel),
                 onPressed: resetearFiltros,
               ),
             ),
@@ -246,14 +246,14 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Fecha', style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+        Text(AppLocalizations.of(context).labelDate, style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         OutlinedButton.icon(
           icon: const Icon(Icons.calendar_today, size: 18),
           label: Text(
             fechaSeleccionada == null
-                ? 'Seleccionar'
-                : '${fechaSeleccionada!.day}/${fechaSeleccionada!.month}/${fechaSeleccionada!.year}',
+                ? AppLocalizations.of(context).actionAccept
+                : context.read<SettingsProvider>().formatDate(fechaSeleccionada!),
             style: const TextStyle(fontSize: 14),
           ),
           onPressed: () async {
@@ -541,10 +541,10 @@ class IngresosTab extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                   child: Row(
                     children: [
-                      Expanded(flex: 2, child: Text('Fecha', style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
-                      Expanded(flex: 3, child: Text('Cliente', style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
-                      Expanded(flex: 3, child: Text('Concepto', style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
-                      Expanded(flex: 2, child: Text('Importe', style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
+                      Expanded(flex: 2, child: Text(AppLocalizations.of(context).labelDate, style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
+                      Expanded(flex: 3, child: Text(AppLocalizations.of(context).agendaClient, style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
+                      Expanded(flex: 3, child: Text(AppLocalizations.of(context).accountingDescription, style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
+                      Expanded(flex: 2, child: Text(AppLocalizations.of(context).labelPrice, style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
                       Expanded(child: Center(child: Icon(Icons.money, size: 16, color: scheme.onSecondaryContainer))),
                       Expanded(child: Center(child: Icon(Icons.phone_android, size: 16, color: scheme.onSecondaryContainer))),
                       Expanded(child: Center(child: Icon(Icons.credit_card, size: 16, color: scheme.onSecondaryContainer))),
@@ -709,7 +709,7 @@ class GastosTab extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: FilledButton.icon(
               icon: const Icon(Icons.add),
-              label: const Text('Añadir gasto'),
+              label: Text(AppLocalizations.of(context).accountingNewExpense),
               onPressed: () async {
                 await showDialog(
                   context: context,
@@ -747,8 +747,8 @@ class GastosTab extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                           child: Row(
                             children: [
-                              Expanded(flex: 4, child: Text('Concepto', style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
-                              Expanded(flex: 2, child: Text('Precio', style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
+                              Expanded(flex: 4, child: Text(AppLocalizations.of(context).accountingDescription, style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
+                              Expanded(flex: 2, child: Text(AppLocalizations.of(context).labelPrice, style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
                               const Expanded(child: SizedBox()),
                             ],
                           ),
@@ -831,14 +831,14 @@ class _DialogNuevoGastoState extends State<DialogNuevoGasto> {
     final text = Theme.of(context).textTheme;
 
     return AlertDialog(
-      title: Text('Nuevo gasto', style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w600)),
+      title: Text(AppLocalizations.of(context).accountingNewExpense, style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w600)),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           TextField(
             controller: _conceptoController,
             decoration: InputDecoration(
-              labelText: 'Concepto',
+              labelText: AppLocalizations.of(context).accountingCategory,
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             ),
@@ -848,7 +848,7 @@ class _DialogNuevoGastoState extends State<DialogNuevoGasto> {
             controller: _precioController,
             keyboardType: TextInputType.number,
             decoration: InputDecoration(
-              labelText: 'Precio (€)',
+              labelText: '${AppLocalizations.of(context).labelPrice} (${context.read<SettingsProvider>().simboloMoneda})',
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             ),
@@ -858,7 +858,7 @@ class _DialogNuevoGastoState extends State<DialogNuevoGasto> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
+          child: Text(AppLocalizations.of(context).actionCancel),
         ),
         FilledButton.icon(
           icon: const Icon(Icons.add),
@@ -884,7 +884,7 @@ class _DialogNuevoGastoState extends State<DialogNuevoGasto> {
               Navigator.pop(context);
             }
           },
-          label: const Text('Guardar'),
+          label: Text(AppLocalizations.of(context).actionSave),
         ),
       ],
     );

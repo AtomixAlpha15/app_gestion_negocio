@@ -272,7 +272,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
               children: [
                 Padding(
                   padding: const EdgeInsets.only(left: 12),
-                  child: Text('Horario:', style: text.labelSmall?.copyWith(color: scheme.onSurface)),
+                  child: Text('${AppLocalizations.of(context).labelTime}:', style: text.labelSmall?.copyWith(color: scheme.onSurface)),
                 ),
                 TextButton(
                   onPressed: () async {
@@ -936,7 +936,7 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 ),
                 child: Text(
-                  widget.cita == null ? 'Nueva cita' : 'Editar cita',
+                  widget.cita == null ? AppLocalizations.of(context).agendaNewAppointment : AppLocalizations.of(context).agendaEditAppointment,
                   style: text.headlineSmall?.copyWith(
                     color: scheme.onPrimaryContainer,
                     fontWeight: FontWeight.bold,
@@ -955,7 +955,7 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                           .toList(),
                       onChanged: (val) => setState(() => clienteId = val),
                       decoration: InputDecoration(
-                        labelText: 'Cliente',
+                        labelText: AppLocalizations.of(context).agendaClient,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -973,7 +973,7 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                         extrasSeleccionados.clear();
                       }),
                       decoration: InputDecoration(
-                        labelText: 'Servicio',
+                        labelText: AppLocalizations.of(context).agendaService,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -1106,7 +1106,7 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                       controller: TextEditingController(text: notas ?? ''),
                       onChanged: (v) => notas = v,
                       decoration: InputDecoration(
-                        labelText: 'Notas (opcional)',
+                        labelText: '${AppLocalizations.of(context).labelNotes} (${AppLocalizations.of(context).actionAccept})',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -1131,15 +1131,15 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                           final confirm = await showDialog<bool>(
                             context: context,
                             builder: (_) => AlertDialog(
-                              title: const Text('¿Eliminar cita?'),
-                              content: const Text('Esta acción no se puede deshacer.'),
+                              title: Text(AppLocalizations.of(context).agendaDeleteAppointment),
+                              content: Text(AppLocalizations.of(context).agendaConfirmDelete),
                               actions: [
                                 TextButton(
                                     onPressed: () => Navigator.pop(context, false),
-                                    child: const Text('Cancelar')),
+                                    child: Text(AppLocalizations.of(context).actionCancel)),
                                 TextButton(
                                     onPressed: () => Navigator.pop(context, true),
-                                    child: const Text('Eliminar')),
+                                    child: Text(AppLocalizations.of(context).actionDelete)),
                               ],
                             ),
                           );

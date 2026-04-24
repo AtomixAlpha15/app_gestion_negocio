@@ -99,6 +99,14 @@ class AppLocalizationsEs extends AppLocalizations {
   @override String get clientsTotalSpent => 'Total gastado';
   @override String get clientsHistory => 'Historial';
   @override String get clientsBonos => 'Bonos';
+  @override String get clientsCardTitle => 'Ficha de cliente';
+  @override String get clientsCardData => 'Datos del cliente';
+  @override String get clientsSummary => 'Resumen del cliente';
+  @override String get clientsUnpaidAppointments => 'Citas impagadas';
+  @override String get clientsNoHistoryYet => 'Sin historial aún.';
+  @override String get clientsNoAppointmentsRecorded => 'Sin citas registradas.';
+  @override String get clientsChangeImage => 'Cambiar imagen';
+  @override String get clientsRemoveImage => 'Quitar imagen';
 
   // ── Services ─────────────────────────────────────────────────────────────
   @override String get servicesTitle => 'Servicios';
@@ -111,6 +119,20 @@ class AppLocalizationsEs extends AppLocalizations {
   @override String get servicesDeleted => 'Servicio eliminado';
   @override String get servicesDuration => 'Duración (min)';
   @override String get servicesNoResults => 'Sin servicios';
+  @override String get servicesSearch => 'Buscar servicio...';
+  @override String get servicesAddImage => 'Añadir imagen';
+  @override String get servicesChangeImage => 'Cambiar imagen';
+  @override String get servicesRemoveImage => 'Quitar imagen';
+  @override String get servicesPrice => 'Precio (€)';
+  @override String get servicesDescription => 'Descripción';
+  @override String get servicesExtrasSection => 'Extras para este servicio:';
+  @override String get servicesAddExtra => 'Añadir extra';
+  @override String get servicesEditExtra => 'Editar Extra';
+  @override String get servicesExtraName => 'Nombre del extra';
+  @override String get servicesExtraPrice => 'Precio (€)';
+  @override String get servicesInvalidPrice => 'Precio inválido';
+  @override String get servicesInvalidDuration => 'Duración inválida';
+  @override String get servicesInvalidData => 'Datos inválidos';
 
   // ── Accounting ───────────────────────────────────────────────────────────
   @override String get accountingTitle => 'Contabilidad';
@@ -136,6 +158,17 @@ class AppLocalizationsEs extends AppLocalizations {
   @override String get bonosDiferido => 'Diferido';
   @override String get bonosSessions => 'Sesiones';
   @override String bonosSessionsUsed(int used, int total) => '$used / $total sesiones';
+  @override String get bonosCreateTitle => 'Crear bono';
+  @override String get bonosServiceLabel => 'Servicio';
+  @override String get bonosNameLabel => 'Nombre';
+  @override String get bonosNameOptional => 'Nombre (opcional)';
+  @override String get bonosSessionsLabel => 'Sesiones:';
+  @override String get bonosPriceLabel => 'Precio bono (€) (opcional)';
+  @override String get bonosNoDueDate => 'Sin caducidad';
+  @override String get bonosDueDate => 'Caduca:';
+  @override String get bonosChooseDate => 'Elegir fecha';
+  @override String get bonosSelectService => 'Selecciona un servicio';
+  @override String get bonosCreateButton => 'Crear';
 
   // ── Settings ─────────────────────────────────────────────────────────────
   @override String get settingsTitle => 'Ajustes';
@@ -176,8 +209,49 @@ class AppLocalizationsEs extends AppLocalizations {
   @override String get settingsResetBody => 'Se restablecerán todos los ajustes a sus valores por defecto. Esta acción no se puede deshacer.';
   @override String get settingsColorBrand => 'Color de marca';
   @override String get settingsColorAuto => 'Paleta automática';
+  @override String get settingsColorAutoDesc => 'Genera secundario y terciario desde el color base';
   @override String get settingsColorManual => 'Colores manuales';
   @override String get settingsColorSecondary => 'Color secundario';
   @override String get settingsColorTertiary => 'Color terciario';
+  @override String get settingsColorPrimary => 'Color base';
+  @override String get settingsPrimaryPreview => 'Primario';
+  @override String get settingsSecondaryPreview => 'Secundario';
+  @override String get settingsTertiaryPreview => 'Terciario';
+  @override String get settingsSurfacePreview => 'Surface';
+  @override String get settingsEmployeesDesc => 'Para agendas por empleado (próximamente)';
+  @override String get settingsInactiveDaysLabel => 'Días sin visita';
+  @override String get settingsInactiveClientsDesc => '';
+  @override String get settingsAlertUnpaidDesc => 'Avisar cuando un cliente tiene pagos pendientes';
+  @override String get settingsAlertAppointmentsDesc => 'Notificar antes de cada cita programada';
+  @override String get settingsDaysInactivity => 'Días sin visita';
+  @override String get settingsCancelButton => 'Cancelar';
+  @override String get settingsSaveButton => 'Guardar';
+  @override String get settingsLogoDontHave => 'No hay logo';
+  @override String get settingsLogoUploaded => 'Logo subido';
+  @override String get settingsLogoUploadedDesc => 'Subido correctamente';
+  @override String get settingsUnsavedChanges => 'Cambios sin guardar';
+  @override String get settingsDiscardConfirm => '¿Descartar cambios?';
+  @override String get settingsBackupFrequencyDays => '${0} días';
+  @override String get settingsResetConfirmMsg => 'Se restablecerán todos los ajustes a sus valores por defecto.';
+  @override String get settingsRestoreDefaults => 'Restablecer valores por defecto';
+  @override String get settingsRestoreDefaultsWarning => 'Se perderán todos tus ajustes visuales, de empresa y notificaciones. Los datos (clientes, citas, etc.) no se verán afectados.';
+  @override String get settingsRestoreDefaultsSuccess => 'Ajustes restablecidos';
+  @override String get settingsPickColor => 'Seleccionar color';
+  @override String get settingsPreviewLabel => 'Vista previa';
+  @override String get settingsCompanyLogo => 'Logo de empresa';
+  @override String get settingsNoAddress => 'Sin dirección';
+  @override String get settingsNoPhone => 'Sin teléfono';
+  @override String get settingsNoEmail => 'Sin email';
+  @override String get settingsDaysWithoutVisit => 'Días sin visita';
+  @override String get settingsDaysSliderLabel => 'días';
+  @override String get settingsBackupCancelled => 'Exportación cancelada';
+  @override String get settingsSavedAt => 'Guardado en:';
+  @override String get settingsBackupSuccess => 'Backup local creado (carpeta Backups).';
+  @override String get settingsBackupError => 'No se pudo importar el backup';
+  @override String get settingsImportSuccess => 'Copia restaurada';
+  @override String get settingsImportSuccessMessage => 'Se restauró la copia correctamente.\nReinicia la app para aplicar todos los cambios.';
+  @override String get settingsImportError => 'No se pudo importar el backup';
+  @override String get settingsEditEmployees => 'Número de empleados';
+  @override String get settingsEmployeeInput => 'Empleados';
   @override String settingsBackupFrequencyLabel(int days) => 'Cada $days día${days == 1 ? '' : 's'}';
 }

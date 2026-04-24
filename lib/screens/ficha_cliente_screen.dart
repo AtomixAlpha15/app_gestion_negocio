@@ -103,9 +103,10 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
 
   Future<void> _guardar() async {
     final nombre = nombreCtrl.text.trim();
+    final localized = AppLocalizations.of(context);
     if (nombre.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('El nombre es obligatorio', style: TextStyle(color: Theme.of(context).colorScheme.onTertiaryContainer)),
+        SnackBar(content: Text(localized.validationRequired, style: TextStyle(color: Theme.of(context).colorScheme.onTertiaryContainer)),
           backgroundColor: Theme.of(context).colorScheme.tertiaryContainer),
       );
       return;
@@ -122,7 +123,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Cliente creado', style: TextStyle(color: Theme.of(context).colorScheme.onSecondaryContainer)),
+          SnackBar(content: Text(localized.clientsCreated, style: TextStyle(color: Theme.of(context).colorScheme.onSecondaryContainer)),
             backgroundColor: Theme.of(context).colorScheme.secondaryContainer),
         );
         Navigator.pop(context, true);
@@ -138,7 +139,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Cambios guardados', style: TextStyle(color: Theme.of(context).colorScheme.onSecondaryContainer)),
+          SnackBar(content: Text(localized.clientsUpdated, style: TextStyle(color: Theme.of(context).colorScheme.onSecondaryContainer)),
             backgroundColor: Theme.of(context).colorScheme.secondaryContainer),
         );
         Navigator.pop(context, true);
@@ -147,16 +148,17 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
   }
 
   Future<void> _eliminar() async {
+    final localized = AppLocalizations.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('¿Eliminar cliente?'),
-        content: const Text('Esta acción no se puede deshacer.'),
+        title: Text(localized.clientsDelete),
+        content: Text(localized.clientsConfirmDelete),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(localized.actionCancel)),
           FilledButton.tonal(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar'),
+            child: Text(localized.actionDelete),
           ),
         ],
       ),
@@ -166,7 +168,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
       await provider.eliminarCliente(widget.cliente.id, imagenPath: widget.cliente.imagenPath);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Cliente eliminado', style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer)),
+          SnackBar(content: Text(localized.clientsDeleted, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer)),
             backgroundColor: Theme.of(context).colorScheme.errorContainer),
         );
         Navigator.pop(context, true);
@@ -178,10 +180,11 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text   = Theme.of(context).textTheme;
+    final localized = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(esNuevo ? 'Nuevo cliente' : 'Ficha de cliente'),
+        title: Text(esNuevo ? localized.clientsNew : localized.clientsCardTitle),
       ),
       body: Center(
         child: ConstrainedBox(
@@ -227,12 +230,12 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                   }
                                 },
                                 icon: const Icon(Icons.image),
-                                label: const Text('Cambiar imagen'),
+                                label: Text(localized.clientsChangeImage),
                               ),
                               if (imagenPath != null && imagenPath!.isNotEmpty) ...[
                                 const SizedBox(width: 8),
                                 IconButton(
-                                  tooltip: 'Quitar imagen',
+                                  tooltip: localized.clientsRemoveImage,
                                   onPressed: () => setState(() => imagenPath = null),
                                   icon: const Icon(Icons.close),
                                 ),
@@ -257,7 +260,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                 return Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('Resumen del cliente',
+                                    Text(localized.clientsSummary,
                                         style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                                     const SizedBox(height: 8),
                                     Wrap(
@@ -265,13 +268,13 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                       runSpacing: 12,
                                       children: [
                                         _totalChip(context,
-                                          label: 'Total gastado',
+                                          label: localized.clientsTotalSpent,
                                           value: context.read<SettingsProvider>().formatCurrency(data.totalGastado),
                                           bg: scheme.secondaryContainer,
                                           fg: scheme.onSecondaryContainer,
                                         ),
                                         _totalChip(context,
-                                          label: 'Impagos',
+                                          label: localized.dashUnpaidTotal,
                                           value: context.read<SettingsProvider>().formatCurrency(data.totalImpagos),
                                           bg: data.totalImpagos > 0 ? scheme.tertiaryContainer : scheme.surfaceVariant,
                                           fg: data.totalImpagos > 0 ? scheme.onTertiaryContainer : scheme.onSurfaceVariant,
@@ -295,13 +298,13 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                 foregroundColor: scheme.onErrorContainer,
                               ),
                               onPressed: _eliminar,
-                              label: const Text('Eliminar'),
+                              label: Text(localized.actionDelete),
                             ),
                           const SizedBox(height: 8),
                           FilledButton.icon(
                             icon: const Icon(Icons.save),
                             onPressed: _guardar,
-                            label: const Text('Guardar'),
+                            label: Text(localized.actionSave),
                           ),
                         ],
                       ),
@@ -322,7 +325,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Datos del cliente', style: text.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+                            Text(localized.clientsCardData, style: text.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
                             const SizedBox(height: 16),
 
                             Row(
@@ -330,14 +333,14 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                 Expanded(
                                   child: TextField(
                                     controller: nombreCtrl,
-                                    decoration: const InputDecoration(labelText: 'Nombre'),
+                                    decoration: InputDecoration(labelText: localized.labelName),
                                   ),
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: TextField(
                                     controller: telefonoCtrl,
-                                    decoration: const InputDecoration(labelText: 'Teléfono'),
+                                    decoration: InputDecoration(labelText: localized.labelPhone),
                                   ),
                                 ),
                               ],
@@ -345,14 +348,14 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                             const SizedBox(height: 12),
                             TextField(
                               controller: emailCtrl,
-                              decoration: const InputDecoration(labelText: 'Email'),
+                              decoration: InputDecoration(labelText: localized.labelEmail),
                             ),
                             const SizedBox(height: 12),
                             TextField(
                               controller: notasCtrl,
                               maxLines: 4,
-                              decoration: const InputDecoration(
-                                labelText: 'Notas',
+                              decoration: InputDecoration(
+                                labelText: localized.labelNotes,
                                 alignLabelWithHint: true,
                               ),
                             ),
@@ -379,7 +382,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                   return Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text('Citas impagadas',
+                                      Text(localized.clientsUnpaidAppointments,
                                           style: text.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                                       const SizedBox(height: 8),
                                       Card(
@@ -424,7 +427,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                                       );
                                                       if (context.mounted) setState(() {});
                                                     },
-                                                    child: const Text('Marcar pagada'),
+                                                    child: Text(localized.agendaMarkPaid),
                                                   ),
                                                 );
                                               },
@@ -458,12 +461,12 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Historial (últimas 10)',
+                          Text('${localized.clientsHistory} (últimas 10)',
                               style: text.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                           const SizedBox(height: 8),
 
                           if (esNuevo)
-                            const Text('Sin historial aún.')
+                            Text(localized.clientsNoHistoryYet)
                           else
                             Expanded(
                               child: FutureBuilder<_ClientePanelData>(
@@ -474,7 +477,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                   }
                                   final data = snap.data!;
                                   if (data.ultimas10.isEmpty) {
-                                    return const Center(child: Text('Sin citas registradas.'));
+                                    return Center(child: Text(localized.clientsNoAppointmentsRecorded));
                                   }
 
                                   final servicios = context.read<ServiciosProvider>().servicios;
@@ -502,7 +505,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                                 style: text.bodyMedium?.copyWith(fontWeight: FontWeight.bold)),
                                             const SizedBox(height: 2),
                                             Text(
-                                              pagado ? (c.metodoPago ?? 'Pagada') : 'Impagado',
+                                              pagado ? (c.metodoPago ?? localized.agendaPaid) : localized.agendaUnpaid,
                                               style: text.bodySmall?.copyWith(
                                                 color: pagado ? scheme.primary : scheme.tertiary,
                                                 fontWeight: FontWeight.w600,
@@ -571,9 +574,10 @@ class _DialogCrearBonoState extends State<_DialogCrearBono> {
   @override
   Widget build(BuildContext context) {
     final servicios = context.read<ServiciosProvider>().servicios;
+    final localized = AppLocalizations.of(context);
 
     return AlertDialog(
-      title: const Text('Crear bono'),
+      title: Text(localized.bonosCreateTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -583,17 +587,17 @@ class _DialogCrearBonoState extends State<_DialogCrearBono> {
               items: servicios.map((s) =>
                 DropdownMenuItem(value: s.id, child: Text(s.nombre))).toList(),
               onChanged: (v) => setState(() => servicioId = v),
-              decoration: const InputDecoration(labelText: 'Servicio'),
+              decoration: InputDecoration(labelText: localized.bonosServiceLabel),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: nombreCtrl,
-              decoration: const InputDecoration(labelText: 'Nombre (opcional)'),
+              decoration: InputDecoration(labelText: localized.bonosNameOptional),
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                const Text('Sesiones:'),
+                Text(localized.bonosSessionsLabel),
                 const SizedBox(width: 12),
                 DropdownButton<int>(
                   value: sesiones,
@@ -608,13 +612,13 @@ class _DialogCrearBonoState extends State<_DialogCrearBono> {
             TextField(
               controller: precioCtrl,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Precio bono (€) (opcional)'),
+              decoration: InputDecoration(labelText: localized.bonosPriceLabel),
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                Expanded(child: Text(caducaEl == null ? 'Sin caducidad' :
-                  'Caduca: ${context.read<SettingsProvider>().formatDate(caducaEl!)}')),
+                Expanded(child: Text(caducaEl == null ? localized.bonosNoDueDate :
+                  '${localized.bonosDueDate} ${context.read<SettingsProvider>().formatDate(caducaEl!)}')),
                 TextButton(
                   onPressed: () async {
                     final picked = await showDatePicker(
@@ -625,7 +629,7 @@ class _DialogCrearBonoState extends State<_DialogCrearBono> {
                     );
                     if (picked != null) setState(() => caducaEl = picked);
                   },
-                  child: const Text('Elegir fecha'),
+                  child: Text(localized.bonosChooseDate),
                 ),
               ],
             ),
@@ -633,11 +637,11 @@ class _DialogCrearBonoState extends State<_DialogCrearBono> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(localized.actionCancel)),
         FilledButton(
           onPressed: () async {
             if (servicioId == null) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecciona un servicio')));
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(localized.bonosSelectService)));
               return;
             }
             final precio = double.tryParse(precioCtrl.text.replaceAll(',', '.'));
@@ -651,7 +655,7 @@ class _DialogCrearBonoState extends State<_DialogCrearBono> {
             );
             if (context.mounted) Navigator.pop(context, true);
           },
-          child: const Text('Crear'),
+          child: Text(localized.bonosCreateButton),
         ),
       ],
     );
