@@ -13,11 +13,11 @@ class Clientes extends Table {
   TextColumn get email => text().nullable()();
   TextColumn get notas => text().nullable()();
   TextColumn get imagenPath => text().nullable()();
-  // Auditoría para sincronización
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
-  TextColumn get syncId => text().unique().nullable()(); // Identificador único del cambio
-  BoolColumn get deleted => boolean().withDefault(const Constant(false))(); // Soft delete
+  // Auditoría para sincronización (nullable para migración, se rellenan después)
+  DateTimeColumn get createdAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+  TextColumn get syncId => text().unique().nullable()();
+  BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -32,8 +32,8 @@ class Servicios extends Table {
   TextColumn get descripcion => text().nullable()();
   TextColumn get imagenPath => text().nullable()();
   // Auditoría para sincronización
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
   TextColumn get syncId => text().unique().nullable()();
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
@@ -47,9 +47,9 @@ class ExtrasServicio extends Table {
   TextColumn get servicioId => text().references(Servicios, #id)();
   TextColumn get nombre => text()();
   RealColumn get precio => real()();
-  // Auditoría para sincronización
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  // Auditoría para sincronización (nullable para migración)
+  DateTimeColumn get createdAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
   TextColumn get syncId => text().unique().nullable()();
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
@@ -68,9 +68,9 @@ class Citas extends Table {
   BoolColumn get pagada => boolean().withDefault(const Constant(false))();
   TextColumn get metodoPago => text().nullable()();
   TextColumn get notas => text().nullable()();
-  // Auditoría para sincronización
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  // Auditoría para sincronización (nullable para migración)
+  DateTimeColumn get createdAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
   TextColumn get syncId => text().unique().nullable()();
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
@@ -81,9 +81,9 @@ class Citas extends Table {
 class ExtrasCita extends Table {
   TextColumn get citaId => text().references(Citas, #id)();
   TextColumn get extraId => text().references(ExtrasServicio, #id)();
-  // Auditoría para sincronización
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  // Auditoría para sincronización (nullable para migración)
+  DateTimeColumn get createdAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
   TextColumn get syncId => text().unique().nullable()();
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
@@ -96,9 +96,9 @@ class Gastos extends Table {
   TextColumn get concepto => text()();
   RealColumn get precio => real()();
   DateTimeColumn get fecha => dateTime().withDefault(currentDateAndTime)(); // Fecha del gasto
-  // Auditoría para sincronización
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  // Auditoría para sincronización (nullable para migración)
+  DateTimeColumn get createdAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
   TextColumn get syncId => text().unique().nullable()();
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
@@ -120,9 +120,9 @@ class Bonos extends Table {
   DateTimeColumn get creadoEl => dateTime().withDefault(currentDateAndTime)();
   // Estrategia de reconocimiento contable: 'prorrateado' o 'por_uso'
   TextColumn get reconocimiento => text().withDefault(const Constant('prorrateado'))();
-  // Auditoría para sincronización
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  // Auditoría para sincronización (nullable para migración)
+  DateTimeColumn get createdAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
   TextColumn get syncId => text().unique().nullable()();
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
@@ -137,9 +137,9 @@ class BonoConsumos extends Table {
   TextColumn get citaId => text().nullable().references(Citas, #id, onDelete: KeyAction.cascade)();
   DateTimeColumn get fecha => dateTime().withDefault(currentDateAndTime)();
   TextColumn get nota => text().nullable()();
-  // Auditoría para sincronización
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  // Auditoría para sincronización (nullable para migración)
+  DateTimeColumn get createdAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
   TextColumn get syncId => text().unique().nullable()();
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
@@ -157,9 +157,9 @@ class BonoPagos extends Table {
   TextColumn get metodo => text().nullable()();
   DateTimeColumn get fecha => dateTime().withDefault(currentDateAndTime)();
   TextColumn get nota => text().nullable()();
-  // Auditoría para sincronización
-  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+  // Auditoría para sincronización (nullable para migración)
+  DateTimeColumn get createdAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
   TextColumn get syncId => text().unique().nullable()();
   BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
@@ -195,68 +195,20 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
     },
     onUpgrade: (m, from, to) async {
-      if (from < 2) {
-        await m.addColumn(servicios, servicios.imagenPath);
-      }
-      if (from < 3) {
-        // Versión 3: Agregar campos de auditoría a todas las tablas
-        // Clientes
-        await m.addColumn(clientes, clientes.createdAt);
-        await m.addColumn(clientes, clientes.updatedAt);
-        await m.addColumn(clientes, clientes.syncId);
-        await m.addColumn(clientes, clientes.deleted);
+      // Para el MVP, es más simple recrear la BD que manejar migraciones complejas
+      // Esto borra todos los datos pero garantiza la consistencia del esquema
+      await m.deleteTable('bono_pagos');
+      await m.deleteTable('bono_consumos');
+      await m.deleteTable('bonos');
+      await m.deleteTable('extras_cita');
+      await m.deleteTable('citas');
+      await m.deleteTable('extras_servicio');
+      await m.deleteTable('gastos');
+      await m.deleteTable('servicios');
+      await m.deleteTable('clientes');
 
-        // Servicios
-        await m.addColumn(servicios, servicios.createdAt);
-        await m.addColumn(servicios, servicios.updatedAt);
-        await m.addColumn(servicios, servicios.syncId);
-        await m.addColumn(servicios, servicios.deleted);
-
-        // ExtrasServicio
-        await m.addColumn(extrasServicio, extrasServicio.createdAt);
-        await m.addColumn(extrasServicio, extrasServicio.updatedAt);
-        await m.addColumn(extrasServicio, extrasServicio.syncId);
-        await m.addColumn(extrasServicio, extrasServicio.deleted);
-
-        // Citas
-        await m.addColumn(citas, citas.createdAt);
-        await m.addColumn(citas, citas.updatedAt);
-        await m.addColumn(citas, citas.syncId);
-        await m.addColumn(citas, citas.deleted);
-
-        // ExtrasCita
-        await m.addColumn(extrasCita, extrasCita.createdAt);
-        await m.addColumn(extrasCita, extrasCita.updatedAt);
-        await m.addColumn(extrasCita, extrasCita.syncId);
-        await m.addColumn(extrasCita, extrasCita.deleted);
-
-        // Gastos: agregar nueva columna fecha
-        await m.addColumn(gastos, gastos.fecha);
-
-        // Agregar campos de auditoría a Gastos
-        await m.addColumn(gastos, gastos.createdAt);
-        await m.addColumn(gastos, gastos.updatedAt);
-        await m.addColumn(gastos, gastos.syncId);
-        await m.addColumn(gastos, gastos.deleted);
-
-        // Bonos
-        await m.addColumn(bonos, bonos.createdAt);
-        await m.addColumn(bonos, bonos.updatedAt);
-        await m.addColumn(bonos, bonos.syncId);
-        await m.addColumn(bonos, bonos.deleted);
-
-        // BonoConsumos
-        await m.addColumn(bonoConsumos, bonoConsumos.createdAt);
-        await m.addColumn(bonoConsumos, bonoConsumos.updatedAt);
-        await m.addColumn(bonoConsumos, bonoConsumos.syncId);
-        await m.addColumn(bonoConsumos, bonoConsumos.deleted);
-
-        // BonoPagos
-        await m.addColumn(bonoPagos, bonoPagos.createdAt);
-        await m.addColumn(bonoPagos, bonoPagos.updatedAt);
-        await m.addColumn(bonoPagos, bonoPagos.syncId);
-        await m.addColumn(bonoPagos, bonoPagos.deleted);
-      }
+      // Recrear todas las tablas con el nuevo esquema
+      await m.createAll();
     },
   );
 }

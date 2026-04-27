@@ -6,7 +6,8 @@
       "Bash(timeout 120 flutter run -d windows)",
       "Bash(grep -v \"^$\")",
       "Bash(flutter pub *)",
-      "Bash(flutter build *)"
+      "Bash(flutter build *)",
+      "Bash(flutter clean *)"
     ]
   }
 }
