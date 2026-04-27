@@ -3,6 +3,7 @@ import 'package:drift/drift.dart' as d;
 import 'package:uuid/uuid.dart';
 import '../services/app_database.dart';
 import '../models/movimiento_contable.dart';
+import '../utils/metodo_pago_utils.dart';
 
 class CitasProvider extends ChangeNotifier {
   final AppDatabase db;

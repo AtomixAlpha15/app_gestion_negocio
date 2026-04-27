@@ -11,6 +11,7 @@ import 'package:image_picker/image_picker.dart';
 import '../providers/settings_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/bonos_panel.dart';
+import '../utils/metodo_pago_utils.dart';
 
 
 class FichaClienteScreen extends StatefulWidget {
@@ -423,7 +424,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                                         fin: c.fin,
                                                         precio: c.precio,
                                                         notas: c.notas,
-                                                        metodoPago: 'Efectivo', // o abre diálogo para elegir
+                                                        metodoPago: MetodoPagoUtils.efectivoValue,
                                                       );
                                                       if (context.mounted) setState(() {});
                                                     },

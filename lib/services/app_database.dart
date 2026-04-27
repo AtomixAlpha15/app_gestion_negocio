@@ -66,6 +66,9 @@ class Citas extends Table {
   DateTimeColumn get fin => dateTime()();
   RealColumn get precio => real()();
   BoolColumn get pagada => boolean().withDefault(const Constant(false))();
+  // Método de pago: 'efectivo', 'bizum', 'tarjeta', 'otro', o null
+  // IMPORTANTE: Usar solo los valores del enum MetodoPago.name (no traducidos)
+  // Traducción ocurre solo en UI, no en BD
   TextColumn get metodoPago => text().nullable()();
   TextColumn get notas => text().nullable()();
   // Auditoría para sincronización (nullable para migración)

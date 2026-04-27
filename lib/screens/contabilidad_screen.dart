@@ -9,6 +9,7 @@ import '../models/movimiento_contable.dart';
 import '../providers/contabilidad_provider.dart';
 import '../providers/settings_provider.dart';
 import '../l10n/app_localizations.dart';
+import '../utils/metodo_pago_utils.dart';
 
 // Helper para Dart < 3
 extension FirstWhereOrNullExtension<E> on List<E> {
@@ -487,14 +488,13 @@ class IngresosTab extends StatelessWidget {
         final todos = snap.data ?? [];
 
         final movsFiltrados = todos.where((m) {
-          final ml = (m.metodo ?? '').toLowerCase();
           final hayFiltrosMetodo = metodoPagoSeleccionado.values.any((v) => v);
           bool metodoOk = true;
           if (hayFiltrosMetodo) {
             bool coincide = false;
-            if (metodoPagoSeleccionado['Efectivo'] == true && ml == 'efectivo'.toLowerCase()) coincide = true;
-            if (metodoPagoSeleccionado['Bizum']    == true && ml == 'bizum'.toLowerCase())    coincide = true;
-            if (metodoPagoSeleccionado['Tarjeta']  == true && ml == 'tarjeta'.toLowerCase())  coincide = true;
+            if (metodoPagoSeleccionado['Efectivo'] == true && m.metodo == MetodoPagoUtils.efectivoValue) coincide = true;
+            if (metodoPagoSeleccionado['Bizum']    == true && m.metodo == MetodoPagoUtils.bizumValue)    coincide = true;
+            if (metodoPagoSeleccionado['Tarjeta']  == true && m.metodo == MetodoPagoUtils.tarjetaValue)  coincide = true;
             if (metodoPagoSeleccionado['Impagado'] == true &&
                 m.tipo == MovimientoTipo.cita &&
                 (m.metodo == null || m.metodo!.isEmpty)) {
@@ -611,15 +611,15 @@ class IngresosTab extends StatelessWidget {
                         child: Center(
                           child: m.tipo == MovimientoTipo.cita
                               ? Checkbox(
-                                  value: metodo == 'Efectivo',
+                                  value: metodo == MetodoPagoUtils.efectivoValue,
                                   onChanged: (val) async {
                                     if (citaParaEditar == null) return;
-                                    await _actualizarMetodoPagoCita(context, citaParaEditar, val == true ? 'Efectivo' : null);
+                                    await _actualizarMetodoPagoCita(context, citaParaEditar, val == true ? MetodoPagoUtils.efectivoValue : null);
                                   },
                                 )
                               : IgnorePointer(
                                   child: Checkbox(
-                                    value: metodo == 'Efectivo',
+                                    value: metodo == MetodoPagoUtils.efectivoValue,
                                     onChanged: (_) {},
                                   ),
                                 ),
@@ -629,15 +629,15 @@ class IngresosTab extends StatelessWidget {
                         child: Center(
                           child: m.tipo == MovimientoTipo.cita
                               ? Checkbox(
-                                  value: metodo == 'Bizum',
+                                  value: metodo == MetodoPagoUtils.bizumValue,
                                   onChanged: (val) async {
                                     if (citaParaEditar == null) return;
-                                    await _actualizarMetodoPagoCita(context, citaParaEditar, val == true ? 'Bizum' : null);
+                                    await _actualizarMetodoPagoCita(context, citaParaEditar, val == true ? MetodoPagoUtils.bizumValue : null);
                                   },
                                 )
                               : IgnorePointer(
                                   child: Checkbox(
-                                    value: metodo == 'Bizum',
+                                    value: metodo == MetodoPagoUtils.bizumValue,
                                     onChanged: (_) {},
                                   ),
                                 ),
@@ -647,15 +647,15 @@ class IngresosTab extends StatelessWidget {
                         child: Center(
                           child: m.tipo == MovimientoTipo.cita
                               ? Checkbox(
-                                  value: metodo == 'Tarjeta',
+                                  value: metodo == MetodoPagoUtils.tarjetaValue,
                                   onChanged: (val) async {
                                     if (citaParaEditar == null) return;
-                                    await _actualizarMetodoPagoCita(context, citaParaEditar, val == true ? 'Tarjeta' : null);
+                                    await _actualizarMetodoPagoCita(context, citaParaEditar, val == true ? MetodoPagoUtils.tarjetaValue : null);
                                   },
                                 )
                               : IgnorePointer(
                                   child: Checkbox(
-                                    value: metodo == 'Tarjeta',
+                                    value: metodo == MetodoPagoUtils.tarjetaValue,
                                     onChanged: (_) {},
                                   ),
                                 ),
