@@ -344,7 +344,8 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
           FutureBuilder<Map<String, double>>(
             future: context.read<ContabilidadProvider>()
                 .totalCobradoPorMetodoMes(anioActual, mesActual),
-            builder: (_, snap) {
+            builder: (ctx, snap) {
+              final l = AppLocalizations.of(ctx);
               final porMetodo = snap.data ?? {};
               final efe = porMetodo['efectivo'] ?? 0.0;
               final biz = porMetodo['bizum'] ?? 0.0;
@@ -357,19 +358,19 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildTotalCard('Efectivo', efe, scheme.secondaryContainer, scheme.onSecondaryContainer, Icons.money, text),
+                      _buildTotalCard(l.accountingPaymentMethodCash, efe, scheme.secondaryContainer, scheme.onSecondaryContainer, Icons.money, text),
                       const SizedBox(height: 10),
-                      _buildTotalCard('Bizum', biz, scheme.secondaryContainer, scheme.onSecondaryContainer, Icons.phone_android, text),
+                      _buildTotalCard(l.accountingPaymentMethodBizum, biz, scheme.secondaryContainer, scheme.onSecondaryContainer, Icons.phone_android, text),
                       const SizedBox(height: 10),
-                      _buildTotalCard('Tarjeta', tar, scheme.secondaryContainer, scheme.onSecondaryContainer, Icons.credit_card, text),
+                      _buildTotalCard(l.accountingPaymentMethodCard, tar, scheme.secondaryContainer, scheme.onSecondaryContainer, Icons.credit_card, text),
                       const SizedBox(height: 16),
                       Divider(color: scheme.outlineVariant, height: 16),
                       const SizedBox(height: 16),
-                      _buildTotalCard('Facturado', totalFacturado, scheme.primaryContainer, scheme.onPrimaryContainer, Icons.trending_up, text),
+                      _buildTotalCard(l.accountingRevenue, totalFacturado, scheme.primaryContainer, scheme.onPrimaryContainer, Icons.trending_up, text),
                       const SizedBox(height: 10),
-                      _buildTotalCard('Gastos', totalGastos, scheme.errorContainer, scheme.onErrorContainer, Icons.trending_down, text),
+                      _buildTotalCard(l.accountingExpenses, totalGastos, scheme.errorContainer, scheme.onErrorContainer, Icons.trending_down, text),
                       const SizedBox(height: 10),
-                      _buildTotalCard('Beneficio', beneficio, scheme.tertiaryContainer, scheme.onTertiaryContainer,
+                      _buildTotalCard(l.accountingProfit, beneficio, scheme.tertiaryContainer, scheme.onTertiaryContainer,
                         beneficio >= 0 ? Icons.check_circle : Icons.error, text),
                       const SizedBox(height: 24),
                       _buildVistaAnual(text, scheme, beneficiosPorMes),

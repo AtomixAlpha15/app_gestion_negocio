@@ -148,6 +148,15 @@ class AppLocalizationsEs extends AppLocalizations {
   @override String get accountingFilterAll => 'Todos';
   @override String get accountingFilterIncome => 'Ingresos';
   @override String get accountingFilterExpenses => 'Gastos';
+  @override String get accountingPaymentMethodCash => 'Efectivo';
+  @override String get accountingPaymentMethodBizum => 'Bizum';
+  @override String get accountingPaymentMethodCard => 'Tarjeta';
+  @override String get accountingPaymentMethodOther => 'Otro';
+  @override String get accountingPaymentMethodUnpaid => 'Impagado';
+  @override String get accountingRevenue => 'Facturado';
+  @override String get accountingProfit => 'Beneficio';
+  @override String get accountingSummary => 'Resumen';
+  @override String get accountingMonthSummary => 'Resumen mensual';
 
   // ── Bonos ────────────────────────────────────────────────────────────────
   @override String get bonosTitle => 'Bonos';

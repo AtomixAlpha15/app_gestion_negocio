@@ -155,6 +155,15 @@ abstract class AppLocalizations {
   String get accountingFilterAll;
   String get accountingFilterIncome;
   String get accountingFilterExpenses;
+  String get accountingPaymentMethodCash;
+  String get accountingPaymentMethodBizum;
+  String get accountingPaymentMethodCard;
+  String get accountingPaymentMethodOther;
+  String get accountingPaymentMethodUnpaid;
+  String get accountingRevenue;
+  String get accountingProfit;
+  String get accountingSummary;
+  String get accountingMonthSummary;
 
   // ── Bonos ────────────────────────────────────────────────────────────────
   String get bonosTitle;
