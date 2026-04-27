@@ -3,14 +3,13 @@ import 'package:drift/drift.dart';
 import '../services/app_database.dart';
 import 'package:drift/drift.dart' as d;
 import 'package:uuid/uuid.dart';
-import 'dart:math';
 
 class BonosProvider extends ChangeNotifier {
   final AppDatabase db;
   BonosProvider(this.db);
 
-  // Utilidad simple para ids
-  String _id() => DateTime.now().millisecondsSinceEpoch.toString() + Random().nextInt(9999).toString();
+  // Generar UUID para todos los IDs
+  String _id() => const Uuid().v4();
 
   Future<String> crearBonoSesiones({
     required String clienteId,

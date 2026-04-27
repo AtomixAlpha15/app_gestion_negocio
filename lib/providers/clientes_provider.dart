@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:uuid/uuid.dart';
 import '../services/app_database.dart';
 import '../utils/image_utils.dart';
 
@@ -28,7 +29,7 @@ class ClientesProvider extends ChangeNotifier {
     String? notas,
     String? imagenSeleccionada,
   }) async {
-    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    final id = const Uuid().v4();
 
     String? nuevaImagenPath;
     final clean = (imagenSeleccionada ?? '').trim();

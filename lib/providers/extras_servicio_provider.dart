@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:uuid/uuid.dart';
 import '../services/app_database.dart';
 
 class ExtrasServicioProvider extends ChangeNotifier {
@@ -16,7 +17,7 @@ class ExtrasServicioProvider extends ChangeNotifier {
     required String nombre,
     required double precio,
   }) async {
-    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    final id = const Uuid().v4();
     final extra = ExtrasServicioCompanion(
       id: Value(id),
       servicioId: Value(servicioId),

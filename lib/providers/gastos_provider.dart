@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 import '../services/app_database.dart';
 import 'package:drift/drift.dart';
 
@@ -23,7 +24,7 @@ class GastosProvider extends ChangeNotifier {
   }
 
   Future<void> insertarGasto({required String concepto, required double precio, required int mes, required int anio}) async {
-    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    final id = const Uuid().v4();
     final gasto = GastosCompanion(
       id: Value(id),
       concepto: Value(concepto),

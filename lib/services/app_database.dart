@@ -84,7 +84,8 @@ class Bonos extends Table {
   DateTimeColumn get caducaEl => dateTime().nullable()();
   BoolColumn get activo => boolean().withDefault(const Constant(true))();
   DateTimeColumn get creadoEl => dateTime().withDefault(currentDateAndTime)();
-  TextColumn get reconocimiento => text().withDefault(const Constant('prorrateado'))(); 
+  // Estrategia de reconocimiento contable: 'prorrateado' (distribuido por uso) o 'por_uso' (reconocer al consumir)
+  TextColumn get reconocimiento => text().withDefault(const Constant('prorrateado'))();
 
   @override
   Set<Column> get primaryKey => {id};

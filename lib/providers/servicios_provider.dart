@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:drift/drift.dart' show Value;
+import 'package:uuid/uuid.dart';
 import '../services/app_database.dart';
 import '../utils/image_utils.dart';
 
@@ -22,7 +23,7 @@ class ServiciosProvider extends ChangeNotifier {
     String? descripcion,
     String? imagenPath,
   }) async {
-    final id = DateTime.now().millisecondsSinceEpoch.toString();
+    final id = const Uuid().v4();
 
     String? nuevaImagenPath;
     if (imagenPath != null && imagenPath.isNotEmpty) {
