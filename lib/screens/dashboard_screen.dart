@@ -281,31 +281,34 @@ class _DashboardScreenState extends State<DashboardScreen>
               const SizedBox(height: 16),
 
               // ── Gráfica + Agenda de hoy ──────────────────────────
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    flex: 5,
-                    child: _animated(
-                      anim: _interval(0.3, 0.65),
-                      offsetY: 0.06,
-                      child: _ChartCard(data: data, anim: _interval(0.4, 1.0), sim: sim),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    flex: 3,
-                    child: _animated(
-                      anim: _interval(0.35, 0.7),
-                      offsetY: 0.06,
-                      child: _AgendaHoyCard(
-                        citas: data.citasHoy,
-                        clienteNombres: data.clienteNombres,
-                        servicioNombres: data.servicioNombres,
+              SizedBox(
+                height: 420,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: _animated(
+                        anim: _interval(0.3, 0.65),
+                        offsetY: 0.06,
+                        child: _ChartCard(data: data, anim: _interval(0.4, 1.0), sim: sim),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 3,
+                      child: _animated(
+                        anim: _interval(0.35, 0.7),
+                        offsetY: 0.06,
+                        child: _AgendaHoyCard(
+                          citas: data.citasHoy,
+                          clienteNombres: data.clienteNombres,
+                          servicioNombres: data.servicioNombres,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
 
@@ -576,11 +579,10 @@ class _ChartCard extends StatelessWidget {
             _LegendDot(color: scheme.error, label: AppLocalizations.of(context).accountingExpenses),
           ]),
           const SizedBox(height: 16),
-          AnimatedBuilder(
-            animation: anim,
-            builder: (_, __) => SizedBox(
-              height: 200,
-              child: CustomPaint(
+          Expanded(
+            child: AnimatedBuilder(
+              animation: anim,
+              builder: (_, __) => CustomPaint(
                 painter: _BarChartPainter(
                   ingresos: data.ingresosMeses,
                   gastos: data.gastosMeses,
@@ -592,7 +594,7 @@ class _ChartCard extends StatelessWidget {
                   colorLabel: scheme.onSurfaceVariant,
                   sim: sim,
                 ),
-                size: const Size(double.infinity, 200),
+                size: Size.infinite,
               ),
             ),
           ),
@@ -779,7 +781,6 @@ class _AgendaHoyCard extends StatelessWidget {
     final now = DateTime.now();
 
     return Container(
-      constraints: const BoxConstraints(minHeight: 260),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerLow,
@@ -797,101 +798,99 @@ class _AgendaHoyCard extends StatelessWidget {
                     text.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
           ]),
           const SizedBox(height: 12),
-          if (citas.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Column(children: [
-                  Icon(Icons.event_available_rounded,
-                      size: 40, color: scheme.outlineVariant),
-                  const SizedBox(height: 8),
-                  Text(AppLocalizations.of(context).dashNoAppointmentsToday,
-                      style: text.bodyMedium
-                          ?.copyWith(color: scheme.onSurfaceVariant)),
-                ]),
-              ),
-            )
-          else
-            SizedBox(
-              height: 280,
-              child: ListView.builder(
-                itemCount: citas.length,
-                itemBuilder: (_, idx) {
-                  final c = citas[idx];
-                  final isPast = c.fin.isBefore(now);
-                  final isNow = c.inicio.isBefore(now) && c.fin.isAfter(now);
-                  final hIni =
-                      '${c.inicio.hour.toString().padLeft(2, '0')}:${c.inicio.minute.toString().padLeft(2, '0')}';
-                  final hFin =
-                      '${c.fin.hour.toString().padLeft(2, '0')}:${c.fin.minute.toString().padLeft(2, '0')}';
-                  final cliente = clienteNombres[c.clienteId] ?? '';
-                  final servicio = servicioNombres[c.servicioId] ?? '';
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isNow
-                          ? scheme.primaryContainer
-                          : isPast
-                              ? scheme.surfaceContainerHighest
-                              : scheme.secondaryContainer.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(10),
-                      border: isNow
-                          ? Border.all(color: scheme.primary, width: 1.5)
-                          : null,
+          Expanded(
+            child: citas.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.event_available_rounded,
+                            size: 40, color: scheme.outlineVariant),
+                        const SizedBox(height: 8),
+                        Text(AppLocalizations.of(context).dashNoAppointmentsToday,
+                            style: text.bodyMedium
+                                ?.copyWith(color: scheme.onSurfaceVariant)),
+                      ],
                     ),
-                    child: Row(children: [
-                      Text('$hIni\n$hFin',
-                          style: text.labelSmall?.copyWith(
-                            color: isNow
-                                ? scheme.onPrimaryContainer
-                                : scheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(cliente,
-                                style: text.bodySmall?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: isNow
-                                        ? scheme.onPrimaryContainer
-                                        : scheme.onSurface),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis),
-                            Text(servicio,
-                                style: text.labelSmall?.copyWith(
-                                    color: isNow
-                                        ? scheme.onPrimaryContainer
-                                            .withValues(alpha: 0.7)
-                                        : scheme.onSurfaceVariant),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis),
-                          ],
+                  )
+                : ListView.builder(
+                    itemCount: citas.length,
+                    itemBuilder: (_, idx) {
+                      final c = citas[idx];
+                      final isPast = c.fin.isBefore(now);
+                      final isNow = c.inicio.isBefore(now) && c.fin.isAfter(now);
+                      final hIni =
+                          '${c.inicio.hour.toString().padLeft(2, '0')}:${c.inicio.minute.toString().padLeft(2, '0')}';
+                      final hFin =
+                          '${c.fin.hour.toString().padLeft(2, '0')}:${c.fin.minute.toString().padLeft(2, '0')}';
+                      final cliente = clienteNombres[c.clienteId] ?? '';
+                      final servicio = servicioNombres[c.servicioId] ?? '';
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isNow
+                              ? scheme.primaryContainer
+                              : isPast
+                                  ? scheme.surfaceContainerHighest
+                                  : scheme.secondaryContainer.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(10),
+                          border: isNow
+                              ? Border.all(color: scheme.primary, width: 1.5)
+                              : null,
                         ),
-                      ),
-                      if (isNow)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: scheme.primary,
-                            borderRadius: BorderRadius.circular(6),
+                        child: Row(children: [
+                          Text('$hIni\n$hFin',
+                              style: text.labelSmall?.copyWith(
+                                color: isNow
+                                    ? scheme.onPrimaryContainer
+                                    : scheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              textAlign: TextAlign.center),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(cliente,
+                                    style: text.bodySmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: isNow
+                                            ? scheme.onPrimaryContainer
+                                            : scheme.onSurface),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
+                                Text(servicio,
+                                    style: text.labelSmall?.copyWith(
+                                        color: isNow
+                                            ? scheme.onPrimaryContainer
+                                                .withValues(alpha: 0.7)
+                                            : scheme.onSurfaceVariant),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis),
+                              ],
+                            ),
                           ),
-                          child: Text(AppLocalizations.of(context).agendaStart,
-                              style: text.labelSmall
-                                  ?.copyWith(color: scheme.onPrimary)),
-                        ),
-                    ]),
-                  );
-                },
-              ),
-            ),
+                          if (isNow)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: scheme.primary,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(AppLocalizations.of(context).agendaStart,
+                                  style: text.labelSmall
+                                      ?.copyWith(color: scheme.onPrimary)),
+                            ),
+                        ]),
+                      );
+                    },
+                  ),
+          ),
         ],
       ),
     );
