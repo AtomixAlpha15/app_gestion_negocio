@@ -125,8 +125,10 @@ class _DashboardScreenState extends State<DashboardScreen>
         anio -= 1;
       }
       final ing = await citasProv.totalCobradoMes(anio, mes);
+      final inicio = DateTime(anio, mes, 1);
+      final fin = DateTime(anio, mes + 1, 1).subtract(const Duration(days: 1));
       final gasRows = await (db.select(db.gastos)
-            ..where((g) => g.mes.equals(mes) & g.anio.equals(anio)))
+            ..where((g) => g.fecha.isBetweenValues(inicio, fin)))
           .get();
       final gas = gasRows.fold(0.0, (s, g) => s + g.precio);
       ingresosMeses.add(ing);

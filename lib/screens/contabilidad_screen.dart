@@ -877,8 +877,7 @@ class _DialogNuevoGastoState extends State<DialogNuevoGasto> {
             await gastosProvider.insertarGasto(
               concepto: concepto,
               precio: precio,
-              mes: widget.mes,
-              anio: widget.anio,
+              fecha: DateTime(widget.anio, widget.mes, 1),
             );
             if (mounted && context.mounted) {
               Navigator.pop(context);
