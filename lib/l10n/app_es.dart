@@ -4,6 +4,13 @@ class AppLocalizationsEs extends AppLocalizations {
   // ── General ─────────────────────────────────────────────────────────────
   @override String get appName => 'Gestión Negocio';
 
+  // ── Navigation Menu ──────────────────────────────────────────────────────
+  @override String get navMenu => 'Menú';
+  @override String get navMenuExpand => 'Expandir menú';
+  @override String get navMenuCollapse => 'Contraer menú';
+  @override String get navUser => 'Usuario';
+  @override String get navHome => 'Inicio';
+
   // ── Navigation ──────────────────────────────────────────────────────────
   @override String get navDashboard => 'Inicio';
   @override String get navAgenda => 'Agenda';
@@ -157,6 +164,19 @@ class AppLocalizationsEs extends AppLocalizations {
   @override String get accountingProfit => 'Beneficio';
   @override String get accountingSummary => 'Resumen';
   @override String get accountingMonthSummary => 'Resumen mensual';
+  @override String get accountingFilters => 'Filtros';
+  @override String get accountingPaymentMethod => 'Método de pago';
+  @override String get accountingClient => 'Cliente';
+  @override String get accountingAllClients => 'Todos';
+  @override String get accountingService => 'Servicio';
+  @override String get accountingAllServices => 'Todos';
+  @override String get accountingPeriod => 'Período';
+  @override String get accountingMonth => 'Mes';
+  @override String get accountingYear => 'Año';
+  @override String get accountingTabIncome => 'Ingresos';
+  @override String get accountingTabExpenses => 'Gastos';
+  @override String get accountingNoExpenses => 'No hay gastos este mes';
+  @override String get accountingAnnualSummary => 'Resumen anual';
 
   // ── Bonos ────────────────────────────────────────────────────────────────
   @override String get bonosTitle => 'Bonos';
@@ -178,6 +198,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override String get bonosChooseDate => 'Elegir fecha';
   @override String get bonosSelectService => 'Selecciona un servicio';
   @override String get bonosCreateButton => 'Crear';
+  @override String get bonosPaymentMethod => 'Método de pago';
+  @override String get bonosPaymentMethodLabel => 'Método de pago';
+  @override String get bonosHistory => 'Historial de bonos';
+  @override String get bonosAddPayment => 'Añadir pago';
 
   // ── Settings ─────────────────────────────────────────────────────────────
   @override String get settingsTitle => 'Ajustes';

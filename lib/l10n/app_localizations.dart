@@ -164,6 +164,19 @@ abstract class AppLocalizations {
   String get accountingProfit;
   String get accountingSummary;
   String get accountingMonthSummary;
+  String get accountingFilters;
+  String get accountingPaymentMethod;
+  String get accountingClient;
+  String get accountingAllClients;
+  String get accountingService;
+  String get accountingAllServices;
+  String get accountingPeriod;
+  String get accountingMonth;
+  String get accountingYear;
+  String get accountingTabIncome;
+  String get accountingTabExpenses;
+  String get accountingNoExpenses;
+  String get accountingAnnualSummary;
 
   // ── Bonos ────────────────────────────────────────────────────────────────
   String get bonosTitle;
@@ -186,6 +199,17 @@ abstract class AppLocalizations {
   String get bonosChooseDate;
   String get bonosSelectService;
   String get bonosCreateButton;
+  String get bonosPaymentMethod;
+  String get bonosPaymentMethodLabel;
+  String get bonosHistory;
+  String get bonosAddPayment;
+
+  // ── Navigation Menu ──────────────────────────────────────────────────────
+  String get navMenu;
+  String get navMenuExpand;
+  String get navMenuCollapse;
+  String get navUser;
+  String get navHome;
 
   // ── Settings ─────────────────────────────────────────────────────────────
   String get settingsTitle;

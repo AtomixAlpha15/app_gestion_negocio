@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
+import '../l10n/app_localizations.dart';
 import 'dart:io';
 
 const double _kCollapsedWidth = 72.0;
@@ -61,6 +62,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+    final l = AppLocalizations.of(context);
 
     final railBg = _blend(settings.colorBase, scheme.surface, isDark ? 0.22 : 0.50);
     final railFg = _onColor(railBg);
@@ -69,12 +71,12 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
     final selectedFg = _onColor(selectedBg);
 
     final destinations = [
-      (Icons.dashboard_rounded, 'Inicio'),
-      (Icons.people_rounded, 'Clientes'),
-      (Icons.handyman_rounded, 'Servicios'),
-      (Icons.calendar_month_rounded, 'Agenda'),
-      (Icons.wallet_rounded, 'Contabilidad'),
-      (Icons.settings_rounded, 'Ajustes'),
+      (Icons.dashboard_rounded, l.navDashboard),
+      (Icons.people_rounded, l.navClientes),
+      (Icons.handyman_rounded, l.navServicios),
+      (Icons.calendar_month_rounded, l.navAgenda),
+      (Icons.wallet_rounded, l.navContabilidad),
+      (Icons.settings_rounded, l.navAjustes),
     ];
 
     return Padding(
@@ -119,7 +121,7 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
                       opacity: _extended ? 1 : 0,
                       duration: const Duration(milliseconds: 200),
                       child: Text(
-                        'Menú',
+                        AppLocalizations.of(context).navMenu,
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: railFg.withValues(alpha: 0.7),
                           letterSpacing: 1.2,
@@ -151,7 +153,9 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
                             _lastManualExtended = _extended;
                           });
                         },
-                        tooltip: _extended ? "Contraer menú" : "Expandir menú",
+                        tooltip: _extended
+                          ? AppLocalizations.of(context).navMenuCollapse
+                          : AppLocalizations.of(context).navMenuExpand,
                         constraints: const BoxConstraints(minHeight: 40, minWidth: 40),
                         splashRadius: 20,
                       ),
@@ -475,7 +479,7 @@ class _UserChip extends StatelessWidget {
                     opacity: extended ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 200),
                     child: Text(
-                      "Usuario",
+                      AppLocalizations.of(context).navUser,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(

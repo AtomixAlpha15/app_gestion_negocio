@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import '../providers/bonos_provider.dart';
 import '../providers/servicios_provider.dart';
 import '../providers/settings_provider.dart';
-import '../services/app_database.dart'; // Tipos Bono/BonoConsumo (generados por Drift)
+import '../services/app_database.dart';
+import '../l10n/app_localizations.dart';
 
 // PANEL DE BONOS
 class BonosPanel extends StatefulWidget {
@@ -22,6 +23,7 @@ class _BonosPanelState extends State<BonosPanel> {
     final text      = Theme.of(context).textTheme;
     final scheme    = Theme.of(context).colorScheme;
     final clienteId = widget.clienteId;
+    final l         = AppLocalizations.of(context);
 
     return Card(
       color: Theme.of(context).colorScheme.surface,
@@ -35,14 +37,14 @@ class _BonosPanelState extends State<BonosPanel> {
               children: [
                 Expanded(
                   child: Text(
-                    'Bonos',
+                    l.bonosTitle,
                     style: text.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                 ),
                 const SizedBox(width: 12),
                 FilledButton.icon(
                   icon: const Icon(Icons.card_membership),
-                  label: const Text('Crear bono'),
+                  label: Text(l.bonosNew),
                   onPressed: () async {
                     final creado = await showDialog<bool>(
                       context: context,
@@ -80,14 +82,14 @@ class _BonosPanelState extends State<BonosPanel> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'No hay bonos activos.',
+                        l.bonosActive,
                         style: text.bodyMedium?.copyWith(
                           color: scheme.onSurface.withValues(alpha:0.8),
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Sin bonos registrados.',
+                        l.bonosHistory,
                         style: text.bodyMedium,
                       ),
                     ],
@@ -773,9 +775,10 @@ class _CrearBonoDialogState extends State<_CrearBonoDialog> {
   Widget build(BuildContext context) {
     final serviciosProvider  = context.read<ServiciosProvider>();
     final servicios          = serviciosProvider.servicios;
+    final l                  = AppLocalizations.of(context);
 
     return AlertDialog(
-      title: const Text('Crear bono de sesiones'),
+      title: Text(l.bonosCreateTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -786,7 +789,7 @@ class _CrearBonoDialogState extends State<_CrearBonoDialog> {
                   .map((s) => DropdownMenuItem(value: s.id, child: Text(s.nombre)))
                   .toList(),
               onChanged: (v) => setState(() => servicioId = v),
-              decoration: const InputDecoration(labelText: 'Servicio'),
+              decoration: InputDecoration(labelText: l.bonosServiceLabel),
             ),
             const SizedBox(height: 8),
             Row(
@@ -805,7 +808,7 @@ class _CrearBonoDialogState extends State<_CrearBonoDialog> {
                 Expanded(
                   child: TextFormField(
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Precio del bono (opcional)'),
+                    decoration: InputDecoration(labelText: l.bonosPriceLabel),
                     onChanged: (v) => precio = double.tryParse(v.replaceAll(',', '.')),
                   ),
                 ),
@@ -828,7 +831,7 @@ class _CrearBonoDialogState extends State<_CrearBonoDialog> {
                     },
                     icon: const Icon(Icons.event),
                     label: Text(
-                      caducaEl == null ? 'Sin caducidad' : 'Caduca: ${_fmtDate(caducaEl!, context)}',
+                      caducaEl == null ? l.bonosNoDueDate : '${l.bonosDueDate} ${_fmtDate(caducaEl!, context)}',
                     ),
                   ),
                 ),
@@ -838,12 +841,12 @@ class _CrearBonoDialogState extends State<_CrearBonoDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+        TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
         FilledButton(
           onPressed: () async {
             if (servicioId == null || sesiones <= 0) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Completa servicio y nº de sesiones')),
+                SnackBar(content: Text('${l.bonosSelectService} ${l.bonosSessionsLabel}')),
               );
               return;
             }
@@ -858,7 +861,7 @@ class _CrearBonoDialogState extends State<_CrearBonoDialog> {
 
             if (context.mounted) Navigator.pop(context, true);
           },
-          child: const Text('Crear'),
+          child: Text(l.bonosCreateButton),
         ),
       ],
     );
@@ -882,32 +885,33 @@ class _AnadirPagoDialogState extends State<_AnadirPagoDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
 
     return AlertDialog(
-      title: const Text('Añadir pago de bono'),
+      title: Text(l.bonosAddPayment),
       content: Form(
         key: _formKey,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextFormField(
-              decoration: const InputDecoration(labelText: 'Importe'),
+              decoration: InputDecoration(labelText: l.labelPrice),
               keyboardType: TextInputType.numberWithOptions(decimal: true),
               validator: (v) {
                 final x = double.tryParse((v ?? '').replaceAll(',', '.'));
-                if (x == null) return 'Importe inválido';
+                if (x == null) return l.servicesInvalidPrice;
                 return null;
               },
               onSaved: (v) => importe = double.tryParse((v ?? '').replaceAll(',', '.')),
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
-              decoration: const InputDecoration(labelText: 'Método'),
+              decoration: InputDecoration(labelText: l.bonosPaymentMethodLabel),
               value: metodo,
-              items: const [
-                DropdownMenuItem(value: 'Efectivo', child: Text('Efectivo')),
-                DropdownMenuItem(value: 'Bizum', child: Text('Bizum')),
-                DropdownMenuItem(value: 'Tarjeta', child: Text('Tarjeta')),
+              items: [
+                DropdownMenuItem(value: 'Efectivo', child: Text(l.accountingPaymentMethodCash)),
+                DropdownMenuItem(value: 'Bizum', child: Text(l.accountingPaymentMethodBizum)),
+                DropdownMenuItem(value: 'Tarjeta', child: Text(l.accountingPaymentMethodCard)),
               ],
               onChanged: (v) => setState(() => metodo = v),
             ),
@@ -934,14 +938,14 @@ class _AnadirPagoDialogState extends State<_AnadirPagoDialog> {
             ),
             const SizedBox(height: 8),
             TextFormField(
-              decoration: const InputDecoration(labelText: 'Nota (opcional)'),
+              decoration: InputDecoration(labelText: l.labelNotes),
               onChanged: (v) => nota = v.isEmpty ? null : v,
             ),
           ],
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+        TextButton(onPressed: () => Navigator.pop(context, false), child: Text(l.actionCancel)),
         FilledButton(
           onPressed: () async {
             if (!_formKey.currentState!.validate()) return;
@@ -956,7 +960,7 @@ class _AnadirPagoDialogState extends State<_AnadirPagoDialog> {
             );
             if (context.mounted) Navigator.pop(context, true);
           },
-          child: const Text('Guardar'),
+          child: Text(l.actionSave),
         ),
       ],
     );

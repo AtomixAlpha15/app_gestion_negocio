@@ -112,9 +112,9 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
                 children: [
                   TabBar(
                     controller: _tabController,
-                    tabs: const [
-                      Tab(text: 'Ingresos'),
-                      Tab(text: 'Gastos'),
+                    tabs: [
+                      Tab(text: AppLocalizations.of(context).accountingTabIncome),
+                      Tab(text: AppLocalizations.of(context).accountingTabExpenses),
                     ],
                   ),
                   Expanded(
@@ -147,6 +147,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
   }
 
   Widget _buildFiltrosPanel(BuildContext context, List clientes, List servicios, ColorScheme scheme, TextTheme text) {
+    final l = AppLocalizations.of(context);
     return Container(
       width: anchoFiltros,
       decoration: BoxDecoration(
@@ -160,27 +161,32 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Filtros', style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w600)),
+            Text(l.accountingFilters, style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w600)),
             const SizedBox(height: 24),
-            _buildFiltroSeccion(
-              'Método de pago',
-              ['Efectivo', 'Bizum', 'Tarjeta', 'Impagado'],
+            _buildFiltroSeccionTraducida(
+              l.accountingPaymentMethod,
+              [
+                (l.accountingPaymentMethodCash, 'Efectivo'),
+                (l.accountingPaymentMethodBizum, 'Bizum'),
+                (l.accountingPaymentMethodCard, 'Tarjeta'),
+                (l.accountingPaymentMethodUnpaid, 'Impagado'),
+              ],
               text,
             ),
             const SizedBox(height: 20),
-            _buildDropdownSeccion('Cliente', clienteId, [null, ...clientes.map((c) => c.id)],
-              (c) => c == null ? 'Todos' : clientes.firstWhereOrNull((x) => x.id == c)?.nombre ?? 'Cliente',
+            _buildDropdownSeccion(l.accountingClient, clienteId, [null, ...clientes.map((c) => c.id)],
+              (c) => c == null ? l.accountingAllClients : clientes.firstWhereOrNull((x) => x.id == c)?.nombre ?? 'Cliente',
               (val) => setState(() => clienteId = val),
               text,
             ),
             const SizedBox(height: 20),
-            _buildDropdownSeccion('Servicio', servicioId, [null, ...servicios.map((s) => s.id)],
-              (s) => s == null ? 'Todos' : servicios.firstWhereOrNull((x) => x.id == s)?.nombre ?? 'Servicio',
+            _buildDropdownSeccion(l.accountingService, servicioId, [null, ...servicios.map((s) => s.id)],
+              (s) => s == null ? l.accountingAllServices : servicios.firstWhereOrNull((x) => x.id == s)?.nombre ?? 'Servicio',
               (val) => setState(() => servicioId = val),
               text,
             ),
             const SizedBox(height: 20),
-            _buildFechaSeccion(text),
+            _buildFechaSeccion(text, l),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
@@ -200,25 +206,28 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
     );
   }
 
-  Widget _buildFiltroSeccion(String titulo, List<String> opciones, TextTheme text) {
+  Widget _buildFiltroSeccionTraducida(String titulo, List<(String, String)> opciones, TextTheme text) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(titulo, style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
-        ...opciones.map((metodo) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: CheckboxListTile(
-            value: metodoPagoSeleccionado[metodo],
-            onChanged: (val) {
-              setState(() => metodoPagoSeleccionado[metodo] = val ?? false);
-            },
-            title: Text(metodo, style: const TextStyle(fontSize: 14)),
-            controlAffinity: ListTileControlAffinity.leading,
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-          ),
-        )),
+        ...opciones.map((opcion) {
+          final (displayText, storageKey) = opcion;
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: CheckboxListTile(
+              value: metodoPagoSeleccionado[storageKey],
+              onChanged: (val) {
+                setState(() => metodoPagoSeleccionado[storageKey] = val ?? false);
+              },
+              title: Text(displayText, style: const TextStyle(fontSize: 14)),
+              controlAffinity: ListTileControlAffinity.leading,
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+          );
+        }),
       ],
     );
   }
@@ -243,7 +252,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
     );
   }
 
-  Widget _buildFechaSeccion(TextTheme text) {
+  Widget _buildFechaSeccion(TextTheme text, AppLocalizations l) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -272,10 +281,11 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
   }
 
   Widget _buildSelectoresMesAnio(TextTheme text) {
+    final l = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Periodo', style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+        Text(l.accountingPeriod, style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -283,7 +293,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Mes', style: text.labelSmall),
+                  Text(l.accountingMonth, style: text.labelSmall),
                   const SizedBox(height: 4),
                   DropdownButton<int>(
                     value: mesActual,
@@ -304,7 +314,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Año', style: text.labelSmall),
+                  Text(l.accountingYear, style: text.labelSmall),
                   const SizedBox(height: 4),
                   DropdownButton<int>(
                     value: anioActual,
@@ -416,7 +426,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Resumen anual', style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+        Text(AppLocalizations.of(context).accountingAnnualSummary, style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 12),
         GridView.count(
           crossAxisCount: 3,
@@ -729,7 +739,7 @@ class GastosTab extends StatelessWidget {
                     children: [
                       Icon(Icons.receipt, size: 48, color: scheme.outline),
                       const SizedBox(height: 16),
-                      Text('No hay gastos este mes', style: text.bodyLarge),
+                      Text(AppLocalizations.of(context).accountingNoExpenses, style: text.bodyLarge),
                     ],
                   ),
                 )
