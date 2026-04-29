@@ -41,8 +41,12 @@ class SyncRepository {
     if ((clientesCount.data['c'] as int) > 0) return false;
     final serviciosCount = await db.customSelect('SELECT COUNT(*) AS c FROM servicios').getSingle();
     if ((serviciosCount.data['c'] as int) > 0) return false;
+    final extrasServicioCount = await db.customSelect('SELECT COUNT(*) AS c FROM extras_servicio').getSingle();
+    if ((extrasServicioCount.data['c'] as int) > 0) return false;
     final citasCount = await db.customSelect('SELECT COUNT(*) AS c FROM citas').getSingle();
     if ((citasCount.data['c'] as int) > 0) return false;
+    final extrasCitaCount = await db.customSelect('SELECT COUNT(*) AS c FROM extras_cita').getSingle();
+    if ((extrasCitaCount.data['c'] as int) > 0) return false;
     final bonosCount = await db.customSelect('SELECT COUNT(*) AS c FROM bonos').getSingle();
     if ((bonosCount.data['c'] as int) > 0) return false;
     final consumosCount = await db.customSelect('SELECT COUNT(*) AS c FROM bono_consumos').getSingle();
