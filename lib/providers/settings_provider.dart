@@ -2,9 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 class SettingsProvider extends ChangeNotifier {
+  final String? userId;
+
+  SettingsProvider({this.userId});
+
+  String _k(String key) =>
+      (userId != null && userId!.isNotEmpty) ? '${userId}_$key' : key;
+
+  Future<Directory> getUserDir() async {
+    final appDir = await getApplicationDocumentsDirectory();
+    if (userId != null && userId!.isNotEmpty) {
+      final dir = Directory(p.join(appDir.path, userId!));
+      if (!await dir.exists()) await dir.create(recursive: true);
+      return dir;
+    }
+    return Directory(p.join(appDir.path, 'guest'));
+  }
   // --- PERSONALIZACIÓN VISUAL ---
   String fuente = "Roboto";
   double tamanoFuente = 1.0; // 0.85: pequeño, 1.0: mediano, 1.25: grande
@@ -135,41 +152,41 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> cargarAjustes() async {
     final prefs = await SharedPreferences.getInstance();
 
-    fuente        = prefs.getString(_kFuente)        ?? "Roboto";
-    tamanoFuente  = prefs.getDouble(_kTamanoFuente)  ?? 1.0;
-    oscuro        = prefs.getBool(_kOscuro)          ?? false;
+    fuente        = prefs.getString(_k(_kFuente))        ?? "Roboto";
+    tamanoFuente  = prefs.getDouble(_k(_kTamanoFuente))  ?? 1.0;
+    oscuro        = prefs.getBool(_k(_kOscuro))          ?? false;
 
-    nombreEmpresa = prefs.getString(_kNombreEmpresa) ?? "Mi Empresa";
-    logoPath      = prefs.getString(_kLogoPath)      ?? "";
-    telefono      = prefs.getString(_kTelefono)      ?? "";
-    email         = prefs.getString(_kEmail)         ?? "";
-    direccion     = prefs.getString(_kDireccion)     ?? "";
-    numeroEmpleados = prefs.getInt('numeroEmpleados') ?? 1;
+    nombreEmpresa   = prefs.getString(_k(_kNombreEmpresa)) ?? "Mi Empresa";
+    logoPath        = prefs.getString(_k(_kLogoPath))      ?? "";
+    telefono        = prefs.getString(_k(_kTelefono))      ?? "";
+    email           = prefs.getString(_k(_kEmail))         ?? "";
+    direccion       = prefs.getString(_k(_kDireccion))     ?? "";
+    numeroEmpleados = prefs.getInt(_k('numeroEmpleados'))  ?? 1;
 
     // Migración: si se guardó el nombre completo ("Español") convertir a código BCP-47
-    final rawIdioma = prefs.getString(_kIdioma) ?? "es";
+    final rawIdioma = prefs.getString(_k(_kIdioma)) ?? "es";
     idioma = _migrarIdioma(rawIdioma);
 
-    formatoFecha  = prefs.getString(_kFormatoFecha)  ?? "DD/MM/YYYY";
-    simboloMoneda = prefs.getString(_kSimboloMoneda) ?? "€";
-    alertasImpagos          = prefs.getBool(_kAlertasImpagos)          ?? true;
-    notifCitas              = prefs.getBool(_kNotifCitas)              ?? true;
-    notifClientesInactivos  = prefs.getBool(_kNotifClientesInactivos)  ?? false;
-    diasInactividad         = prefs.getInt(_kDiasInactividad)          ?? 30;
+    formatoFecha  = prefs.getString(_k(_kFormatoFecha))  ?? "DD/MM/YYYY";
+    simboloMoneda = prefs.getString(_k(_kSimboloMoneda)) ?? "€";
+    alertasImpagos         = prefs.getBool(_k(_kAlertasImpagos))          ?? true;
+    notifCitas             = prefs.getBool(_k(_kNotifCitas))              ?? true;
+    notifClientesInactivos = prefs.getBool(_k(_kNotifClientesInactivos))  ?? false;
+    diasInactividad        = prefs.getInt(_k(_kDiasInactividad))          ?? 30;
 
-    final baseInt = prefs.getInt(_kColorBase);
+    final baseInt = prefs.getInt(_k(_kColorBase));
     if (baseInt != null) _colorBase = Color(baseInt);
 
-    _usarPaletaAuto = prefs.getBool(_kUsarPaletaAuto) ?? true;
+    _usarPaletaAuto = prefs.getBool(_k(_kUsarPaletaAuto)) ?? true;
 
-    final secManInt = prefs.getInt(_kColorSecundarioManual);
+    final secManInt = prefs.getInt(_k(_kColorSecundarioManual));
     if (secManInt != null) _colorSecundarioManual = Color(secManInt);
 
-    final terManInt = prefs.getInt(_kColorTerciarioManual);
+    final terManInt = prefs.getInt(_k(_kColorTerciarioManual));
     if (terManInt != null) _colorTerciarioManual = Color(terManInt);
 
-    intervaloBackupDias = prefs.getInt('intervaloBackupDias') ?? 7;
-    final lastIso = prefs.getString('ultimaFechaBackup');
+    intervaloBackupDias = prefs.getInt(_k('intervaloBackupDias')) ?? 7;
+    final lastIso = prefs.getString(_k('ultimaFechaBackup'));
     ultimaFechaBackup = lastIso != null ? DateTime.tryParse(lastIso) : null;
 
     notifyListeners();
@@ -188,32 +205,32 @@ class SettingsProvider extends ChangeNotifier {
   Future<void> guardarAjustes() async {
     final prefs = await SharedPreferences.getInstance();
 
-    await prefs.setString(_kFuente, fuente);
-    await prefs.setDouble(_kTamanoFuente, tamanoFuente);
-    await prefs.setBool(_kOscuro, oscuro);
+    await prefs.setString(_k(_kFuente), fuente);
+    await prefs.setDouble(_k(_kTamanoFuente), tamanoFuente);
+    await prefs.setBool(_k(_kOscuro), oscuro);
 
-    await prefs.setString(_kNombreEmpresa, nombreEmpresa);
-    await prefs.setString(_kLogoPath, logoPath);
-    await prefs.setString(_kTelefono, telefono);
-    await prefs.setString(_kEmail, email);
-    await prefs.setString(_kDireccion, direccion);
-    await prefs.setInt('numeroEmpleados', numeroEmpleados);
+    await prefs.setString(_k(_kNombreEmpresa), nombreEmpresa);
+    await prefs.setString(_k(_kLogoPath), logoPath);
+    await prefs.setString(_k(_kTelefono), telefono);
+    await prefs.setString(_k(_kEmail), email);
+    await prefs.setString(_k(_kDireccion), direccion);
+    await prefs.setInt(_k('numeroEmpleados'), numeroEmpleados);
 
-    await prefs.setString(_kIdioma, idioma);
-    await prefs.setString(_kFormatoFecha, formatoFecha);
-    await prefs.setString(_kSimboloMoneda, simboloMoneda);
-    await prefs.setBool(_kAlertasImpagos, alertasImpagos);
-    await prefs.setBool(_kNotifCitas, notifCitas);
-    await prefs.setBool(_kNotifClientesInactivos, notifClientesInactivos);
-    await prefs.setInt(_kDiasInactividad, diasInactividad);
+    await prefs.setString(_k(_kIdioma), idioma);
+    await prefs.setString(_k(_kFormatoFecha), formatoFecha);
+    await prefs.setString(_k(_kSimboloMoneda), simboloMoneda);
+    await prefs.setBool(_k(_kAlertasImpagos), alertasImpagos);
+    await prefs.setBool(_k(_kNotifCitas), notifCitas);
+    await prefs.setBool(_k(_kNotifClientesInactivos), notifClientesInactivos);
+    await prefs.setInt(_k(_kDiasInactividad), diasInactividad);
 
-    await prefs.setInt(_kColorBase, _colorBase.toARGB32());
-    await prefs.setBool(_kUsarPaletaAuto, _usarPaletaAuto);
-    await prefs.setInt(_kColorSecundarioManual, _colorSecundarioManual.toARGB32());
-    await prefs.setInt(_kColorTerciarioManual, _colorTerciarioManual.toARGB32());
+    await prefs.setInt(_k(_kColorBase), _colorBase.toARGB32());
+    await prefs.setBool(_k(_kUsarPaletaAuto), _usarPaletaAuto);
+    await prefs.setInt(_k(_kColorSecundarioManual), _colorSecundarioManual.toARGB32());
+    await prefs.setInt(_k(_kColorTerciarioManual), _colorTerciarioManual.toARGB32());
 
-    await prefs.setInt('intervaloBackupDias', intervaloBackupDias);
-    await prefs.setString('ultimaFechaBackup', ultimaFechaBackup?.toIso8601String() ?? '');
+    await prefs.setInt(_k('intervaloBackupDias'), intervaloBackupDias);
+    await prefs.setString(_k('ultimaFechaBackup'), ultimaFechaBackup?.toIso8601String() ?? '');
   }
 
   // --------- SETTERS REACTIVOS ---------
@@ -393,8 +410,8 @@ class SettingsProvider extends ChangeNotifier {
     if (overrideLogoPath != null && overrideLogoPath.isNotEmpty) {
       logoPath = overrideLogoPath;
     } else if (logoFileInJson.isNotEmpty) {
-      final docs = await getApplicationDocumentsDirectory();
-      logoPath = '${docs.path}${Platform.pathSeparator}$logoFileInJson';
+      final userDir = await getUserDir();
+      logoPath = p.join(userDir.path, logoFileInJson);
     }
     nombreEmpresa = (m['nombreEmpresa'] ?? nombreEmpresa) as String;
     direccion = (m['direccion'] ?? direccion) as String;

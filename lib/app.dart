@@ -1,37 +1,117 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:provider/provider.dart';
+import 'package:provider/provider.dart' as provider;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/main_shell.dart';
-import 'screens/login_screen.dart';
+import 'screens/auth/login_screen.dart';
 import 'providers/settings_provider.dart';
+import 'providers/auth_provider.dart';
+import 'providers/sync_provider.dart';
+import 'providers/clientes_provider.dart';
+import 'providers/servicios_provider.dart';
+import 'providers/citas_provider.dart';
+import 'providers/gastos_provider.dart';
 import 'services/app_database.dart';
 import 'services/backup_services.dart';
+import 'services/sync_service.dart';
 import 'l10n/app_localizations.dart';
 
-class MyApp extends StatefulWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
   @override
-  State<MyApp> createState() => _MyAppState();
+  ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
-  bool _logueado = false;
+class _MyAppState extends ConsumerState<MyApp> {
+  SyncService? _syncService;
 
   @override
   void initState() {
     super.initState();
-    // Lanza el auto-backup cuando ya está montada la app
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
       final db = context.read<AppDatabase>();
       final s  = context.read<SettingsProvider>();
       final backup = BackupService(db: db, settings: s);
       await backup.autoBackupIfDue();
+
+      // Si MyApp se acaba de crear y el usuario YA está autenticado (caso
+      // típico tras login: el cambio de _userId en AppRoot recrea el
+      // MultiProvider y por tanto MyApp, registrando ref.listen DESPUÉS de
+      // que el estado pasara a authenticated), arrancar sync manualmente.
+      // ref.listen solo se dispara en cambios posteriores a su registro.
+      if (!mounted || _syncService != null) return;
+      final auth = ref.read(authStateProvider);
+      auth.when(
+        onAuthenticated: (user) => _startSyncWhenReady(user['id'] as String?),
+        onUnauthenticated: () {},
+        onLoading: () {},
+        onError: (_) {},
+      );
     });
+  }
+
+  void _startSyncWhenReady(String? targetUserId) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _syncService != null) return;
+      final db = context.read<AppDatabase>();
+      if (db.userId == targetUserId) {
+        _startSync(db);
+      } else {
+        // La BD aún no está actualizada, reintentar en el siguiente frame
+        _startSyncWhenReady(targetUserId);
+      }
+    });
+  }
+
+  void _startSync(AppDatabase db) {
+    _syncService = ref.read(syncServiceProvider(db));
+    _syncService!.onServerChangesApplied = _reloadProviders;
+    _syncService!.startPolling();
+  }
+
+  void _reloadProviders() {
+    if (!mounted) return;
+    final anio = DateTime.now().year;
+    context.read<ClientesProvider>().cargarClientes();
+    context.read<ServiciosProvider>().cargarServicios();
+    context.read<CitasProvider>().cargarCitasAnio(anio);
+    context.read<GastosProvider>().cargarGastosAnio(anio);
+    // BonosProvider consulta bajo demanda, no necesita recarga explícita
+  }
+
+  void _stopSync() {
+    _syncService?.stopPolling();
+    _syncService = null;
+  }
+
+  @override
+  void dispose() {
+    _stopSync();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SettingsProvider>();
+
+    // Arrancar/parar sync según cambios de estado de autenticación.
+    // Para el caso inicial (estado ya authenticated cuando MyApp se monta),
+    // ver initState — ref.listen solo se dispara en cambios POSTERIORES.
+    ref.listen(authStateProvider, (previous, next) {
+      if (!next.isAuthenticated) {
+        _stopSync();
+        return;
+      }
+      if (_syncService != null) return;
+      // Esperamos a que _switchDatabase complete y el MultiProvider tenga la BD correcta
+      next.when(
+        onAuthenticated: (user) => _startSyncWhenReady(user['id'] as String?),
+        onUnauthenticated: () {},
+        onLoading: () {},
+        onError: (_) {},
+      );
+    });
 
     // Construimos un ColorScheme completo a partir de los colores del usuario
     // Genera esquema base a partir del color semilla
@@ -214,13 +294,20 @@ class _MyAppState extends State<MyApp> {
         }
       },
 
-      home: _logueado
-          ? const MainShell()
-          : LoginScreen(
-              onLoginOk: () {
-                setState(() => _logueado = true);
-              },
-            ),
+      home: _buildHome(),
+    );
+  }
+
+  Widget _buildHome() {
+    final authState = ref.watch(authStateProvider);
+
+    return authState.when(
+      onAuthenticated: (user) => const MainShell(),
+      onUnauthenticated: () => const LoginScreen(),
+      onLoading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      onError: (message) => const LoginScreen(),
     );
   }
 }

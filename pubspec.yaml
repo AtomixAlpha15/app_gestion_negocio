@@ -24,6 +24,10 @@ dependencies:
   archive: ^3.6.1
   uuid: ^4.5.1
   rxdart: ^0.27.7
+  http: ^1.1.0
+  flutter_secure_storage: ^9.0.0
+  flutter_riverpod: ^2.4.0
+  riverpod_annotation: ^2.3.0
 
 dev_dependencies:
   flutter_test:

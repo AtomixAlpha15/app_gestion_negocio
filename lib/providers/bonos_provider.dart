@@ -20,6 +20,7 @@ class BonosProvider extends ChangeNotifier {
     DateTime? caducaEl,
   }) async {
     final id = _id();
+    final now = DateTime.now();
     final bono = BonosCompanion(
       id: Value(id),
       clienteId: Value(clienteId),
@@ -28,10 +29,12 @@ class BonosProvider extends ChangeNotifier {
       sesionesTotales: Value(sesiones),
       precioBono: Value(precioBono),
       caducaEl: Value(caducaEl),
-      // asegúrate de que tu tabla tenga estos campos; si no, elimina/ajusta:
       activo: const Value(true),
       sesionesUsadas: const Value(0),
-      creadoEl: Value(DateTime.now()),
+      creadoEl: Value(now),
+      syncId: Value(_id()),
+      createdAt: Value(now),
+      updatedAt: Value(now),
     );
     await db.into(db.bonos).insert(bono);
     notifyListeners();
@@ -53,12 +56,13 @@ Future<List<Bono>> bonosActivosClienteServicio(String clienteId, String servicio
     ..where((b) =>
       b.clienteId.equals(clienteId) &
       b.servicioId.equals(servicioId) &
-      b.activo.equals(true) & // respeta la lógica nueva (sesiones, citas futuras, pagos)
+      b.activo.equals(true) &
+      b.deleted.equals(false) &
       (
-        b.caducaEl.isNull() | 
-        b.caducaEl.isBiggerOrEqualValue(hoy) // caduca a nivel de día, no por hora
+        b.caducaEl.isNull() |
+        b.caducaEl.isBiggerOrEqualValue(hoy)
       ) &
-      b.sesionesUsadas.isSmallerThan(b.sesionesTotales) // tiene sesiones libres
+      b.sesionesUsadas.isSmallerThan(b.sesionesTotales)
     );
 
   return query.get();
@@ -86,9 +90,11 @@ Future<List<Bono>> bonosActivosClienteServicio(String clienteId, String servicio
 
     // Lo hacemos todo dentro de una transacción por seguridad
     await db.transaction(() async {
+      final now = DateTime.now();
+
       // 1) marcar la cita como pagada con bono
       await (db.update(db.citas)..where((c) => c.id.equals(cita.id))).write(
-        const CitasCompanion(metodoPago: Value('Bono')),
+        CitasCompanion(metodoPago: const Value('Bono'), updatedAt: Value(now)),
       );
 
       // 2) registrar consumo
@@ -96,12 +102,18 @@ Future<List<Bono>> bonosActivosClienteServicio(String clienteId, String servicio
         id: Value(_id()),
         bonoId: Value(bono.id),
         citaId: Value(cita.id),
-        fecha: Value(DateTime.now()),
+        fecha: Value(now),
+        syncId: Value(_id()),
+        createdAt: Value(now),
+        updatedAt: Value(now),
       ));
 
       // 3) subir contador de sesiones usadas
       await (db.update(db.bonos)..where((b) => b.id.equals(bono.id))).write(
-        BonosCompanion(sesionesUsadas: Value(bono.sesionesUsadas + 1)),
+        BonosCompanion(
+          sesionesUsadas: Value(bono.sesionesUsadas + 1),
+          updatedAt: Value(now),
+        ),
       );
     });
 
@@ -121,24 +133,29 @@ Future<List<Bono>> bonosActivosClienteServicio(String clienteId, String servicio
       ..where((b) =>
         b.clienteId.equals(clienteId) &
         b.activo.equals(true) &
+        b.deleted.equals(false) &
         (b.caducaEl.isNull() | b.caducaEl.isBiggerOrEqualValue(now)) &
         (b.sesionesUsadas.isSmallerThan(b.sesionesTotales)));
     return q.get();
   }
 
   Future<List<Bono>> bonosCliente(String clienteId) {
-    return (db.select(db.bonos)..where((b) => b.clienteId.equals(clienteId))).get();
+    return (db.select(db.bonos)
+          ..where((b) => b.clienteId.equals(clienteId) & b.deleted.equals(false)))
+        .get();
   }
 
   Future<List<BonoConsumo>> consumosDeBono(String bonoId) {
-    return (db.select(db.bonoConsumos)..where((c) => c.bonoId.equals(bonoId))).get();
+    return (db.select(db.bonoConsumos)
+          ..where((c) => c.bonoId.equals(bonoId) & c.deleted.equals(false)))
+        .get();
   }
 
 /// Selecciona bono activo con hueco (en base a sesiones ASIGNADAS)
 Future<Bono?> bonoActivoPara(String clienteId, String servicioId) async {
   // Trae bonos activos del cliente/servicio, orden preferente por más antiguo
   final bonos = await (db.select(db.bonos)
-        ..where((b) => b.clienteId.equals(clienteId) & b.servicioId.equals(servicioId) & b.activo.equals(true))
+        ..where((b) => b.clienteId.equals(clienteId) & b.servicioId.equals(servicioId) & b.activo.equals(true) & b.deleted.equals(false))
         ..orderBy([(b) => d.OrderingTerm.asc(b.creadoEl)]))
       .get();
 
@@ -150,33 +167,46 @@ Future<Bono?> bonoActivoPara(String clienteId, String servicioId) async {
 }
 
 Future<void> eliminarBono(String bonoId) async {
-  await (db.delete(db.bonoConsumos)..where((t) => t.bonoId.equals(bonoId))).go();
-  await (db.delete(db.bonos)..where((t) => t.id.equals(bonoId))).go();
-  // Nada de recargas si la UI escucha a watch*
+  // Soft-delete para que la sincronización propague la eliminación al
+  // servidor y otros dispositivos. Borrar físicamente impediría que el
+  // sync lo viera (filas borradas no pueden viajar como cambios).
+  final now = DateTime.now();
+  await db.transaction(() async {
+    await (db.update(db.bonoConsumos)..where((t) => t.bonoId.equals(bonoId))).write(
+      BonoConsumosCompanion(deleted: const Value(true), updatedAt: Value(now)),
+    );
+    await (db.update(db.bonoPagos)..where((t) => t.bonoId.equals(bonoId))).write(
+      BonoPagosCompanion(deleted: const Value(true), updatedAt: Value(now)),
+    );
+    await (db.update(db.bonos)..where((t) => t.id.equals(bonoId))).write(
+      BonosCompanion(deleted: const Value(true), updatedAt: Value(now)),
+    );
+  });
   notifyListeners();
 }
 
 Future<void> actualizarActivo(String bonoId, bool activo) async {
   await (db.update(db.bonos)..where((t) => t.id.equals(bonoId)))
-      .write(BonosCompanion(activo: Value(activo)));
-  // No llames a cargarBonos* si usas streams
-  notifyListeners(); // por si hay otros dependientes
+      .write(BonosCompanion(activo: Value(activo), updatedAt: Value(DateTime.now())));
+  notifyListeners();
 }
 
 /////////////////////////////////// CONSUMOS DE BONO ////////////////////////////////////
 
 Future<void> consumirSesion(String bonoId, String? citaId, DateTime? fecha) async {
-  // Solo insertamos el consumo
+  final now = DateTime.now();
   await db.into(db.bonoConsumos).insert(
     BonoConsumosCompanion(
       id: Value(_id()),
       bonoId: Value(bonoId),
       citaId: Value(citaId),
-      fecha: Value(fecha ?? DateTime.now()),
+      fecha: Value(fecha ?? now),
+      syncId: Value(_id()),
+      createdAt: Value(now),
+      updatedAt: Value(now),
     ),
   );
 
-  // Y luego recalculamos el bono entero a partir de los consumos/pagos reales
   await _recalcularBonoDesdeConsumos(bonoId);
 
   notifyListeners();
@@ -187,7 +217,7 @@ Future<void> consumirSesion(String bonoId, String? citaId, DateTime? fecha) asyn
 Future<bool> existeConsumoParaCita(String citaId) async {
   final q = db.selectOnly(db.bonoConsumos)
     ..addColumns([db.bonoConsumos.id.count()])
-    ..where(db.bonoConsumos.citaId.equals(citaId));
+    ..where(db.bonoConsumos.citaId.equals(citaId) & db.bonoConsumos.deleted.equals(false));
   final row = await q.getSingleOrNull();
   final count = row?.read(db.bonoConsumos.id.count()) ?? 0;
   return count > 0;
@@ -195,9 +225,9 @@ Future<bool> existeConsumoParaCita(String citaId) async {
 
 Future<void> eliminarConsumoPorCita(String citaId) async {
   await db.transaction(() async {
-    // 1) Buscar el consumo asociado a esa cita (si no hay, no hacemos nada)
+    // 1) Buscar el consumo activo asociado a esa cita
     final consumo = await (db.select(db.bonoConsumos)
-          ..where((t) => t.citaId.equals(citaId)))
+          ..where((t) => t.citaId.equals(citaId) & t.deleted.equals(false)))
         .getSingleOrNull();
 
     if (consumo == null) {
@@ -206,8 +236,13 @@ Future<void> eliminarConsumoPorCita(String citaId) async {
 
     final bonoId = consumo.bonoId;
 
-    // 2) Borrar ese consumo concreto
-    await (db.delete(db.bonoConsumos)..where((t) => t.id.equals(consumo.id))).go();
+    // 2) Soft-delete del consumo (necesario para que el sync lo propague)
+    await (db.update(db.bonoConsumos)..where((t) => t.id.equals(consumo.id))).write(
+      BonoConsumosCompanion(
+        deleted: const Value(true),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
 
     // 3) Recalcular el bono desde los consumos/pagos reales
     await _recalcularBonoDesdeConsumos(bonoId);
@@ -222,9 +257,9 @@ Future<void> _recalcularBonoDesdeConsumos(String bonoId) async {
   // 1) Leer el bono
   final bono = await (db.select(db.bonos)..where((b) => b.id.equals(bonoId))).getSingle();
 
-  // 2) Leer TODOS los consumos del bono
+  // 2) Leer TODOS los consumos activos del bono
   final consumos = await (db.select(db.bonoConsumos)
-        ..where((bc) => bc.bonoId.equals(bonoId)))
+        ..where((bc) => bc.bonoId.equals(bonoId) & bc.deleted.equals(false)))
       .get();
 
   // sesiones usadas = nº de consumos
@@ -254,7 +289,7 @@ Future<void> _recalcularBonoDesdeConsumos(String bonoId) async {
   final precioTotal = bono.precioBono ?? 0.0;
 
   final pagos = await (db.select(db.bonoPagos)
-        ..where((p) => p.bonoId.equals(bonoId)))
+        ..where((p) => p.bonoId.equals(bonoId) & p.deleted.equals(false)))
       .get();
 
   final totalPagado = pagos.fold<double>(0.0, (a, p) => a + p.importe);
@@ -275,6 +310,7 @@ Future<void> _recalcularBonoDesdeConsumos(String bonoId) async {
     BonosCompanion(
       sesionesUsadas: Value(usadas),
       activo: Value(activo),
+      updatedAt: Value(DateTime.now()),
     ),
   );
 }
@@ -284,7 +320,7 @@ Future<void> _recalcularBonoDesdeConsumos(String bonoId) async {
 Future<int> sesionesAsignadasBono(String bonoId) async {
   final q = db.selectOnly(db.bonoConsumos)
     ..addColumns([db.bonoConsumos.id.count()])
-    ..where(db.bonoConsumos.bonoId.equals(bonoId));
+    ..where(db.bonoConsumos.bonoId.equals(bonoId) & db.bonoConsumos.deleted.equals(false));
   final row = await q.getSingleOrNull();
   return row?.read(db.bonoConsumos.id.count()) ?? 0;
 }
@@ -302,9 +338,9 @@ Future<void> _recalcularEstadoBono(String bonoId) async {
   // ¿Quedan sesiones pendientes?
   final haySesionesPendientes = bono.sesionesUsadas < bono.sesionesTotales;
 
-  // Buscar consumos de este bono que tengan citaId
+  // Buscar consumos activos de este bono que tengan citaId
   final consumos = await (db.select(db.bonoConsumos)
-        ..where((bc) => bc.bonoId.equals(bonoId) & bc.citaId.isNotNull()))
+        ..where((bc) => bc.bonoId.equals(bonoId) & bc.citaId.isNotNull() & bc.deleted.equals(false)))
       .get();
 
   bool hayCitasFuturas = false;
@@ -327,7 +363,7 @@ Future<void> _recalcularEstadoBono(String bonoId) async {
   final bool activo = haySesionesPendientes || hayCitasFuturas;
 
   await (db.update(db.bonos)..where((b) => b.id.equals(bonoId))).write(
-    BonosCompanion(activo: Value(activo)),
+    BonosCompanion(activo: Value(activo), updatedAt: Value(DateTime.now())),
   );
 
   notifyListeners();
@@ -344,13 +380,17 @@ Future<void> insertarPagoBono({
   String? nota,
 }) async {
   final id = const Uuid().v4();
+  final now = DateTime.now();
   await db.into(db.bonoPagos).insert(BonoPagosCompanion(
     id:        d.Value(id),
     bonoId:    d.Value(bonoId),
     importe:   d.Value(importe),
     metodo:    d.Value(metodo),
-    fecha:     fecha != null ? d.Value(fecha) : const d.Value.absent(),
+    fecha:     fecha != null ? d.Value(fecha) : d.Value(now),
     nota:      d.Value(nota),
+    syncId:    d.Value(_id()),
+    createdAt: d.Value(now),
+    updatedAt: d.Value(now),
   ));
 
   await _recalcularBonoDesdeConsumos(bonoId);
@@ -358,7 +398,7 @@ Future<void> insertarPagoBono({
 
 Future<List<BonoPago>> pagosDeBono(String bonoId) {
   final q = db.select(db.bonoPagos)
-    ..where((t) => t.bonoId.equals(bonoId))
+    ..where((t) => t.bonoId.equals(bonoId) & t.deleted.equals(false))
     ..orderBy([(t) => d.OrderingTerm.asc(t.fecha)]);
   return q.get();
 }
@@ -366,7 +406,7 @@ Future<List<BonoPago>> pagosDeBono(String bonoId) {
 Future<double> totalCobradoBono(String bonoId) async {
   final q = db.selectOnly(db.bonoPagos)
     ..addColumns([db.bonoPagos.importe.sum()])
-    ..where(db.bonoPagos.bonoId.equals(bonoId));
+    ..where(db.bonoPagos.bonoId.equals(bonoId) & db.bonoPagos.deleted.equals(false));
   final row = await q.getSingleOrNull();
   return row?.read(db.bonoPagos.importe.sum()) ?? 0.0;
 }
@@ -374,7 +414,7 @@ Future<double> totalCobradoBono(String bonoId) async {
 Future<int> sesionesConsumidasBono(String bonoId) async {
   final q = db.selectOnly(db.bonoConsumos)
     ..addColumns([db.bonoConsumos.id.count()])
-    ..where(db.bonoConsumos.bonoId.equals(bonoId));
+    ..where(db.bonoConsumos.bonoId.equals(bonoId) & db.bonoConsumos.deleted.equals(false));
   final row = await q.getSingleOrNull();
   return row?.read(db.bonoConsumos.id.count()) ?? 0;
 }

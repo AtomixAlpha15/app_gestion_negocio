@@ -13,7 +13,7 @@ class GastosProvider extends ChangeNotifier {
     final inicio = DateTime(anio, 1, 1);
     final fin = DateTime(anio, 12, 31, 23, 59, 59);
     todosLosGastos = await (db.select(db.gastos)
-      ..where((g) => g.fecha.isBetweenValues(inicio, fin)))
+      ..where((g) => g.fecha.isBetweenValues(inicio, fin) & g.deleted.equals(false)))
       .get();
     notifyListeners();
   }
@@ -30,18 +30,27 @@ class GastosProvider extends ChangeNotifier {
     required DateTime fecha,
   }) async {
     final id = const Uuid().v4();
+    final now = DateTime.now();
     final gasto = GastosCompanion(
       id: Value(id),
       concepto: Value(concepto),
       precio: Value(precio),
       fecha: Value(fecha),
+      syncId: Value(const Uuid().v4()),
+      createdAt: Value(now),
+      updatedAt: Value(now),
     );
     await db.into(db.gastos).insert(gasto);
     await cargarGastosAnio(fecha.year);
   }
 
   Future<void> eliminarGasto(String id, {required int anio}) async {
-    await (db.delete(db.gastos)..where((g) => g.id.equals(id))).go();
+    await (db.update(db.gastos)..where((g) => g.id.equals(id))).write(
+      GastosCompanion(
+        deleted: const Value(true),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
     await cargarGastosAnio(anio);
   }
 }

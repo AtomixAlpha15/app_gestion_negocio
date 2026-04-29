@@ -6,7 +6,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-
 import '../providers/settings_provider.dart';
 import 'app_database.dart';
 
@@ -116,9 +115,6 @@ class BackupService {
       return false;
     }
 
-    // Resolver docs app
-    final docs = await getApplicationDocumentsDirectory();
-
     // 1) Logo (opcional)
     final Map<String, dynamic> sMap =
         jsonDecode(await settingsFile.readAsString()) as Map<String, dynamic>;
@@ -127,7 +123,8 @@ class BackupService {
     if (logoFileName.isNotEmpty) {
       final extractedLogo = File(p.join(extractDir.path, logoFileName));
       if (await extractedLogo.exists()) {
-        final dst = File(p.join(docs.path, logoFileName));
+        final userDir = await db.getUserDir();
+        final dst = File(p.join(userDir.path, logoFileName));
         await extractedLogo.copy(dst.path);
         overrideLogoPath = dst.path;
       }
@@ -146,7 +143,8 @@ class BackupService {
       } catch (e) {
         debugPrint('No se pudo restaurar la DB (bloqueo/permiso): $e');
         // copia de cortesía para restauración manual
-        final fallback = File(p.join(docs.path, 'restaurar_${p.basename(extractedDb.path)}'));
+        final userDir = await db.getUserDir();
+        final fallback = File(p.join(userDir.path, 'restaurar_${p.basename(extractedDb.path)}'));
         await extractedDb.copy(fallback.path);
       }
     }
@@ -173,10 +171,8 @@ class BackupService {
     final needs = last == null || now.difference(last).inDays >= interval;
     if (!needs) return;
 
-    // Carpeta de Backups locales
-    final docs = await getApplicationDocumentsDirectory();
-    final backupsDir = Directory(p.join(docs.path, 'Backups'));
-    if (!backupsDir.existsSync()) backupsDir.createSync(recursive: true);
+    // Carpeta de Backups locales (dentro de la carpeta del usuario)
+    final backupsDir = await db.getBackupsDir();
 
     final fileName =
         'backup_${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}.zip';

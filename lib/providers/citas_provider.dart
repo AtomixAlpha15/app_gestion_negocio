@@ -135,6 +135,7 @@ class CitasProvider extends ChangeNotifier {
     bool pagada = false,
   }) async {
     final citaId = const Uuid().v4();
+    final now = DateTime.now();
 
     final companion = CitasCompanion(
       id:          d.Value(citaId),
@@ -146,6 +147,9 @@ class CitasProvider extends ChangeNotifier {
       metodoPago:  d.Value(metodoPago),
       notas:       d.Value(notas),
       pagada:      d.Value(pagada),
+      syncId:      d.Value(const Uuid().v4()),
+      createdAt:   d.Value(now),
+      updatedAt:   d.Value(now),
     );
 
     await db.into(db.citas).insert(companion);
@@ -200,14 +204,15 @@ class CitasProvider extends ChangeNotifier {
   }) async {
     final companion = CitasCompanion(
       id: d.Value(id),
-      clienteId: clienteId != null ? d.Value(clienteId) : const d.Value.absent(),
-      servicioId: servicioId != null ? d.Value(servicioId) : const d.Value.absent(),
-      inicio:     inicio     != null ? d.Value(inicio)   : const d.Value.absent(),
-      fin:        fin        != null ? d.Value(fin)      : const d.Value.absent(),
+      clienteId: d.Value(clienteId),
+      servicioId: d.Value(servicioId),
+      inicio:     d.Value(inicio),
+      fin:        d.Value(fin),
       precio:     d.Value(precio),
       metodoPago: metodoPago != null ? d.Value(metodoPago) : const d.Value.absent(),
       notas:      d.Value(notas),
       pagada:     pagada == null ? const d.Value.absent() : d.Value(pagada),
+      updatedAt:  d.Value(DateTime.now()),
     );
 
     await (db.update(db.citas)..where((c) => c.id.equals(id))).write(companion);
@@ -220,7 +225,12 @@ class CitasProvider extends ChangeNotifier {
 
   Future<void> eliminarCita(String id, {int? anio}) async {
     await (db.delete(db.bonoConsumos)..where((t) => t.citaId.equals(id))).go();
-    await (db.delete(db.citas)..where((c) => c.id.equals(id))).go();
+    await (db.update(db.citas)..where((c) => c.id.equals(id))).write(
+      CitasCompanion(
+        deleted: const d.Value(true),
+        updatedAt: d.Value(DateTime.now()),
+      ),
+    );
 
     // Si nos pasan el año, refrescamos esa caché
     if (anio != null) {

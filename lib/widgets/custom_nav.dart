@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/settings_provider.dart';
+import '../providers/auth_provider.dart';
 import '../l10n/app_localizations.dart';
 import 'dart:io';
 
@@ -418,7 +420,7 @@ class _NavItemState extends State<_NavItem> {
 
 // ─── User Chip ───────────────────────────────────────────────────────────────
 
-class _UserChip extends StatelessWidget {
+class _UserChip extends ConsumerWidget {
   final bool extended;
   final Color railFg;
   final ColorScheme scheme;
@@ -433,8 +435,80 @@ class _UserChip extends StatelessWidget {
     required this.settings,
   });
 
+  void _showAccountMenu(BuildContext context, WidgetRef ref, String displayName, String email) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Avatar + datos de usuario
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [scheme.secondary, scheme.secondary.withValues(alpha: 0.7)],
+                ),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Icon(Icons.person_rounded, color: scheme.onSecondary, size: 32),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              displayName,
+              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              email,
+              style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 8),
+            // Cerrar sesión
+            ListTile(
+              leading: Icon(Icons.logout_rounded, color: scheme.error),
+              title: Text(
+                'Cerrar sesión',
+                style: TextStyle(color: scheme.error, fontWeight: FontWeight.w500),
+              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              onTap: () async {
+                Navigator.of(ctx).pop();
+                await ref.read(authStateProvider.notifier).logout();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+
+    final displayName = authState.when(
+      onAuthenticated: (user) => user['display_name'] as String? ?? '',
+      onUnauthenticated: () => '',
+      onLoading: () => '',
+      onError: (_) => '',
+    );
+
+    final email = authState.when(
+      onAuthenticated: (user) => user['email'] as String? ?? '',
+      onUnauthenticated: () => '',
+      onLoading: () => '',
+      onError: (_) => '',
+    );
+
+    final initials = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 280),
       curve: Curves.easeInOut,
@@ -447,14 +521,14 @@ class _UserChip extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () {},
+          onTap: () => _showAccountMenu(context, ref, displayName, email),
           splashColor: scheme.primary.withValues(alpha: 0.1),
           child: SizedBox(
             height: 44,
             child: Stack(
               alignment: Alignment.centerLeft,
               children: [
-                // Avatar, siempre centrado en la columna de iconos
+                // Avatar con inicial del nombre
                 Positioned(
                   left: 0,
                   width: _kCollapsedWidth - 16,
@@ -467,11 +541,18 @@ class _UserChip extends StatelessWidget {
                         ),
                       ),
                       padding: const EdgeInsets.all(5),
-                      child: Icon(Icons.person_rounded, color: scheme.onSecondary, size: 16),
+                      child: Text(
+                        initials,
+                        style: TextStyle(
+                          color: scheme.onSecondary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-                // Nombre, sólo visible expandido
+                // Nombre real del usuario
                 Positioned(
                   left: _kCollapsedWidth - 16,
                   right: 8,
@@ -479,7 +560,7 @@ class _UserChip extends StatelessWidget {
                     opacity: extended ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 200),
                     child: Text(
-                      AppLocalizations.of(context).navUser,
+                      displayName.isNotEmpty ? displayName : AppLocalizations.of(context).navUser,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(

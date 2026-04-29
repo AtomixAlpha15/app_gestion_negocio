@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:path/path.dart' as p;
 import '../services/app_database.dart';
@@ -493,9 +492,19 @@ class _TileEmpresa extends StatelessWidget {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery);
     if (picked != null) {
-      final appDir = await getApplicationDocumentsDirectory();
-      final ext = p.extension(picked.path);
-      final target = File(p.join(appDir.path, 'logo_empresa$ext'));
+      final userDir = await s.getUserDir();
+      final ext = p.extension(picked.path).isNotEmpty ? p.extension(picked.path) : '.jpg';
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final target = File(p.join(userDir.path, 'logo_empresa_$timestamp$ext'));
+
+      // Borrar logo anterior si existe y es distinto
+      if (s.logoPath.isNotEmpty) {
+        final old = File(s.logoPath);
+        if (await old.exists() && old.path != target.path) {
+          await old.delete();
+        }
+      }
+
       await File(picked.path).copy(target.path);
       s.setLogoPath(target.path);
     }

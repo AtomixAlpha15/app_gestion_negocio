@@ -178,11 +178,43 @@ class BonoPagos extends Table {
   tables: [Clientes, Servicios, Citas, ExtrasServicio,ExtrasCita,Gastos,Bonos,BonoConsumos,BonoPagos],
 )
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  final String? userId;
+  // true si el archivo SQLite no existía al crear esta instancia
+  final bool isNewDatabase;
+
+  AppDatabase([this.userId, this.isNewDatabase = false]) : super(_openConnection(userId));
+
+  Future<Directory> getUserDir() async {
+    final appDir = await getApplicationDocumentsDirectory();
+    if (userId != null && userId!.isNotEmpty) {
+      final dir = Directory(p.join(appDir.path, userId!));
+      if (!await dir.exists()) await dir.create(recursive: true);
+      return dir;
+    }
+    return Directory(p.join(appDir.path, 'guest'));
+  }
+
+  Future<Directory> getBackupsDir() async {
+    final dir = Directory(p.join((await getUserDir()).path, 'backups'));
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  Future<Directory> getClientImagesDir() async {
+    final dir = Directory(p.join((await getUserDir()).path, 'imagenes_clientes'));
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
+
+  Future<Directory> getServiceImagesDir() async {
+    final dir = Directory(p.join((await getUserDir()).path, 'imagenes_servicios'));
+    if (!await dir.exists()) await dir.create(recursive: true);
+    return dir;
+  }
 
   Future<File> getDatabaseFile() async {
-    final dir = await getApplicationDocumentsDirectory();
-    return File(p.join(dir.path, 'negocio_app.sqlite'));
+    final userDir = await getUserDir();
+    return File(p.join(userDir.path, 'negocio_app.sqlite'));
   }
   
   Future<void> closeDatabase() async {
@@ -217,11 +249,14 @@ class AppDatabase extends _$AppDatabase {
 }
 
 
-// Abre la base de datos en la ruta local adecuada
-LazyDatabase _openConnection() {
+// Abre la base de datos en la carpeta del usuario
+LazyDatabase _openConnection([String? userId]) {
   return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
-    final file = File(p.join(dbFolder.path, 'negocio_app.sqlite'));
+    final appDir = await getApplicationDocumentsDirectory();
+    final dirName = (userId != null && userId.isNotEmpty) ? userId : 'guest';
+    final userDir = Directory(p.join(appDir.path, dirName));
+    if (!userDir.existsSync()) userDir.createSync(recursive: true);
+    final file = File(p.join(userDir.path, 'negocio_app.sqlite'));
     return NativeDatabase(file);
   });
 }
