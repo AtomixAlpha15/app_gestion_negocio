@@ -9,7 +9,11 @@
       "Bash(flutter build *)",
       "Bash(flutter clean *)",
       "Bash(git add *)",
-      "Bash(npm --version)"
+      "Bash(npm --version)",
+      "Bash(grep -E \"\\\\.\\(dart|ts|sql\\)$\")",
+      "Read(//e/Cositas/VS/app_gestion_negocio_backend/**)",
+      "Bash(npx tsc *)",
+      "Bash(grep -E \"\\\\.dart$\")"
     ]
   }
 }

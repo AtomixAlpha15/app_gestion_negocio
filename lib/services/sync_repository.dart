@@ -61,7 +61,9 @@ class SyncRepository {
 
     changes.addAll(await _clientesChanges(since));
     changes.addAll(await _serviciosChanges(since));
+    changes.addAll(await _extrasServicioChanges(since));
     changes.addAll(await _citasChanges(since));
+    changes.addAll(await _extrasCitaChanges(since));
     changes.addAll(await _bonosChanges(since));
     changes.addAll(await _bonoConsumosChanges(since));
     changes.addAll(await _bonoPagosChanges(since));
@@ -226,6 +228,48 @@ class SyncRepository {
     )).toList();
   }
 
+  Future<List<SyncChange>> _extrasServicioChanges(DateTime since) async {
+    final rows = await (db.select(db.extrasServicio)
+      ..where((t) => t.updatedAt.isBiggerThanValue(since))).get();
+
+    return rows.map((r) => SyncChange(
+      entityType: 'extras_servicio',
+      action: r.deleted ? 'delete' : (r.createdAt != null && r.createdAt!.isAfter(since) ? 'create' : 'update'),
+      id: r.id,
+      syncId: r.syncId ?? r.id,
+      data: {
+        'id': r.id,
+        'servicio_id': r.servicioId,
+        'nombre': r.nombre,
+        'precio': r.precio,
+        'deleted': r.deleted,
+        'created_at': r.createdAt?.toIso8601String(),
+        'updated_at': r.updatedAt?.toIso8601String(),
+        'sync_id': r.syncId ?? r.id,
+      },
+    )).toList();
+  }
+
+  Future<List<SyncChange>> _extrasCitaChanges(DateTime since) async {
+    final rows = await (db.select(db.extrasCita)
+      ..where((t) => t.updatedAt.isBiggerThanValue(since))).get();
+
+    return rows.map((r) => SyncChange(
+      entityType: 'extras_cita',
+      action: r.deleted ? 'delete' : (r.createdAt != null && r.createdAt!.isAfter(since) ? 'create' : 'update'),
+      id: '${r.citaId}_${r.extraId}',
+      syncId: r.syncId ?? '${r.citaId}_${r.extraId}',
+      data: {
+        'cita_id': r.citaId,
+        'extra_id': r.extraId,
+        'deleted': r.deleted,
+        'created_at': r.createdAt?.toIso8601String(),
+        'updated_at': r.updatedAt?.toIso8601String(),
+        'sync_id': r.syncId ?? '${r.citaId}_${r.extraId}',
+      },
+    )).toList();
+  }
+
   Future<List<SyncChange>> _gastosChanges(DateTime since) async {
     final rows = await (db.select(db.gastos)
       ..where((t) => t.updatedAt.isBiggerThanValue(since))).get();
@@ -265,8 +309,12 @@ class SyncRepository {
             await _applyCliente(change);
           case 'servicios':
             await _applyServicio(change);
+          case 'extras_servicio':
+            await _applyExtrasServicio(change);
           case 'citas':
             await _applyCita(change);
+          case 'extras_cita':
+            await _applyExtrasCita(change);
           case 'bonos':
             await _applyBono(change);
           case 'bono_consumos':
@@ -405,6 +453,34 @@ class SyncRepository {
       createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']) : DateTime.now()),
     );
     await db.into(db.bonoPagos).insertOnConflictUpdate(companion);
+  }
+
+  Future<void> _applyExtrasServicio(SyncChange change) async {
+    final d = change.data;
+    final companion = ExtrasServicioCompanion(
+      id: Value(d['id']),
+      servicioId: Value(d['servicio_id']),
+      nombre: Value(d['nombre'] ?? ''),
+      precio: Value(_toDouble(d['precio'])),
+      deleted: Value(d['deleted'] ?? false),
+      syncId: Value(d['sync_id']),
+      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
+      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']) : DateTime.now()),
+    );
+    await db.into(db.extrasServicio).insertOnConflictUpdate(companion);
+  }
+
+  Future<void> _applyExtrasCita(SyncChange change) async {
+    final d = change.data;
+    final companion = ExtrasCitaCompanion(
+      citaId: Value(d['cita_id']),
+      extraId: Value(d['extra_id']),
+      deleted: Value(d['deleted'] ?? false),
+      syncId: Value(d['sync_id']),
+      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
+      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']) : DateTime.now()),
+    );
+    await db.into(db.extrasCita).insertOnConflictUpdate(companion);
   }
 
   Future<void> _applyGasto(SyncChange change) async {
