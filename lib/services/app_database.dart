@@ -222,7 +222,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -230,20 +230,62 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
     },
     onUpgrade: (m, from, to) async {
-      // Para el MVP, es más simple recrear la BD que manejar migraciones complejas
-      // Esto borra todos los datos pero garantiza la consistencia del esquema
-      await m.deleteTable('bono_pagos');
-      await m.deleteTable('bono_consumos');
-      await m.deleteTable('bonos');
-      await m.deleteTable('extras_cita');
-      await m.deleteTable('citas');
-      await m.deleteTable('extras_servicio');
-      await m.deleteTable('gastos');
-      await m.deleteTable('servicios');
-      await m.deleteTable('clientes');
+      // v1 → v2: servicios.imagenPath añadida
+      if (from < 2) {
+        await m.addColumn(servicios, servicios.imagenPath);
+      }
 
-      // Recrear todas las tablas con el nuevo esquema
-      await m.createAll();
+      // v2 → v3: campos de auditoría (createdAt, updatedAt, syncId, deleted) en todas las tablas
+      if (from < 3) {
+        await m.addColumn(clientes, clientes.createdAt);
+        await m.addColumn(clientes, clientes.updatedAt);
+        await m.addColumn(clientes, clientes.syncId);
+        await m.addColumn(clientes, clientes.deleted);
+
+        await m.addColumn(servicios, servicios.createdAt);
+        await m.addColumn(servicios, servicios.updatedAt);
+        await m.addColumn(servicios, servicios.syncId);
+        await m.addColumn(servicios, servicios.deleted);
+
+        await m.addColumn(extrasServicio, extrasServicio.createdAt);
+        await m.addColumn(extrasServicio, extrasServicio.updatedAt);
+        await m.addColumn(extrasServicio, extrasServicio.syncId);
+        await m.addColumn(extrasServicio, extrasServicio.deleted);
+
+        await m.addColumn(citas, citas.createdAt);
+        await m.addColumn(citas, citas.updatedAt);
+        await m.addColumn(citas, citas.syncId);
+        await m.addColumn(citas, citas.deleted);
+
+        await m.addColumn(extrasCita, extrasCita.createdAt);
+        await m.addColumn(extrasCita, extrasCita.updatedAt);
+        await m.addColumn(extrasCita, extrasCita.syncId);
+        await m.addColumn(extrasCita, extrasCita.deleted);
+
+        await m.addColumn(gastos, gastos.fecha);
+        await m.addColumn(gastos, gastos.createdAt);
+        await m.addColumn(gastos, gastos.updatedAt);
+        await m.addColumn(gastos, gastos.syncId);
+        await m.addColumn(gastos, gastos.deleted);
+
+        await m.addColumn(bonos, bonos.createdAt);
+        await m.addColumn(bonos, bonos.updatedAt);
+        await m.addColumn(bonos, bonos.syncId);
+        await m.addColumn(bonos, bonos.deleted);
+
+        await m.addColumn(bonoConsumos, bonoConsumos.createdAt);
+        await m.addColumn(bonoConsumos, bonoConsumos.updatedAt);
+        await m.addColumn(bonoConsumos, bonoConsumos.syncId);
+        await m.addColumn(bonoConsumos, bonoConsumos.deleted);
+
+        await m.addColumn(bonoPagos, bonoPagos.createdAt);
+        await m.addColumn(bonoPagos, bonoPagos.updatedAt);
+        await m.addColumn(bonoPagos, bonoPagos.syncId);
+        await m.addColumn(bonoPagos, bonoPagos.deleted);
+      }
+
+      // v3 → v4: sin cambios de columnas (v3 usaba borrar-recrear, ya tiene el schema correcto)
+      // Esta versión solo formaliza la estrategia incremental. No-op para BDs en v3.
     },
   );
 }
