@@ -10,6 +10,7 @@ import '../providers/extras_servicio_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/app_database.dart';
 import '../l10n/app_localizations.dart';
+import '../utils/responsive.dart';
 
 extension FirstWhereOrNullExtension<E> on List<E> {
   E? firstWhereOrNull(bool Function(E) test) {
@@ -198,6 +199,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final fechaDer = fechaSeleccionada.add(const Duration(days: 1));
+    final mobile = isMobile(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -241,12 +243,13 @@ class _AgendaScreenState extends State<AgendaScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Text(
-                          'a ${_formatFecha(fechaDer)}',
-                          style: text.labelSmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
+                        if (!mobile)
+                          Text(
+                            'a ${_formatFecha(fechaDer)}',
+                            style: text.labelSmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -260,76 +263,87 @@ class _AgendaScreenState extends State<AgendaScreen> {
               ],
             ),
           ),
-          const SizedBox(width: 16),
-          Container(
-            margin: const EdgeInsets.symmetric(vertical: 8),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHigh,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(left: 12),
-                  child: Text('${AppLocalizations.of(context).labelTime}:', style: text.labelSmall?.copyWith(color: scheme.onSurface)),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    final hora = await showTimePicker(context: context, initialTime: horaInicio);
-                    if (hora != null) setState(() => horaInicio = hora);
-                  },
-                  child: Text(
-                    horaInicio.format(context),
-                    style: text.labelMedium?.copyWith(fontWeight: FontWeight.bold),
+          if (!mobile) ...[
+            const SizedBox(width: 16),
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12),
+                    child: Text('${AppLocalizations.of(context).labelTime}:', style: text.labelSmall?.copyWith(color: scheme.onSurface)),
                   ),
-                ),
-                Text('–', style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
-                TextButton(
-                  onPressed: () async {
-                    final hora = await showTimePicker(context: context, initialTime: horaFin);
-                    if (hora != null) setState(() => horaFin = hora);
-                  },
-                  child: Text(
-                    horaFin.format(context),
-                    style: text.labelMedium?.copyWith(fontWeight: FontWeight.bold),
+                  TextButton(
+                    onPressed: () async {
+                      final hora = await showTimePicker(context: context, initialTime: horaInicio);
+                      if (hora != null) setState(() => horaInicio = hora);
+                    },
+                    child: Text(
+                      horaInicio.format(context),
+                      style: text.labelMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
                   ),
-                ),
-              ],
+                  Text('–', style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
+                  TextButton(
+                    onPressed: () async {
+                      final hora = await showTimePicker(context: context, initialTime: horaFin);
+                      if (hora != null) setState(() => horaFin = hora);
+                    },
+                    child: Text(
+                      horaFin.format(context),
+                      style: text.labelMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+          ],
           const SizedBox(width: 16),
         ],
       ),
       body: cargandoCitas
           ? const Center(child: CircularProgressIndicator())
-          : Row(
-              children: [
-                // ── Panel izquierdo ──────────────────────────────────────────
-                Expanded(
-                  child: Column(
-                    children: [
-                      _DiaHeader(fecha: fechaSeleccionada),
-                      Expanded(
-                        child: _panel(fechaSeleccionada, _citasIzq, _extrasIzq, _scrollIzq),
+          : mobile
+              ? Column(
+                  children: [
+                    _DiaHeader(fecha: fechaSeleccionada),
+                    Expanded(
+                      child: _panel(fechaSeleccionada, _citasIzq, _extrasIzq, _scrollIzq),
+                    ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    // ── Panel izquierdo ──────────────────────────────────────────
+                    Expanded(
+                      child: Column(
+                        children: [
+                          _DiaHeader(fecha: fechaSeleccionada),
+                          Expanded(
+                            child: _panel(fechaSeleccionada, _citasIzq, _extrasIzq, _scrollIzq),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                VerticalDivider(width: 1, color: scheme.outlineVariant),
-                // ── Panel derecho ────────────────────────────────────────────
-                Expanded(
-                  child: Column(
-                    children: [
-                      _DiaHeader(fecha: fechaDer),
-                      Expanded(
-                        child: _panel(fechaDer, _citasDer, _extrasDer, _scrollDer),
+                    ),
+                    VerticalDivider(width: 1, color: scheme.outlineVariant),
+                    // ── Panel derecho ────────────────────────────────────────────
+                    Expanded(
+                      child: Column(
+                        children: [
+                          _DiaHeader(fecha: fechaDer),
+                          Expanded(
+                            child: _panel(fechaDer, _citasDer, _extrasDer, _scrollDer),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final result = await showDialog(
@@ -762,9 +776,7 @@ class _AgendaVisualState extends State<AgendaVisual> {
                                           horizontal: 10,
                                           vertical: 8,
                                         ),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        child: Row(
                                           children: [
                                             Text(
                                               nombreCliente,
@@ -775,6 +787,7 @@ class _AgendaVisualState extends State<AgendaVisual> {
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                             ),
+                                            SizedBox(width: 15),
                                             if (nombreServicioYExtras.isNotEmpty)
                                               Text(
                                                 nombreServicioYExtras,
@@ -784,6 +797,7 @@ class _AgendaVisualState extends State<AgendaVisual> {
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
+                                            SizedBox(width: 15),
                                             Text(
                                               horaFormato,
                                               style: text.labelSmall?.copyWith(

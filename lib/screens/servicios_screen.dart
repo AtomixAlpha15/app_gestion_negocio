@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/entity_card.dart';
 import '../l10n/app_localizations.dart';
+import '../utils/responsive.dart';
 
 class ServiciosScreen extends StatefulWidget {
   const ServiciosScreen({super.key});
@@ -75,130 +76,256 @@ void _mostrarDialogoServicio({dynamic servicio}) {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final mobile = isMobile(context);
 
+    final provider = context.watch<ServiciosProvider>();
+    final servicios = provider.servicios;
+    final q = _norm(_query);
+    final filtrados = q.isEmpty
+        ? servicios
+        : servicios.where((s) {
+            final nombre = _norm(s.nombre);
+            final desc = _norm(s.descripcion ?? '');
+            return nombre.contains(q) || desc.contains(q);
+          }).toList();
 
     return Scaffold(
       appBar: AppBar(title: Text(AppLocalizations.of(context).servicesTitle)),
+      floatingActionButton: mobile
+          ? FloatingActionButton(
+              onPressed: () => _mostrarDialogoServicio(),
+              child: const Icon(Icons.add),
+            )
+          : null,
       body: Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // --- Buscador ---
-          SizedBox(
-            height: 44,
-            child: TextField(
-              controller: _searchCtrl,
-              onChanged: (v) {
-                _debounce?.cancel();
-                _debounce = Timer(const Duration(milliseconds: 120), () {
-                  if (!mounted) return;
-                  setState(() => _query = v.trim());
-                });
-              },
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: AppLocalizations.of(context).servicesSearch,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _query.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: AppLocalizations.of(context).actionClose,
-                        icon: const Icon(Icons.close),
-                        onPressed: () {
-                          setState(() {
-                            _query = '';
-                            _searchCtrl.clear();
-                          });
-                          FocusScope.of(context).unfocus();
-                        },
-                      ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 44,
+              child: TextField(
+                controller: _searchCtrl,
+                onChanged: (v) {
+                  _debounce?.cancel();
+                  _debounce = Timer(const Duration(milliseconds: 120), () {
+                    if (!mounted) return;
+                    setState(() => _query = v.trim());
+                  });
+                },
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: AppLocalizations.of(context).servicesSearch,
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: AppLocalizations.of(context).actionClose,
+                          icon: const Icon(Icons.close),
+                          onPressed: () {
+                            setState(() {
+                              _query = '';
+                              _searchCtrl.clear();
+                            });
+                            FocusScope.of(context).unfocus();
+                          },
+                        ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  isDense: true,
                 ),
-                isDense: true,
               ),
             ),
-          ),
+            const SizedBox(height: 10),
+            Divider(color: scheme.outlineVariant),
+            SizedBox(height: mobile ? 0 : 24),
+            Expanded(
+              child: mobile
+                  ? _buildMobileList(context, filtrados)
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        final ancho = constraints.maxWidth;
+                        final columnas = (ancho / 220).floor().clamp(1, 6);
+                        final gridKey =
+                            ValueKey(filtrados.map((e) => e.id).join('|'));
 
-          const SizedBox(height: 10),
-          
-          Divider(color: scheme.outlineVariant),
-
-          const SizedBox(height: 24),
-
-          // --- Grid ---
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final provider = context.watch<ServiciosProvider>();
-                final servicios = provider.servicios;
-
-                final q = _norm(_query);
-                final filtrados = q.isEmpty
-                    ? servicios
-                    : servicios.where((s) {
-                        final nombre = _norm(s.nombre);
-                        final desc = _norm(s.descripcion ?? '');
-                        return nombre.contains(q) || desc.contains(q);
-                      }).toList();
-
-                final ancho = constraints.maxWidth;
-                final columnas = (ancho / 220).floor().clamp(1, 6);
-                final filtered = filtrados;
-                final gridKey = ValueKey(filtered.map((e) => e.id).join('|'));
-
-                return AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeOutCubic,
-                  transitionBuilder: (child, anim) {
-                    final fade = CurvedAnimation(parent: anim, curve: Curves.easeOut);
-                    final slide = Tween<Offset>(
-                      begin: const Offset(0, 0.03),
-                      end: Offset.zero,
-                    ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic));
-
-                    return FadeTransition(
-                      opacity: fade,
-                      child: SlideTransition(position: slide, child: child),
-                    );
-                  },
-                  child: GridView.count(
-                    key: gridKey,
-                    crossAxisCount: columnas,
-                    mainAxisSpacing: 20,
-                    crossAxisSpacing: 20,
-                    children: [
-                      EntityCard(
-                        isNew: true,
-                        newIcon: Icons.add_box,
-                        newLabel: AppLocalizations.of(context).servicesNew,
-                        onTap: () => _mostrarDialogoServicio(),
-                      ),
-
-                      ...filtered.map(
-                        (s) => _AnimatedServicioItem(
-                          key: ValueKey(s.id),
-                          child: EntityCard(
-                            onTap: () => _mostrarDialogoServicio(servicio: s),
-                            title: s.nombre,
-                            subtitle: '${context.read<SettingsProvider>().formatCurrency(s.precio)} · ${s.duracionMinutos} min',
-                            imagePath: s.imagenPath, // String? en tu modelo
+                        return AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 180),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeOutCubic,
+                          transitionBuilder: (child, anim) {
+                            final fade = CurvedAnimation(
+                                parent: anim, curve: Curves.easeOut);
+                            final slide = Tween<Offset>(
+                              begin: const Offset(0, 0.03),
+                              end: Offset.zero,
+                            ).animate(CurvedAnimation(
+                                parent: anim,
+                                curve: Curves.easeOutCubic));
+                            return FadeTransition(
+                              opacity: fade,
+                              child: SlideTransition(
+                                  position: slide, child: child),
+                            );
+                          },
+                          child: GridView.count(
+                            key: gridKey,
+                            crossAxisCount: columnas,
+                            mainAxisSpacing: 20,
+                            crossAxisSpacing: 20,
+                            children: [
+                              EntityCard(
+                                isNew: true,
+                                newIcon: Icons.add_box,
+                                newLabel:
+                                    AppLocalizations.of(context).servicesNew,
+                                onTap: () => _mostrarDialogoServicio(),
+                              ),
+                              ...filtrados.map(
+                                (s) => _AnimatedServicioItem(
+                                  key: ValueKey(s.id),
+                                  child: EntityCard(
+                                    onTap: () =>
+                                        _mostrarDialogoServicio(servicio: s),
+                                    title: s.nombre,
+                                    subtitle:
+                                        '${context.read<SettingsProvider>().formatCurrency(s.precio)} · ${s.duracionMinutos} min',
+                                    imagePath: s.imagenPath,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-
-              },
+                        );
+                      },
+                    ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
+    );
+  }
 
+  Widget _buildMobileList(BuildContext context, List filtrados) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final settings = context.read<SettingsProvider>();
+
+    if (filtrados.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.spa_outlined, size: 56, color: scheme.outline),
+            const SizedBox(height: 12),
+            Text(
+              _query.isEmpty ? 'Aún no hay servicios' : 'Sin resultados',
+              style: text.bodyLarge?.copyWith(color: scheme.onSurfaceVariant),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      itemCount: filtrados.length,
+      separatorBuilder: (_, __) =>
+          const Divider(height: 1, indent: 72, endIndent: 0),
+      itemBuilder: (context, index) {
+        final s = filtrados[index];
+        return _ServicioListTile(
+          nombre: s.nombre,
+          imagePath: s.imagenPath,
+          subtitulo:
+              '${settings.formatCurrency(s.precio)} · ${s.duracionMinutos} min',
+          onTap: () => _mostrarDialogoServicio(servicio: s),
+        );
+      },
+    );
+  }
+}
+
+class _ServicioListTile extends StatelessWidget {
+  final String nombre;
+  final String? imagePath;
+  final String subtitulo;
+  final VoidCallback onTap;
+
+  const _ServicioListTile({
+    required this.nombre,
+    required this.imagePath,
+    required this.subtitulo,
+    required this.onTap,
+  });
+
+  Color _avatarColor(String name) {
+    const palette = [
+      Color(0xFF4CAF50),
+      Color(0xFF2196F3),
+      Color(0xFF9C27B0),
+      Color(0xFFFF9800),
+      Color(0xFF00BCD4),
+      Color(0xFFE91E63),
+      Color(0xFF607D8B),
+      Color(0xFF795548),
+    ];
+    if (name.isEmpty) return palette[0];
+    return palette[name.codeUnitAt(0) % palette.length];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final hasImg = (imagePath ?? '').trim().isNotEmpty;
+    final inicial = nombre.trim().isEmpty ? '?' : nombre.trim()[0].toUpperCase();
+
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 22,
+              backgroundImage: hasImg ? FileImage(File(imagePath!)) : null,
+              backgroundColor: hasImg ? null : _avatarColor(nombre),
+              child: hasImg
+                  ? null
+                  : Text(
+                      inicial,
+                      style: text.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    nombre,
+                    style: text.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitulo,
+                    style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: scheme.onSurfaceVariant, size: 20),
+          ],
+        ),
+      ),
     );
   }
 }

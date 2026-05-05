@@ -10,6 +10,7 @@ import '../providers/contabilidad_provider.dart';
 import '../providers/settings_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/metodo_pago_utils.dart';
+import '../utils/responsive.dart';
 
 // Helper para Dart < 3
 extension FirstWhereOrNullExtension<E> on List<E> {
@@ -83,6 +84,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
     final gastosProvider = context.watch<GastosProvider>();
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final mobile = isMobile(context);
 
     final gastosMes = gastosProvider.gastosPorMes(mesActual, anioActual);
     final totalGastos = gastosMes.fold<double>(0.0, (a, g) => a + g.precio);
@@ -100,48 +102,337 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).accountingTitle),
         elevation: 0,
+        actions: mobile
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.filter_list),
+                  tooltip: AppLocalizations.of(context).accountingFilters,
+                  onPressed: () => _abrirFiltros(clientes, servicios),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.summarize_outlined),
+                  tooltip: 'Resumen',
+                  onPressed: () => _abrirTotales(totalGastos, beneficiosPorMes),
+                ),
+              ]
+            : null,
       ),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildFiltrosPanel(context, clientes, servicios, scheme, text),
-          Expanded(
-            child: DefaultTabController(
-              length: 2,
-              child: Column(
-                children: [
-                  TabBar(
-                    controller: _tabController,
-                    tabs: [
-                      Tab(text: AppLocalizations.of(context).accountingTabIncome),
-                      Tab(text: AppLocalizations.of(context).accountingTabExpenses),
-                    ],
+      body: mobile
+          ? _buildTabContent(context)
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildFiltrosPanel(context, clientes, servicios, scheme, text),
+                Expanded(child: _buildTabContent(context)),
+                _buildTotalesPanel(context, scheme, text, totalGastos, beneficiosPorMes),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildTabContent(BuildContext context) {
+    return Column(
+      children: [
+        TabBar(
+          controller: _tabController,
+          tabs: [
+            Tab(text: AppLocalizations.of(context).accountingTabIncome),
+            Tab(text: AppLocalizations.of(context).accountingTabExpenses),
+          ],
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              IngresosTab(
+                mes: mesActual,
+                anio: anioActual,
+                metodoPagoSeleccionado: metodoPagoSeleccionado,
+                clienteId: clienteId,
+                servicioId: servicioId,
+                fechaSeleccionada: fechaSeleccionada,
+              ),
+              GastosTab(mes: mesActual, anio: anioActual),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _abrirFiltros(List clientes, List servicios) async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => StatefulBuilder(
+        builder: (_, setSheet) {
+          void update(VoidCallback fn) {
+            setState(fn);
+            setSheet(() {});
+          }
+
+          final l = AppLocalizations.of(context);
+          final text = Theme.of(context).textTheme;
+
+          return DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.7,
+            minChildSize: 0.35,
+            builder: (_, sc) => ListView(
+              controller: sc,
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+              children: [
+                Row(children: [
+                  Text(l.accountingFilters,
+                      style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w600)),
+                  const Spacer(),
+                  TextButton.icon(
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Limpiar'),
+                    onPressed: () => update(() {
+                      metodoPagoSeleccionado.updateAll((_, __) => false);
+                      clienteId = null;
+                      servicioId = null;
+                      fechaSeleccionada = null;
+                    }),
                   ),
+                ]),
+                const SizedBox(height: 20),
+                Text(l.accountingPaymentMethod,
+                    style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                ...[
+                  (l.accountingPaymentMethodCash, 'Efectivo'),
+                  (l.accountingPaymentMethodBizum, 'Bizum'),
+                  (l.accountingPaymentMethodCard, 'Tarjeta'),
+                  (l.accountingPaymentMethodUnpaid, 'Impagado'),
+                ].map((op) {
+                  final (label, key) = op;
+                  return CheckboxListTile(
+                    value: metodoPagoSeleccionado[key] ?? false,
+                    onChanged: (val) =>
+                        update(() => metodoPagoSeleccionado[key] = val ?? false),
+                    title: Text(label),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                  );
+                }),
+                const SizedBox(height: 16),
+                Text(l.accountingClient,
+                    style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String?>(
+                  key: ValueKey(clienteId),
+                  initialValue: clienteId,
+                  items: [
+                    DropdownMenuItem(value: null, child: Text(l.accountingAllClients)),
+                    ...clientes.map((c) =>
+                        DropdownMenuItem(value: c.id as String, child: Text(c.nombre as String))),
+                  ],
+                  onChanged: (val) => update(() => clienteId = val),
+                  decoration: InputDecoration(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    border:
+                        OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    isDense: true,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(l.accountingService,
+                    style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                DropdownButtonFormField<String?>(
+                  key: ValueKey(servicioId),
+                  initialValue: servicioId,
+                  items: [
+                    DropdownMenuItem(value: null, child: Text(l.accountingAllServices)),
+                    ...servicios.map((s) =>
+                        DropdownMenuItem(value: s.id as String, child: Text(s.nombre as String))),
+                  ],
+                  onChanged: (val) => update(() => servicioId = val),
+                  decoration: InputDecoration(
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    border:
+                        OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    isDense: true,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(l.labelDate,
+                    style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.calendar_today, size: 18),
+                  label: Text(
+                    fechaSeleccionada == null
+                        ? l.accountingAllClients
+                        : context
+                            .read<SettingsProvider>()
+                            .formatDate(fechaSeleccionada!),
+                  ),
+                  onPressed: () async {
+                    final fecha = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2100),
+                    );
+                    if (fecha != null) update(() => fechaSeleccionada = fecha);
+                  },
+                ),
+                const Divider(height: 32),
+                Text(l.accountingPeriod,
+                    style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 12),
+                Row(children: [
                   Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        IngresosTab(
-                          mes: mesActual,
-                          anio: anioActual,
-                          metodoPagoSeleccionado: metodoPagoSeleccionado,
-                          clienteId: clienteId,
-                          servicioId: servicioId,
-                          fechaSeleccionada: fechaSeleccionada,
-                        ),
-                        GastosTab(
-                          mes: mesActual,
-                          anio: anioActual,
+                        Text(l.accountingMonth, style: text.labelSmall),
+                        const SizedBox(height: 4),
+                        DropdownButton<int>(
+                          value: mesActual,
+                          isExpanded: true,
+                          items: List.generate(
+                            12,
+                            (i) => DropdownMenuItem(
+                                value: i + 1,
+                                child: Text('${i + 1}'.padLeft(2, '0'))),
+                          ),
+                          onChanged: (val) {
+                            if (val != null) {
+                              update(() => mesActual = val);
+                              context
+                                  .read<GastosProvider>()
+                                  .gastosPorMes(mesActual, anioActual);
+                            }
+                          },
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l.accountingYear, style: text.labelSmall),
+                        const SizedBox(height: 4),
+                        DropdownButton<int>(
+                          value: anioActual,
+                          isExpanded: true,
+                          items: List.generate(
+                            8,
+                            (i) => DropdownMenuItem(
+                                value: 2020 + i, child: Text('${2020 + i}')),
+                          ),
+                          onChanged: (val) {
+                            if (val != null) {
+                              update(() => anioActual = val);
+                              context
+                                  .read<GastosProvider>()
+                                  .gastosPorMes(mesActual, anioActual);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ]),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Aplicar'),
+                  ),
+                ),
+              ],
             ),
-          ),
-          _buildTotalesPanel(context, scheme, text, totalGastos, beneficiosPorMes),
-        ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _abrirTotales(double totalGastos, List<double> beneficiosPorMes) async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.8,
+        minChildSize: 0.4,
+        builder: (_, sc) {
+          final scheme = Theme.of(context).colorScheme;
+          final text = Theme.of(context).textTheme;
+          return ListView(
+            controller: sc,
+            padding: const EdgeInsets.all(18),
+            children: [
+              Text('Resumen',
+                  style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 16),
+              FutureBuilder<Map<String, double>>(
+                future: context
+                    .read<ContabilidadProvider>()
+                    .totalCobradoPorMetodoMes(anioActual, mesActual),
+                builder: (ctx, snap) {
+                  final l = AppLocalizations.of(ctx);
+                  final porMetodo = snap.data ?? {};
+                  final efe = porMetodo['efectivo'] ?? 0.0;
+                  final biz = porMetodo['bizum'] ?? 0.0;
+                  final tar = porMetodo['tarjeta'] ?? 0.0;
+                  final totalFacturado = efe + biz + tar;
+                  final beneficio = totalFacturado - totalGastos;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildTotalCard(l.accountingPaymentMethodCash, efe,
+                          scheme.secondaryContainer, scheme.onSecondaryContainer,
+                          Icons.money, text),
+                      const SizedBox(height: 10),
+                      _buildTotalCard(l.accountingPaymentMethodBizum, biz,
+                          scheme.secondaryContainer, scheme.onSecondaryContainer,
+                          Icons.phone_android, text),
+                      const SizedBox(height: 10),
+                      _buildTotalCard(l.accountingPaymentMethodCard, tar,
+                          scheme.secondaryContainer, scheme.onSecondaryContainer,
+                          Icons.credit_card, text),
+                      const SizedBox(height: 16),
+                      Divider(color: scheme.outlineVariant, height: 16),
+                      const SizedBox(height: 16),
+                      _buildTotalCard(l.accountingRevenue, totalFacturado,
+                          scheme.primaryContainer, scheme.onPrimaryContainer,
+                          Icons.trending_up, text),
+                      const SizedBox(height: 10),
+                      _buildTotalCard(l.accountingExpenses, totalGastos,
+                          scheme.errorContainer, scheme.onErrorContainer,
+                          Icons.trending_down, text),
+                      const SizedBox(height: 10),
+                      _buildTotalCard(
+                          l.accountingProfit,
+                          beneficio,
+                          scheme.tertiaryContainer,
+                          scheme.onTertiaryContainer,
+                          beneficio >= 0 ? Icons.check_circle : Icons.error,
+                          text),
+                      const SizedBox(height: 24),
+                      _buildVistaAnual(text, scheme, beneficiosPorMes),
+                    ],
+                  );
+                },
+              ),
+            ],
+          );
+        },
       ),
     );
   }

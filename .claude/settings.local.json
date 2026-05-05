@@ -13,7 +13,14 @@
       "Bash(grep -E \"\\\\.\\(dart|ts|sql\\)$\")",
       "Read(//e/Cositas/VS/app_gestion_negocio_backend/**)",
       "Bash(npx tsc *)",
-      "Bash(grep -E \"\\\\.dart$\")"
+      "Bash(grep -E \"\\\\.dart$\")",
+      "Bash(flutter run *)",
+      "Bash(tee flutter_run_verbose.log)",
+      "Bash(timeout 60 adb logcat *:E)",
+      "Bash(\"C:\\\\Users\\\\info\\\\AppData\\\\Local\\\\Android\\\\sdk\\\\platform-tools\\\\adb.exe\" logcat *)",
+      "Bash(kill %1)",
+      "Bash(\"C:\\\\Users\\\\info\\\\AppData\\\\Local\\\\Android\\\\sdk\\\\platform-tools\\\\adb.exe\" shell *)",
+      "Bash(wait)"
     ]
   }
 }

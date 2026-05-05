@@ -9,6 +9,7 @@ import '../providers/servicios_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/app_database.dart';
 import '../l10n/app_localizations.dart';
+import '../utils/responsive.dart';
 
 // ── Modelos internos ──────────────────────────────────────────────
 class _ClienteRank {
@@ -204,6 +205,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         final l = AppLocalizations.of(ctx);
         final sim = settings.simboloMoneda;
         final scheme = Theme.of(ctx).colorScheme;
+        final mobile = isMobile(ctx);
 
         return SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -219,147 +221,271 @@ class _DashboardScreenState extends State<DashboardScreen>
               const SizedBox(height: 16),
 
               // ── KPIs ────────────────────────────────────────────
-              Row(children: [
-                Expanded(
-                  child: _animated(
-                    anim: _interval(0.1, 0.45),
-                    offsetY: 0.08,
-                    child: _KpiCard(
-                      label: l.dashMonthlyRevenue,
-                      value: data.ingresosEsteMes,
-                      icon: Icons.trending_up_rounded,
-                      color: scheme.primary,
-                      suffix: ' $sim',
-                      anim: _interval(0.2, 0.8),
+              if (mobile) ...[
+                Row(children: [
+                  Expanded(
+                    child: _animated(
+                      anim: _interval(0.1, 0.45),
+                      offsetY: 0.08,
+                      child: _KpiCard(
+                        label: l.dashMonthlyRevenue,
+                        value: data.ingresosEsteMes,
+                        icon: Icons.trending_up_rounded,
+                        color: scheme.primary,
+                        suffix: ' $sim',
+                        anim: _interval(0.2, 0.8),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _animated(
-                    anim: _interval(0.15, 0.5),
-                    offsetY: 0.08,
-                    child: _KpiCard(
-                      label: l.dashAppointmentsToday,
-                      value: data.citasHoy.length.toDouble(),
-                      icon: Icons.event_rounded,
-                      color: scheme.secondary,
-                      suffix: '',
-                      anim: _interval(0.25, 0.8),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _animated(
+                      anim: _interval(0.15, 0.5),
+                      offsetY: 0.08,
+                      child: _KpiCard(
+                        label: l.dashAppointmentsToday,
+                        value: data.citasHoy.length.toDouble(),
+                        icon: Icons.event_rounded,
+                        color: scheme.secondary,
+                        suffix: '',
+                        anim: _interval(0.25, 0.8),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _animated(
-                    anim: _interval(0.2, 0.55),
-                    offsetY: 0.08,
-                    child: _KpiCard(
-                      label: l.dashUnpaidTotal,
-                      value: data.impagosTotal,
-                      icon: Icons.warning_amber_rounded,
-                      color: scheme.error,
-                      suffix: ' $sim',
-                      anim: _interval(0.3, 0.85),
+                ]),
+                const SizedBox(height: 12),
+                Row(children: [
+                  Expanded(
+                    child: _animated(
+                      anim: _interval(0.2, 0.55),
+                      offsetY: 0.08,
+                      child: _KpiCard(
+                        label: l.dashUnpaidTotal,
+                        value: data.impagosTotal,
+                        icon: Icons.warning_amber_rounded,
+                        color: scheme.error,
+                        suffix: ' $sim',
+                        anim: _interval(0.3, 0.85),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _animated(
-                    anim: _interval(0.25, 0.6),
-                    offsetY: 0.08,
-                    child: _KpiCard(
-                      label: l.dashActiveBonuses,
-                      value: data.bonosActivosCount.toDouble(),
-                      icon: Icons.card_giftcard_rounded,
-                      color: scheme.tertiary,
-                      suffix: '',
-                      anim: _interval(0.35, 0.85),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _animated(
+                      anim: _interval(0.25, 0.6),
+                      offsetY: 0.08,
+                      child: _KpiCard(
+                        label: l.dashActiveBonuses,
+                        value: data.bonosActivosCount.toDouble(),
+                        icon: Icons.card_giftcard_rounded,
+                        color: scheme.tertiary,
+                        suffix: '',
+                        anim: _interval(0.35, 0.85),
+                      ),
                     ),
                   ),
-                ),
-              ]),
+                ]),
+              ] else
+                Row(children: [
+                  Expanded(
+                    child: _animated(
+                      anim: _interval(0.1, 0.45),
+                      offsetY: 0.08,
+                      child: _KpiCard(
+                        label: l.dashMonthlyRevenue,
+                        value: data.ingresosEsteMes,
+                        icon: Icons.trending_up_rounded,
+                        color: scheme.primary,
+                        suffix: ' $sim',
+                        anim: _interval(0.2, 0.8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _animated(
+                      anim: _interval(0.15, 0.5),
+                      offsetY: 0.08,
+                      child: _KpiCard(
+                        label: l.dashAppointmentsToday,
+                        value: data.citasHoy.length.toDouble(),
+                        icon: Icons.event_rounded,
+                        color: scheme.secondary,
+                        suffix: '',
+                        anim: _interval(0.25, 0.8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _animated(
+                      anim: _interval(0.2, 0.55),
+                      offsetY: 0.08,
+                      child: _KpiCard(
+                        label: l.dashUnpaidTotal,
+                        value: data.impagosTotal,
+                        icon: Icons.warning_amber_rounded,
+                        color: scheme.error,
+                        suffix: ' $sim',
+                        anim: _interval(0.3, 0.85),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _animated(
+                      anim: _interval(0.25, 0.6),
+                      offsetY: 0.08,
+                      child: _KpiCard(
+                        label: l.dashActiveBonuses,
+                        value: data.bonosActivosCount.toDouble(),
+                        icon: Icons.card_giftcard_rounded,
+                        color: scheme.tertiary,
+                        suffix: '',
+                        anim: _interval(0.35, 0.85),
+                      ),
+                    ),
+                  ),
+                ]),
               const SizedBox(height: 16),
 
               // ── Gráfica + Agenda de hoy ──────────────────────────
-              SizedBox(
-                height: 420,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+              if (mobile) ...[
+                SizedBox(
+                  height: 280,
+                  child: _animated(
+                    anim: _interval(0.3, 0.65),
+                    offsetY: 0.06,
+                    child: _ChartCard(data: data, anim: _interval(0.4, 1.0), sim: sim),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 240,
+                  child: _animated(
+                    anim: _interval(0.35, 0.7),
+                    offsetY: 0.06,
+                    child: _AgendaHoyCard(
+                      citas: data.citasHoy,
+                      clienteNombres: data.clienteNombres,
+                      servicioNombres: data.servicioNombres,
+                    ),
+                  ),
+                ),
+              ] else
+                SizedBox(
+                  height: 420,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        flex: 5,
+                        child: _animated(
+                          anim: _interval(0.3, 0.65),
+                          offsetY: 0.06,
+                          child: _ChartCard(data: data, anim: _interval(0.4, 1.0), sim: sim),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 3,
+                        child: _animated(
+                          anim: _interval(0.35, 0.7),
+                          offsetY: 0.06,
+                          child: _AgendaHoyCard(
+                            citas: data.citasHoy,
+                            clienteNombres: data.clienteNombres,
+                            servicioNombres: data.servicioNombres,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 16),
+
+              // ── Top 3 + Impagos ──────────────────────────────────
+              if (mobile) ...[
+                _animated(
+                  anim: _interval(0.5, 0.85),
+                  offsetY: 0.06,
+                  child: _TopCard(
+                    titulo: l.dashTopClients,
+                    icon: Icons.emoji_events_rounded,
+                    items: data.topClientes
+                        .map((c) => (c.nombre, settings.formatCurrency(c.total, decimals: 0)))
+                        .toList(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _animated(
+                  anim: _interval(0.55, 0.9),
+                  offsetY: 0.06,
+                  child: _TopCard(
+                    titulo: l.dashTopServices,
+                    icon: Icons.auto_awesome_rounded,
+                    items: data.topServicios
+                        .map((s) => (s.nombre, '${s.count}'))
+                        .toList(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _animated(
+                  anim: _interval(0.6, 0.95),
+                  offsetY: 0.06,
+                  child: _ImpagosPendientesCard(
+                    impagos: data.impagosRecientes,
+                    clienteNombres: data.clienteNombres,
+                    servicioNombres: data.servicioNombres,
+                    sim: sim,
+                  ),
+                ),
+              ] else
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      flex: 5,
                       child: _animated(
-                        anim: _interval(0.3, 0.65),
+                        anim: _interval(0.5, 0.85),
                         offsetY: 0.06,
-                        child: _ChartCard(data: data, anim: _interval(0.4, 1.0), sim: sim),
+                        child: _TopCard(
+                          titulo: l.dashTopClients,
+                          icon: Icons.emoji_events_rounded,
+                          items: data.topClientes
+                              .map((c) => (c.nombre, settings.formatCurrency(c.total, decimals: 0)))
+                              .toList(),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      flex: 3,
                       child: _animated(
-                        anim: _interval(0.35, 0.7),
+                        anim: _interval(0.55, 0.9),
                         offsetY: 0.06,
-                        child: _AgendaHoyCard(
-                          citas: data.citasHoy,
+                        child: _TopCard(
+                          titulo: l.dashTopServices,
+                          icon: Icons.auto_awesome_rounded,
+                          items: data.topServicios
+                              .map((s) => (s.nombre, '${s.count}'))
+                              .toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _animated(
+                        anim: _interval(0.6, 0.95),
+                        offsetY: 0.06,
+                        child: _ImpagosPendientesCard(
+                          impagos: data.impagosRecientes,
                           clienteNombres: data.clienteNombres,
                           servicioNombres: data.servicioNombres,
+                          sim: sim,
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 16),
-
-              // ── Top 3 + Impagos ──────────────────────────────────
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: _animated(
-                      anim: _interval(0.5, 0.85),
-                      offsetY: 0.06,
-                      child: _TopCard(
-                        titulo: l.dashTopClients,
-                        icon: Icons.emoji_events_rounded,
-                        items: data.topClientes
-                            .map((c) => (c.nombre, settings.formatCurrency(c.total, decimals: 0)))
-                            .toList(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _animated(
-                      anim: _interval(0.55, 0.9),
-                      offsetY: 0.06,
-                      child: _TopCard(
-                        titulo: l.dashTopServices,
-                        icon: Icons.auto_awesome_rounded,
-                        items: data.topServicios
-                            .map((s) => (s.nombre, '${s.count}'))
-                            .toList(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _animated(
-                      anim: _interval(0.6, 0.95),
-                      offsetY: 0.06,
-                      child: _ImpagosPendientesCard(
-                        impagos: data.impagosRecientes,
-                        clienteNombres: data.clienteNombres,
-                        servicioNombres: data.servicioNombres,
-                        sim: sim,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
               const SizedBox(height: 24),
             ],
           ),

@@ -67,6 +67,9 @@ class _MyAppState extends ConsumerState<MyApp> {
   void _startSync(AppDatabase db) {
     _syncService = ref.read(syncServiceProvider(db));
     _syncService!.onServerChangesApplied = _reloadProviders;
+    // Conectar el notifier del estado de sync para que la UI reaccione
+    _syncService!.onStatusChanged =
+        ref.read(syncStatusProvider(db).notifier).update;
     _syncService!.startPolling();
   }
 

@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+
+const _kKeepSessionKey = 'keep_session';
 
 final apiServiceProvider = Provider((ref) {
   return ApiService();
@@ -41,6 +44,7 @@ class AuthController extends StateNotifier<AuthState> {
     required String email,
     required String password,
     required String displayName,
+    bool keepSession = true,
   }) async {
     state = const AuthState.loading();
     try {
@@ -49,30 +53,48 @@ class AuthController extends StateNotifier<AuthState> {
         password: password,
         displayName: displayName,
       );
+      await _saveKeepSession(keepSession);
       final user = await authService.getCurrentUser();
       state = AuthState.authenticated(user: user['user']);
+    } on ApiException catch (e) {
+      state = AuthState.error(message: e.message);
     } catch (e) {
-      state = AuthState.error(message: e.toString());
+      state = AuthState.error(message: e.toString().replaceFirst('Exception: ', ''));
     }
   }
 
   Future<void> login({
     required String email,
     required String password,
+    bool keepSession = false,
   }) async {
     state = const AuthState.loading();
     try {
       await authService.login(email: email, password: password);
+      await _saveKeepSession(keepSession);
       final user = await authService.getCurrentUser();
       state = AuthState.authenticated(user: user['user']);
+    } on ApiException catch (e) {
+      state = AuthState.error(message: e.message);
     } catch (e) {
-      state = AuthState.error(message: e.toString());
+      state = AuthState.error(message: e.toString().replaceFirst('Exception: ', ''));
     }
   }
 
   Future<void> logout() async {
     await authService.logout();
+    await _saveKeepSession(false);
     state = const AuthState.unauthenticated();
+  }
+
+  static Future<bool> getKeepSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_kKeepSessionKey) ?? false;
+  }
+
+  Future<void> _saveKeepSession(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kKeepSessionKey, value);
   }
 }
 

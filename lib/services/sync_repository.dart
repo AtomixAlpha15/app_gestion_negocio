@@ -61,19 +61,58 @@ class SyncRepository {
   // ── Leer cambios locales desde lastSync ──────────────────────────────────
 
   Future<List<SyncChange>> getLocalChanges(DateTime since) async {
-    final changes = <SyncChange>[];
+    final clientesChanges   = await _clientesChanges(since);
+    final serviciosChanges  = await _serviciosChanges(since);
+    final bonosChanges      = await _bonosChanges(since);
 
-    changes.addAll(await _clientesChanges(since));
-    changes.addAll(await _serviciosChanges(since));
-    changes.addAll(await _extrasServicioChanges(since));
-    changes.addAll(await _citasChanges(since));
-    changes.addAll(await _extrasCitaChanges(since));
-    changes.addAll(await _bonosChanges(since));
-    changes.addAll(await _bonoConsumosChanges(since));
-    changes.addAll(await _bonoPagosChanges(since));
-    changes.addAll(await _gastosChanges(since));
+    // Si un bono nuevo referencia un servicio que no cambió desde lastSync,
+    // ese servicio no estaría en el batch y el backend violaría la FK.
+    // Lo incluimos explícitamente como upsert.
+    final includedServicioIds = {for (final c in serviciosChanges) c.id};
+    final missingServicioIds = bonosChanges
+        .map((b) => b.data['servicio_id'] as String?)
+        .whereType<String>()
+        .where((id) => id.isNotEmpty && !includedServicioIds.contains(id))
+        .toSet();
+    if (missingServicioIds.isNotEmpty) {
+      serviciosChanges.addAll(await _serviciosByIds(missingServicioIds));
+    }
 
-    return changes;
+    return [
+      ...clientesChanges,
+      ...serviciosChanges,
+      ...await _extrasServicioChanges(since),
+      ...await _citasChanges(since),
+      ...await _extrasCitaChanges(since),
+      ...bonosChanges,
+      ...await _bonoConsumosChanges(since),
+      ...await _bonoPagosChanges(since),
+      ...await _gastosChanges(since),
+    ];
+  }
+
+  Future<List<SyncChange>> _serviciosByIds(Set<String> ids) async {
+    if (ids.isEmpty) return [];
+    final rows = await (db.select(db.servicios)
+      ..where((s) => s.id.isIn(ids))).get();
+    return rows.map((r) => SyncChange(
+      entityType: 'servicios',
+      action: 'create',
+      id: r.id,
+      syncId: r.syncId ?? r.id,
+      data: {
+        'id': r.id,
+        'nombre': r.nombre,
+        'descripcion': r.descripcion,
+        'precio_base': r.precio,
+        'duracion_minutos': r.duracionMinutos,
+        'activo': true,
+        'deleted': r.deleted,
+        'created_at': r.createdAt?.toIso8601String(),
+        'updated_at': r.updatedAt?.toIso8601String(),
+        'sync_id': r.syncId ?? r.id,
+      },
+    )).toList();
   }
 
   Future<List<SyncChange>> _clientesChanges(DateTime since) async {

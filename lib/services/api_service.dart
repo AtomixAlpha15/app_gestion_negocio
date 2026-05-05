@@ -1,9 +1,27 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+class ApiException implements Exception {
+  final String message;
+  final int? statusCode;
+  const ApiException(this.message, {this.statusCode});
+
+  @override
+  String toString() => message;
+}
+
 class ApiService {
-  static const String baseUrl = 'http://localhost:3000/api';
+  // --dart-define=BACKEND_URL=http://192.168.X.X:3000/api  (dispositivo físico)
+  // Emulador Android usa 10.0.2.2 automáticamente; Windows usa localhost
+  static const String _envUrl = String.fromEnvironment('BACKEND_URL', defaultValue: '');
+  static String get baseUrl {
+    if (_envUrl.isNotEmpty) return _envUrl;
+    if (Platform.isAndroid) return 'http://10.0.2.2:3000/api';
+    return 'http://localhost:3000/api';
+  }
+
   static const String _tokenKey = 'jwt_token';
 
   final FlutterSecureStorage _secureStorage;
@@ -17,22 +35,30 @@ class ApiService {
     required String password,
     required String displayName,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/register'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-        'display_name': displayName,
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+          'display_name': displayName,
+        }),
+      );
 
-    if (response.statusCode == 201) {
-      final data = jsonDecode(response.body);
-      await _saveToken(data['token']);
-      return data;
-    } else {
-      throw Exception(jsonDecode(response.body)['error'] ?? 'Registration failed');
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        await _saveToken(data['token']);
+        return data;
+      } else {
+        throw _parseError(response);
+      }
+    } on ApiException {
+      rethrow;
+    } on SocketException {
+      throw const ApiException('Sin conexión al servidor. Comprueba tu red.');
+    } catch (e) {
+      throw ApiException('Error inesperado: $e');
     }
   }
 
@@ -40,27 +66,34 @@ class ApiService {
     required String email,
     required String password,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/auth/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      await _saveToken(data['token']);
-      return data;
-    } else {
-      throw Exception(jsonDecode(response.body)['error'] ?? 'Login failed');
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        await _saveToken(data['token']);
+        return data;
+      } else {
+        throw _parseError(response);
+      }
+    } on ApiException {
+      rethrow;
+    } on SocketException {
+      throw const ApiException('Sin conexión al servidor. Comprueba tu red.');
+    } catch (e) {
+      throw ApiException('Error inesperado: $e');
     }
   }
 
   Future<Map<String, dynamic>> getCurrentUser() async {
-    final response = await _get('/auth/me');
-    return response;
+    return await _get('/auth/me');
   }
 
   Future<void> logout() async {
@@ -74,7 +107,6 @@ class ApiService {
       Uri.parse('$baseUrl$endpoint'),
       headers: _getHeaders(token),
     );
-
     return _handleResponse(response);
   }
 
@@ -86,7 +118,6 @@ class ApiService {
       headers: _getHeaders(token),
       body: jsonEncode(body),
     );
-
     return _handleResponse(response);
   }
 
@@ -98,7 +129,6 @@ class ApiService {
       headers: _getHeaders(token),
       body: jsonEncode(body),
     );
-
     return _handleResponse(response);
   }
 
@@ -109,7 +139,6 @@ class ApiService {
       Uri.parse('$baseUrl$endpoint'),
       headers: _getHeaders(token),
     );
-
     return _handleResponse(response);
   }
 
@@ -121,13 +150,12 @@ class ApiService {
       headers: _getHeaders(token),
       body: jsonEncode(body),
     );
-
     return _handleResponse(response);
   }
 
   // Helper methods
   Map<String, String> _getHeaders(String? token) {
-    final headers = {'Content-Type': 'application/json'};
+    final headers = <String, String>{'Content-Type': 'application/json'};
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
     }
@@ -142,25 +170,43 @@ class ApiService {
     return await _secureStorage.read(key: _tokenKey);
   }
 
-  Future<void> _deleteToken() async {
-    await _secureStorage.delete(key: _tokenKey);
-  }
-
   Map<String, dynamic> _handleResponse(http.Response response) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return jsonDecode(response.body);
-    } else {
-      try {
-        final error = jsonDecode(response.body)['error'] ?? 'Request failed';
-        throw Exception(error);
-      } catch (e) {
-        throw Exception('Request failed with status ${response.statusCode}');
-      }
     }
+    throw _parseError(response);
   }
 
-  bool isTokenValid() {
-    // Validate if token exists and is not expired
-    return true; // TODO: Implement JWT validation
+  ApiException _parseError(http.Response response) {
+    try {
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final raw = body['error'] as String? ?? '';
+
+      // Mapear mensajes del backend a mensajes amigables en español
+      if (response.statusCode == 409 ||
+          raw.toLowerCase().contains('already exists') ||
+          raw.toLowerCase().contains('duplicate') ||
+          raw.toLowerCase().contains('ya existe')) {
+        return ApiException('Este email ya está registrado.', statusCode: response.statusCode);
+      }
+      if (response.statusCode == 401 ||
+          raw.toLowerCase().contains('invalid credentials') ||
+          raw.toLowerCase().contains('incorrect') ||
+          raw.toLowerCase().contains('unauthorized')) {
+        return ApiException('Email o contraseña incorrectos.', statusCode: response.statusCode);
+      }
+      if (response.statusCode == 422 || raw.toLowerCase().contains('validation')) {
+        return ApiException('Datos inválidos. Revisa los campos.', statusCode: response.statusCode);
+      }
+      if (response.statusCode == 429) {
+        return ApiException('Demasiados intentos. Espera un momento.', statusCode: response.statusCode);
+      }
+      if (response.statusCode >= 500) {
+        return ApiException('Error del servidor. Inténtalo más tarde.', statusCode: response.statusCode);
+      }
+      return ApiException(raw.isNotEmpty ? raw : 'Error desconocido.', statusCode: response.statusCode);
+    } catch (_) {
+      return ApiException('Error ${response.statusCode}.', statusCode: response.statusCode);
+    }
   }
 }
