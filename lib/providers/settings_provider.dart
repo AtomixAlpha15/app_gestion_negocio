@@ -43,6 +43,9 @@ class SettingsProvider extends ChangeNotifier {
   // simboloMoneda: '€' | '$' | '£' | 'JPY' | ...
   String simboloMoneda = "€";
 
+  // --- MULTI-ESTABLECIMIENTO ---
+  String establecimientoActualId = '';
+
   // --- NOTIFICACIONES ---
   bool alertasImpagos = true;
   bool notifCitas = true;
@@ -189,6 +192,8 @@ class SettingsProvider extends ChangeNotifier {
     final lastIso = prefs.getString(_k('ultimaFechaBackup'));
     ultimaFechaBackup = lastIso != null ? DateTime.tryParse(lastIso) : null;
 
+    establecimientoActualId = prefs.getString(_k('establecimientoActualId')) ?? '';
+
     notifyListeners();
   }
 
@@ -231,6 +236,7 @@ class SettingsProvider extends ChangeNotifier {
 
     await prefs.setInt(_k('intervaloBackupDias'), intervaloBackupDias);
     await prefs.setString(_k('ultimaFechaBackup'), ultimaFechaBackup?.toIso8601String() ?? '');
+    await prefs.setString(_k('establecimientoActualId'), establecimientoActualId);
   }
 
   // --------- SETTERS REACTIVOS ---------
@@ -369,6 +375,12 @@ class SettingsProvider extends ChangeNotifier {
 
   void setUltimaFechaBackup(DateTime dt) {
     ultimaFechaBackup = dt;
+    guardarAjustes();
+    notifyListeners();
+  }
+
+  void setEstablecimientoActualId(String id) {
+    establecimientoActualId = id;
     guardarAjustes();
     notifyListeners();
   }

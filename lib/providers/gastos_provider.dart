@@ -28,6 +28,7 @@ class GastosProvider extends ChangeNotifier {
     required String concepto,
     required double precio,
     required DateTime fecha,
+    String? establecimientoId,
   }) async {
     final id = const Uuid().v4();
     final now = DateTime.now();
@@ -36,6 +37,7 @@ class GastosProvider extends ChangeNotifier {
       concepto: Value(concepto),
       precio: Value(precio),
       fecha: Value(fecha),
+      establecimientoId: Value(establecimientoId),
       syncId: Value(const Uuid().v4()),
       createdAt: Value(now),
       updatedAt: Value(now),

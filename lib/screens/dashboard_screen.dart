@@ -10,6 +10,7 @@ import '../providers/settings_provider.dart';
 import '../services/app_database.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/responsive.dart';
+import '../widgets/custom_nav.dart';
 
 // ── Modelos internos ──────────────────────────────────────────────
 class _ClienteRank {
@@ -194,7 +195,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<_DashData>(
+    final dashBody = FutureBuilder<_DashData>(
       future: _dataFuture,
       builder: (ctx, snap) {
         if (!snap.hasData) {
@@ -492,6 +493,17 @@ class _DashboardScreenState extends State<DashboardScreen>
         );
       },
     );
+    if (isMobile(context)) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Inicio'),
+          centerTitle: false,
+          actions: const [UserAvatarAction()],
+        ),
+        body: dashBody,
+      );
+    }
+    return dashBody;
   }
 
   Widget _animated({

@@ -1095,6 +1095,20 @@ class $CitasTable extends Citas with TableInfo<$CitasTable, Cita> {
   late final GeneratedColumn<String> notas = GeneratedColumn<String>(
       'notas', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _trabajadorMeta =
+      const VerificationMeta('trabajador');
+  @override
+  late final GeneratedColumn<int> trabajador = GeneratedColumn<int>(
+      'trabajador', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(1));
+  static const VerificationMeta _establecimientoIdMeta =
+      const VerificationMeta('establecimientoId');
+  @override
+  late final GeneratedColumn<String> establecimientoId =
+      GeneratedColumn<String>('establecimiento_id', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -1135,6 +1149,8 @@ class $CitasTable extends Citas with TableInfo<$CitasTable, Cita> {
         pagada,
         metodoPago,
         notas,
+        trabajador,
+        establecimientoId,
         createdAt,
         updatedAt,
         syncId,
@@ -1201,6 +1217,18 @@ class $CitasTable extends Citas with TableInfo<$CitasTable, Cita> {
       context.handle(
           _notasMeta, notas.isAcceptableOrUnknown(data['notas']!, _notasMeta));
     }
+    if (data.containsKey('trabajador')) {
+      context.handle(
+          _trabajadorMeta,
+          trabajador.isAcceptableOrUnknown(
+              data['trabajador']!, _trabajadorMeta));
+    }
+    if (data.containsKey('establecimiento_id')) {
+      context.handle(
+          _establecimientoIdMeta,
+          establecimientoId.isAcceptableOrUnknown(
+              data['establecimiento_id']!, _establecimientoIdMeta));
+    }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
@@ -1244,6 +1272,10 @@ class $CitasTable extends Citas with TableInfo<$CitasTable, Cita> {
           .read(DriftSqlType.string, data['${effectivePrefix}metodo_pago']),
       notas: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}notas']),
+      trabajador: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}trabajador'])!,
+      establecimientoId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}establecimiento_id']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
       updatedAt: attachedDatabase.typeMapping
@@ -1271,6 +1303,8 @@ class Cita extends DataClass implements Insertable<Cita> {
   final bool pagada;
   final String? metodoPago;
   final String? notas;
+  final int trabajador;
+  final String? establecimientoId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final String? syncId;
@@ -1285,6 +1319,8 @@ class Cita extends DataClass implements Insertable<Cita> {
       required this.pagada,
       this.metodoPago,
       this.notas,
+      required this.trabajador,
+      this.establecimientoId,
       this.createdAt,
       this.updatedAt,
       this.syncId,
@@ -1304,6 +1340,10 @@ class Cita extends DataClass implements Insertable<Cita> {
     }
     if (!nullToAbsent || notas != null) {
       map['notas'] = Variable<String>(notas);
+    }
+    map['trabajador'] = Variable<int>(trabajador);
+    if (!nullToAbsent || establecimientoId != null) {
+      map['establecimiento_id'] = Variable<String>(establecimientoId);
     }
     if (!nullToAbsent || createdAt != null) {
       map['created_at'] = Variable<DateTime>(createdAt);
@@ -1332,6 +1372,10 @@ class Cita extends DataClass implements Insertable<Cita> {
           : Value(metodoPago),
       notas:
           notas == null && nullToAbsent ? const Value.absent() : Value(notas),
+      trabajador: Value(trabajador),
+      establecimientoId: establecimientoId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(establecimientoId),
       createdAt: createdAt == null && nullToAbsent
           ? const Value.absent()
           : Value(createdAt),
@@ -1357,6 +1401,9 @@ class Cita extends DataClass implements Insertable<Cita> {
       pagada: serializer.fromJson<bool>(json['pagada']),
       metodoPago: serializer.fromJson<String?>(json['metodoPago']),
       notas: serializer.fromJson<String?>(json['notas']),
+      trabajador: serializer.fromJson<int>(json['trabajador']),
+      establecimientoId:
+          serializer.fromJson<String?>(json['establecimientoId']),
       createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
       syncId: serializer.fromJson<String?>(json['syncId']),
@@ -1376,6 +1423,8 @@ class Cita extends DataClass implements Insertable<Cita> {
       'pagada': serializer.toJson<bool>(pagada),
       'metodoPago': serializer.toJson<String?>(metodoPago),
       'notas': serializer.toJson<String?>(notas),
+      'trabajador': serializer.toJson<int>(trabajador),
+      'establecimientoId': serializer.toJson<String?>(establecimientoId),
       'createdAt': serializer.toJson<DateTime?>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
       'syncId': serializer.toJson<String?>(syncId),
@@ -1393,6 +1442,8 @@ class Cita extends DataClass implements Insertable<Cita> {
           bool? pagada,
           Value<String?> metodoPago = const Value.absent(),
           Value<String?> notas = const Value.absent(),
+          int? trabajador,
+          Value<String?> establecimientoId = const Value.absent(),
           Value<DateTime?> createdAt = const Value.absent(),
           Value<DateTime?> updatedAt = const Value.absent(),
           Value<String?> syncId = const Value.absent(),
@@ -1407,6 +1458,10 @@ class Cita extends DataClass implements Insertable<Cita> {
         pagada: pagada ?? this.pagada,
         metodoPago: metodoPago.present ? metodoPago.value : this.metodoPago,
         notas: notas.present ? notas.value : this.notas,
+        trabajador: trabajador ?? this.trabajador,
+        establecimientoId: establecimientoId.present
+            ? establecimientoId.value
+            : this.establecimientoId,
         createdAt: createdAt.present ? createdAt.value : this.createdAt,
         updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
         syncId: syncId.present ? syncId.value : this.syncId,
@@ -1425,6 +1480,11 @@ class Cita extends DataClass implements Insertable<Cita> {
       metodoPago:
           data.metodoPago.present ? data.metodoPago.value : this.metodoPago,
       notas: data.notas.present ? data.notas.value : this.notas,
+      trabajador:
+          data.trabajador.present ? data.trabajador.value : this.trabajador,
+      establecimientoId: data.establecimientoId.present
+          ? data.establecimientoId.value
+          : this.establecimientoId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       syncId: data.syncId.present ? data.syncId.value : this.syncId,
@@ -1444,6 +1504,8 @@ class Cita extends DataClass implements Insertable<Cita> {
           ..write('pagada: $pagada, ')
           ..write('metodoPago: $metodoPago, ')
           ..write('notas: $notas, ')
+          ..write('trabajador: $trabajador, ')
+          ..write('establecimientoId: $establecimientoId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncId: $syncId, ')
@@ -1453,8 +1515,22 @@ class Cita extends DataClass implements Insertable<Cita> {
   }
 
   @override
-  int get hashCode => Object.hash(id, clienteId, servicioId, inicio, fin,
-      precio, pagada, metodoPago, notas, createdAt, updatedAt, syncId, deleted);
+  int get hashCode => Object.hash(
+      id,
+      clienteId,
+      servicioId,
+      inicio,
+      fin,
+      precio,
+      pagada,
+      metodoPago,
+      notas,
+      trabajador,
+      establecimientoId,
+      createdAt,
+      updatedAt,
+      syncId,
+      deleted);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1468,6 +1544,8 @@ class Cita extends DataClass implements Insertable<Cita> {
           other.pagada == this.pagada &&
           other.metodoPago == this.metodoPago &&
           other.notas == this.notas &&
+          other.trabajador == this.trabajador &&
+          other.establecimientoId == this.establecimientoId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.syncId == this.syncId &&
@@ -1484,6 +1562,8 @@ class CitasCompanion extends UpdateCompanion<Cita> {
   final Value<bool> pagada;
   final Value<String?> metodoPago;
   final Value<String?> notas;
+  final Value<int> trabajador;
+  final Value<String?> establecimientoId;
   final Value<DateTime?> createdAt;
   final Value<DateTime?> updatedAt;
   final Value<String?> syncId;
@@ -1499,6 +1579,8 @@ class CitasCompanion extends UpdateCompanion<Cita> {
     this.pagada = const Value.absent(),
     this.metodoPago = const Value.absent(),
     this.notas = const Value.absent(),
+    this.trabajador = const Value.absent(),
+    this.establecimientoId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.syncId = const Value.absent(),
@@ -1515,6 +1597,8 @@ class CitasCompanion extends UpdateCompanion<Cita> {
     this.pagada = const Value.absent(),
     this.metodoPago = const Value.absent(),
     this.notas = const Value.absent(),
+    this.trabajador = const Value.absent(),
+    this.establecimientoId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.syncId = const Value.absent(),
@@ -1536,6 +1620,8 @@ class CitasCompanion extends UpdateCompanion<Cita> {
     Expression<bool>? pagada,
     Expression<String>? metodoPago,
     Expression<String>? notas,
+    Expression<int>? trabajador,
+    Expression<String>? establecimientoId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<String>? syncId,
@@ -1552,6 +1638,8 @@ class CitasCompanion extends UpdateCompanion<Cita> {
       if (pagada != null) 'pagada': pagada,
       if (metodoPago != null) 'metodo_pago': metodoPago,
       if (notas != null) 'notas': notas,
+      if (trabajador != null) 'trabajador': trabajador,
+      if (establecimientoId != null) 'establecimiento_id': establecimientoId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (syncId != null) 'sync_id': syncId,
@@ -1570,6 +1658,8 @@ class CitasCompanion extends UpdateCompanion<Cita> {
       Value<bool>? pagada,
       Value<String?>? metodoPago,
       Value<String?>? notas,
+      Value<int>? trabajador,
+      Value<String?>? establecimientoId,
       Value<DateTime?>? createdAt,
       Value<DateTime?>? updatedAt,
       Value<String?>? syncId,
@@ -1585,6 +1675,8 @@ class CitasCompanion extends UpdateCompanion<Cita> {
       pagada: pagada ?? this.pagada,
       metodoPago: metodoPago ?? this.metodoPago,
       notas: notas ?? this.notas,
+      trabajador: trabajador ?? this.trabajador,
+      establecimientoId: establecimientoId ?? this.establecimientoId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       syncId: syncId ?? this.syncId,
@@ -1623,6 +1715,12 @@ class CitasCompanion extends UpdateCompanion<Cita> {
     if (notas.present) {
       map['notas'] = Variable<String>(notas.value);
     }
+    if (trabajador.present) {
+      map['trabajador'] = Variable<int>(trabajador.value);
+    }
+    if (establecimientoId.present) {
+      map['establecimiento_id'] = Variable<String>(establecimientoId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -1653,6 +1751,8 @@ class CitasCompanion extends UpdateCompanion<Cita> {
           ..write('pagada: $pagada, ')
           ..write('metodoPago: $metodoPago, ')
           ..write('notas: $notas, ')
+          ..write('trabajador: $trabajador, ')
+          ..write('establecimientoId: $establecimientoId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncId: $syncId, ')
@@ -2479,6 +2579,12 @@ class $GastosTable extends Gastos with TableInfo<$GastosTable, Gasto> {
       type: DriftSqlType.dateTime,
       requiredDuringInsert: false,
       defaultValue: currentDateAndTime);
+  static const VerificationMeta _establecimientoIdMeta =
+      const VerificationMeta('establecimientoId');
+  @override
+  late final GeneratedColumn<String> establecimientoId =
+      GeneratedColumn<String>('establecimiento_id', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -2509,8 +2615,17 @@ class $GastosTable extends Gastos with TableInfo<$GastosTable, Gasto> {
           GeneratedColumn.constraintIsAlways('CHECK ("deleted" IN (0, 1))'),
       defaultValue: const Constant(false));
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, concepto, precio, fecha, createdAt, updatedAt, syncId, deleted];
+  List<GeneratedColumn> get $columns => [
+        id,
+        concepto,
+        precio,
+        fecha,
+        establecimientoId,
+        createdAt,
+        updatedAt,
+        syncId,
+        deleted
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2541,6 +2656,12 @@ class $GastosTable extends Gastos with TableInfo<$GastosTable, Gasto> {
     if (data.containsKey('fecha')) {
       context.handle(
           _fechaMeta, fecha.isAcceptableOrUnknown(data['fecha']!, _fechaMeta));
+    }
+    if (data.containsKey('establecimiento_id')) {
+      context.handle(
+          _establecimientoIdMeta,
+          establecimientoId.isAcceptableOrUnknown(
+              data['establecimiento_id']!, _establecimientoIdMeta));
     }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
@@ -2575,6 +2696,8 @@ class $GastosTable extends Gastos with TableInfo<$GastosTable, Gasto> {
           .read(DriftSqlType.double, data['${effectivePrefix}precio'])!,
       fecha: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}fecha'])!,
+      establecimientoId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}establecimiento_id']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
       updatedAt: attachedDatabase.typeMapping
@@ -2597,6 +2720,7 @@ class Gasto extends DataClass implements Insertable<Gasto> {
   final String concepto;
   final double precio;
   final DateTime fecha;
+  final String? establecimientoId;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final String? syncId;
@@ -2606,6 +2730,7 @@ class Gasto extends DataClass implements Insertable<Gasto> {
       required this.concepto,
       required this.precio,
       required this.fecha,
+      this.establecimientoId,
       this.createdAt,
       this.updatedAt,
       this.syncId,
@@ -2617,6 +2742,9 @@ class Gasto extends DataClass implements Insertable<Gasto> {
     map['concepto'] = Variable<String>(concepto);
     map['precio'] = Variable<double>(precio);
     map['fecha'] = Variable<DateTime>(fecha);
+    if (!nullToAbsent || establecimientoId != null) {
+      map['establecimiento_id'] = Variable<String>(establecimientoId);
+    }
     if (!nullToAbsent || createdAt != null) {
       map['created_at'] = Variable<DateTime>(createdAt);
     }
@@ -2636,6 +2764,9 @@ class Gasto extends DataClass implements Insertable<Gasto> {
       concepto: Value(concepto),
       precio: Value(precio),
       fecha: Value(fecha),
+      establecimientoId: establecimientoId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(establecimientoId),
       createdAt: createdAt == null && nullToAbsent
           ? const Value.absent()
           : Value(createdAt),
@@ -2656,6 +2787,8 @@ class Gasto extends DataClass implements Insertable<Gasto> {
       concepto: serializer.fromJson<String>(json['concepto']),
       precio: serializer.fromJson<double>(json['precio']),
       fecha: serializer.fromJson<DateTime>(json['fecha']),
+      establecimientoId:
+          serializer.fromJson<String?>(json['establecimientoId']),
       createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
       syncId: serializer.fromJson<String?>(json['syncId']),
@@ -2670,6 +2803,7 @@ class Gasto extends DataClass implements Insertable<Gasto> {
       'concepto': serializer.toJson<String>(concepto),
       'precio': serializer.toJson<double>(precio),
       'fecha': serializer.toJson<DateTime>(fecha),
+      'establecimientoId': serializer.toJson<String?>(establecimientoId),
       'createdAt': serializer.toJson<DateTime?>(createdAt),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
       'syncId': serializer.toJson<String?>(syncId),
@@ -2682,6 +2816,7 @@ class Gasto extends DataClass implements Insertable<Gasto> {
           String? concepto,
           double? precio,
           DateTime? fecha,
+          Value<String?> establecimientoId = const Value.absent(),
           Value<DateTime?> createdAt = const Value.absent(),
           Value<DateTime?> updatedAt = const Value.absent(),
           Value<String?> syncId = const Value.absent(),
@@ -2691,6 +2826,9 @@ class Gasto extends DataClass implements Insertable<Gasto> {
         concepto: concepto ?? this.concepto,
         precio: precio ?? this.precio,
         fecha: fecha ?? this.fecha,
+        establecimientoId: establecimientoId.present
+            ? establecimientoId.value
+            : this.establecimientoId,
         createdAt: createdAt.present ? createdAt.value : this.createdAt,
         updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
         syncId: syncId.present ? syncId.value : this.syncId,
@@ -2702,6 +2840,9 @@ class Gasto extends DataClass implements Insertable<Gasto> {
       concepto: data.concepto.present ? data.concepto.value : this.concepto,
       precio: data.precio.present ? data.precio.value : this.precio,
       fecha: data.fecha.present ? data.fecha.value : this.fecha,
+      establecimientoId: data.establecimientoId.present
+          ? data.establecimientoId.value
+          : this.establecimientoId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       syncId: data.syncId.present ? data.syncId.value : this.syncId,
@@ -2716,6 +2857,7 @@ class Gasto extends DataClass implements Insertable<Gasto> {
           ..write('concepto: $concepto, ')
           ..write('precio: $precio, ')
           ..write('fecha: $fecha, ')
+          ..write('establecimientoId: $establecimientoId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncId: $syncId, ')
@@ -2725,8 +2867,8 @@ class Gasto extends DataClass implements Insertable<Gasto> {
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, concepto, precio, fecha, createdAt, updatedAt, syncId, deleted);
+  int get hashCode => Object.hash(id, concepto, precio, fecha,
+      establecimientoId, createdAt, updatedAt, syncId, deleted);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2735,6 +2877,7 @@ class Gasto extends DataClass implements Insertable<Gasto> {
           other.concepto == this.concepto &&
           other.precio == this.precio &&
           other.fecha == this.fecha &&
+          other.establecimientoId == this.establecimientoId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.syncId == this.syncId &&
@@ -2746,6 +2889,7 @@ class GastosCompanion extends UpdateCompanion<Gasto> {
   final Value<String> concepto;
   final Value<double> precio;
   final Value<DateTime> fecha;
+  final Value<String?> establecimientoId;
   final Value<DateTime?> createdAt;
   final Value<DateTime?> updatedAt;
   final Value<String?> syncId;
@@ -2756,6 +2900,7 @@ class GastosCompanion extends UpdateCompanion<Gasto> {
     this.concepto = const Value.absent(),
     this.precio = const Value.absent(),
     this.fecha = const Value.absent(),
+    this.establecimientoId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.syncId = const Value.absent(),
@@ -2767,6 +2912,7 @@ class GastosCompanion extends UpdateCompanion<Gasto> {
     required String concepto,
     required double precio,
     this.fecha = const Value.absent(),
+    this.establecimientoId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.syncId = const Value.absent(),
@@ -2780,6 +2926,7 @@ class GastosCompanion extends UpdateCompanion<Gasto> {
     Expression<String>? concepto,
     Expression<double>? precio,
     Expression<DateTime>? fecha,
+    Expression<String>? establecimientoId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<String>? syncId,
@@ -2791,6 +2938,7 @@ class GastosCompanion extends UpdateCompanion<Gasto> {
       if (concepto != null) 'concepto': concepto,
       if (precio != null) 'precio': precio,
       if (fecha != null) 'fecha': fecha,
+      if (establecimientoId != null) 'establecimiento_id': establecimientoId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (syncId != null) 'sync_id': syncId,
@@ -2804,6 +2952,7 @@ class GastosCompanion extends UpdateCompanion<Gasto> {
       Value<String>? concepto,
       Value<double>? precio,
       Value<DateTime>? fecha,
+      Value<String?>? establecimientoId,
       Value<DateTime?>? createdAt,
       Value<DateTime?>? updatedAt,
       Value<String?>? syncId,
@@ -2814,6 +2963,7 @@ class GastosCompanion extends UpdateCompanion<Gasto> {
       concepto: concepto ?? this.concepto,
       precio: precio ?? this.precio,
       fecha: fecha ?? this.fecha,
+      establecimientoId: establecimientoId ?? this.establecimientoId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       syncId: syncId ?? this.syncId,
@@ -2836,6 +2986,9 @@ class GastosCompanion extends UpdateCompanion<Gasto> {
     }
     if (fecha.present) {
       map['fecha'] = Variable<DateTime>(fecha.value);
+    }
+    if (establecimientoId.present) {
+      map['establecimiento_id'] = Variable<String>(establecimientoId.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -2862,6 +3015,7 @@ class GastosCompanion extends UpdateCompanion<Gasto> {
           ..write('concepto: $concepto, ')
           ..write('precio: $precio, ')
           ..write('fecha: $fecha, ')
+          ..write('establecimientoId: $establecimientoId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('syncId: $syncId, ')
@@ -4608,6 +4762,479 @@ class BonoPagosCompanion extends UpdateCompanion<BonoPago> {
   }
 }
 
+class $EstablecimientosTable extends Establecimientos
+    with TableInfo<$EstablecimientosTable, Establecimiento> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EstablecimientosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _nombreMeta = const VerificationMeta('nombre');
+  @override
+  late final GeneratedColumn<String> nombre = GeneratedColumn<String>(
+      'nombre', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _direccionMeta =
+      const VerificationMeta('direccion');
+  @override
+  late final GeneratedColumn<String> direccion = GeneratedColumn<String>(
+      'direccion', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _telefonoMeta =
+      const VerificationMeta('telefono');
+  @override
+  late final GeneratedColumn<String> telefono = GeneratedColumn<String>(
+      'telefono', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _esDefaultMeta =
+      const VerificationMeta('esDefault');
+  @override
+  late final GeneratedColumn<bool> esDefault = GeneratedColumn<bool>(
+      'es_default', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("es_default" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _syncIdMeta = const VerificationMeta('syncId');
+  @override
+  late final GeneratedColumn<String> syncId = GeneratedColumn<String>(
+      'sync_id', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+  static const VerificationMeta _deletedMeta =
+      const VerificationMeta('deleted');
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+      'deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        nombre,
+        direccion,
+        telefono,
+        esDefault,
+        createdAt,
+        updatedAt,
+        syncId,
+        deleted
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'establecimientos';
+  @override
+  VerificationContext validateIntegrity(Insertable<Establecimiento> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('nombre')) {
+      context.handle(_nombreMeta,
+          nombre.isAcceptableOrUnknown(data['nombre']!, _nombreMeta));
+    } else if (isInserting) {
+      context.missing(_nombreMeta);
+    }
+    if (data.containsKey('direccion')) {
+      context.handle(_direccionMeta,
+          direccion.isAcceptableOrUnknown(data['direccion']!, _direccionMeta));
+    }
+    if (data.containsKey('telefono')) {
+      context.handle(_telefonoMeta,
+          telefono.isAcceptableOrUnknown(data['telefono']!, _telefonoMeta));
+    }
+    if (data.containsKey('es_default')) {
+      context.handle(_esDefaultMeta,
+          esDefault.isAcceptableOrUnknown(data['es_default']!, _esDefaultMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    if (data.containsKey('sync_id')) {
+      context.handle(_syncIdMeta,
+          syncId.isAcceptableOrUnknown(data['sync_id']!, _syncIdMeta));
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(_deletedMeta,
+          deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Establecimiento map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Establecimiento(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      nombre: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}nombre'])!,
+      direccion: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}direccion']),
+      telefono: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}telefono']),
+      esDefault: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}es_default'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+      syncId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_id']),
+      deleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}deleted'])!,
+    );
+  }
+
+  @override
+  $EstablecimientosTable createAlias(String alias) {
+    return $EstablecimientosTable(attachedDatabase, alias);
+  }
+}
+
+class Establecimiento extends DataClass implements Insertable<Establecimiento> {
+  final String id;
+  final String nombre;
+  final String? direccion;
+  final String? telefono;
+  final bool esDefault;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final String? syncId;
+  final bool deleted;
+  const Establecimiento(
+      {required this.id,
+      required this.nombre,
+      this.direccion,
+      this.telefono,
+      required this.esDefault,
+      this.createdAt,
+      this.updatedAt,
+      this.syncId,
+      required this.deleted});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['nombre'] = Variable<String>(nombre);
+    if (!nullToAbsent || direccion != null) {
+      map['direccion'] = Variable<String>(direccion);
+    }
+    if (!nullToAbsent || telefono != null) {
+      map['telefono'] = Variable<String>(telefono);
+    }
+    map['es_default'] = Variable<bool>(esDefault);
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    if (!nullToAbsent || syncId != null) {
+      map['sync_id'] = Variable<String>(syncId);
+    }
+    map['deleted'] = Variable<bool>(deleted);
+    return map;
+  }
+
+  EstablecimientosCompanion toCompanion(bool nullToAbsent) {
+    return EstablecimientosCompanion(
+      id: Value(id),
+      nombre: Value(nombre),
+      direccion: direccion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(direccion),
+      telefono: telefono == null && nullToAbsent
+          ? const Value.absent()
+          : Value(telefono),
+      esDefault: Value(esDefault),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+      syncId:
+          syncId == null && nullToAbsent ? const Value.absent() : Value(syncId),
+      deleted: Value(deleted),
+    );
+  }
+
+  factory Establecimiento.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Establecimiento(
+      id: serializer.fromJson<String>(json['id']),
+      nombre: serializer.fromJson<String>(json['nombre']),
+      direccion: serializer.fromJson<String?>(json['direccion']),
+      telefono: serializer.fromJson<String?>(json['telefono']),
+      esDefault: serializer.fromJson<bool>(json['esDefault']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+      syncId: serializer.fromJson<String?>(json['syncId']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'nombre': serializer.toJson<String>(nombre),
+      'direccion': serializer.toJson<String?>(direccion),
+      'telefono': serializer.toJson<String?>(telefono),
+      'esDefault': serializer.toJson<bool>(esDefault),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+      'syncId': serializer.toJson<String?>(syncId),
+      'deleted': serializer.toJson<bool>(deleted),
+    };
+  }
+
+  Establecimiento copyWith(
+          {String? id,
+          String? nombre,
+          Value<String?> direccion = const Value.absent(),
+          Value<String?> telefono = const Value.absent(),
+          bool? esDefault,
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent(),
+          Value<String?> syncId = const Value.absent(),
+          bool? deleted}) =>
+      Establecimiento(
+        id: id ?? this.id,
+        nombre: nombre ?? this.nombre,
+        direccion: direccion.present ? direccion.value : this.direccion,
+        telefono: telefono.present ? telefono.value : this.telefono,
+        esDefault: esDefault ?? this.esDefault,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+        syncId: syncId.present ? syncId.value : this.syncId,
+        deleted: deleted ?? this.deleted,
+      );
+  Establecimiento copyWithCompanion(EstablecimientosCompanion data) {
+    return Establecimiento(
+      id: data.id.present ? data.id.value : this.id,
+      nombre: data.nombre.present ? data.nombre.value : this.nombre,
+      direccion: data.direccion.present ? data.direccion.value : this.direccion,
+      telefono: data.telefono.present ? data.telefono.value : this.telefono,
+      esDefault: data.esDefault.present ? data.esDefault.value : this.esDefault,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      syncId: data.syncId.present ? data.syncId.value : this.syncId,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Establecimiento(')
+          ..write('id: $id, ')
+          ..write('nombre: $nombre, ')
+          ..write('direccion: $direccion, ')
+          ..write('telefono: $telefono, ')
+          ..write('esDefault: $esDefault, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncId: $syncId, ')
+          ..write('deleted: $deleted')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, nombre, direccion, telefono, esDefault,
+      createdAt, updatedAt, syncId, deleted);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Establecimiento &&
+          other.id == this.id &&
+          other.nombre == this.nombre &&
+          other.direccion == this.direccion &&
+          other.telefono == this.telefono &&
+          other.esDefault == this.esDefault &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.syncId == this.syncId &&
+          other.deleted == this.deleted);
+}
+
+class EstablecimientosCompanion extends UpdateCompanion<Establecimiento> {
+  final Value<String> id;
+  final Value<String> nombre;
+  final Value<String?> direccion;
+  final Value<String?> telefono;
+  final Value<bool> esDefault;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  final Value<String?> syncId;
+  final Value<bool> deleted;
+  final Value<int> rowid;
+  const EstablecimientosCompanion({
+    this.id = const Value.absent(),
+    this.nombre = const Value.absent(),
+    this.direccion = const Value.absent(),
+    this.telefono = const Value.absent(),
+    this.esDefault = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncId = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EstablecimientosCompanion.insert({
+    required String id,
+    required String nombre,
+    this.direccion = const Value.absent(),
+    this.telefono = const Value.absent(),
+    this.esDefault = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncId = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        nombre = Value(nombre);
+  static Insertable<Establecimiento> custom({
+    Expression<String>? id,
+    Expression<String>? nombre,
+    Expression<String>? direccion,
+    Expression<String>? telefono,
+    Expression<bool>? esDefault,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? syncId,
+    Expression<bool>? deleted,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (nombre != null) 'nombre': nombre,
+      if (direccion != null) 'direccion': direccion,
+      if (telefono != null) 'telefono': telefono,
+      if (esDefault != null) 'es_default': esDefault,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (syncId != null) 'sync_id': syncId,
+      if (deleted != null) 'deleted': deleted,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EstablecimientosCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? nombre,
+      Value<String?>? direccion,
+      Value<String?>? telefono,
+      Value<bool>? esDefault,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt,
+      Value<String?>? syncId,
+      Value<bool>? deleted,
+      Value<int>? rowid}) {
+    return EstablecimientosCompanion(
+      id: id ?? this.id,
+      nombre: nombre ?? this.nombre,
+      direccion: direccion ?? this.direccion,
+      telefono: telefono ?? this.telefono,
+      esDefault: esDefault ?? this.esDefault,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      syncId: syncId ?? this.syncId,
+      deleted: deleted ?? this.deleted,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (nombre.present) {
+      map['nombre'] = Variable<String>(nombre.value);
+    }
+    if (direccion.present) {
+      map['direccion'] = Variable<String>(direccion.value);
+    }
+    if (telefono.present) {
+      map['telefono'] = Variable<String>(telefono.value);
+    }
+    if (esDefault.present) {
+      map['es_default'] = Variable<bool>(esDefault.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (syncId.present) {
+      map['sync_id'] = Variable<String>(syncId.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EstablecimientosCompanion(')
+          ..write('id: $id, ')
+          ..write('nombre: $nombre, ')
+          ..write('direccion: $direccion, ')
+          ..write('telefono: $telefono, ')
+          ..write('esDefault: $esDefault, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncId: $syncId, ')
+          ..write('deleted: $deleted, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -4620,6 +5247,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $BonosTable bonos = $BonosTable(this);
   late final $BonoConsumosTable bonoConsumos = $BonoConsumosTable(this);
   late final $BonoPagosTable bonoPagos = $BonoPagosTable(this);
+  late final $EstablecimientosTable establecimientos =
+      $EstablecimientosTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -4633,7 +5262,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         gastos,
         bonos,
         bonoConsumos,
-        bonoPagos
+        bonoPagos,
+        establecimientos
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -5384,6 +6014,8 @@ typedef $$CitasTableCreateCompanionBuilder = CitasCompanion Function({
   Value<bool> pagada,
   Value<String?> metodoPago,
   Value<String?> notas,
+  Value<int> trabajador,
+  Value<String?> establecimientoId,
   Value<DateTime?> createdAt,
   Value<DateTime?> updatedAt,
   Value<String?> syncId,
@@ -5400,6 +6032,8 @@ typedef $$CitasTableUpdateCompanionBuilder = CitasCompanion Function({
   Value<bool> pagada,
   Value<String?> metodoPago,
   Value<String?> notas,
+  Value<int> trabajador,
+  Value<String?> establecimientoId,
   Value<DateTime?> createdAt,
   Value<DateTime?> updatedAt,
   Value<String?> syncId,
@@ -5496,6 +6130,13 @@ class $$CitasTableFilterComposer extends Composer<_$AppDatabase, $CitasTable> {
 
   ColumnFilters<String> get notas => $composableBuilder(
       column: $table.notas, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get trabajador => $composableBuilder(
+      column: $table.trabajador, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get establecimientoId => $composableBuilder(
+      column: $table.establecimientoId,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -5622,6 +6263,13 @@ class $$CitasTableOrderingComposer
   ColumnOrderings<String> get notas => $composableBuilder(
       column: $table.notas, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get trabajador => $composableBuilder(
+      column: $table.trabajador, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get establecimientoId => $composableBuilder(
+      column: $table.establecimientoId,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -5704,6 +6352,12 @@ class $$CitasTableAnnotationComposer
 
   GeneratedColumn<String> get notas =>
       $composableBuilder(column: $table.notas, builder: (column) => column);
+
+  GeneratedColumn<int> get trabajador => $composableBuilder(
+      column: $table.trabajador, builder: (column) => column);
+
+  GeneratedColumn<String> get establecimientoId => $composableBuilder(
+      column: $table.establecimientoId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -5836,6 +6490,8 @@ class $$CitasTableTableManager extends RootTableManager<
             Value<bool> pagada = const Value.absent(),
             Value<String?> metodoPago = const Value.absent(),
             Value<String?> notas = const Value.absent(),
+            Value<int> trabajador = const Value.absent(),
+            Value<String?> establecimientoId = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
             Value<DateTime?> updatedAt = const Value.absent(),
             Value<String?> syncId = const Value.absent(),
@@ -5852,6 +6508,8 @@ class $$CitasTableTableManager extends RootTableManager<
             pagada: pagada,
             metodoPago: metodoPago,
             notas: notas,
+            trabajador: trabajador,
+            establecimientoId: establecimientoId,
             createdAt: createdAt,
             updatedAt: updatedAt,
             syncId: syncId,
@@ -5868,6 +6526,8 @@ class $$CitasTableTableManager extends RootTableManager<
             Value<bool> pagada = const Value.absent(),
             Value<String?> metodoPago = const Value.absent(),
             Value<String?> notas = const Value.absent(),
+            Value<int> trabajador = const Value.absent(),
+            Value<String?> establecimientoId = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
             Value<DateTime?> updatedAt = const Value.absent(),
             Value<String?> syncId = const Value.absent(),
@@ -5884,6 +6544,8 @@ class $$CitasTableTableManager extends RootTableManager<
             pagada: pagada,
             metodoPago: metodoPago,
             notas: notas,
+            trabajador: trabajador,
+            establecimientoId: establecimientoId,
             createdAt: createdAt,
             updatedAt: updatedAt,
             syncId: syncId,
@@ -6752,6 +7414,7 @@ typedef $$GastosTableCreateCompanionBuilder = GastosCompanion Function({
   required String concepto,
   required double precio,
   Value<DateTime> fecha,
+  Value<String?> establecimientoId,
   Value<DateTime?> createdAt,
   Value<DateTime?> updatedAt,
   Value<String?> syncId,
@@ -6763,6 +7426,7 @@ typedef $$GastosTableUpdateCompanionBuilder = GastosCompanion Function({
   Value<String> concepto,
   Value<double> precio,
   Value<DateTime> fecha,
+  Value<String?> establecimientoId,
   Value<DateTime?> createdAt,
   Value<DateTime?> updatedAt,
   Value<String?> syncId,
@@ -6790,6 +7454,10 @@ class $$GastosTableFilterComposer
 
   ColumnFilters<DateTime> get fecha => $composableBuilder(
       column: $table.fecha, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get establecimientoId => $composableBuilder(
+      column: $table.establecimientoId,
+      builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -6825,6 +7493,10 @@ class $$GastosTableOrderingComposer
   ColumnOrderings<DateTime> get fecha => $composableBuilder(
       column: $table.fecha, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get establecimientoId => $composableBuilder(
+      column: $table.establecimientoId,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
 
@@ -6858,6 +7530,9 @@ class $$GastosTableAnnotationComposer
 
   GeneratedColumn<DateTime> get fecha =>
       $composableBuilder(column: $table.fecha, builder: (column) => column);
+
+  GeneratedColumn<String> get establecimientoId => $composableBuilder(
+      column: $table.establecimientoId, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -6899,6 +7574,7 @@ class $$GastosTableTableManager extends RootTableManager<
             Value<String> concepto = const Value.absent(),
             Value<double> precio = const Value.absent(),
             Value<DateTime> fecha = const Value.absent(),
+            Value<String?> establecimientoId = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
             Value<DateTime?> updatedAt = const Value.absent(),
             Value<String?> syncId = const Value.absent(),
@@ -6910,6 +7586,7 @@ class $$GastosTableTableManager extends RootTableManager<
             concepto: concepto,
             precio: precio,
             fecha: fecha,
+            establecimientoId: establecimientoId,
             createdAt: createdAt,
             updatedAt: updatedAt,
             syncId: syncId,
@@ -6921,6 +7598,7 @@ class $$GastosTableTableManager extends RootTableManager<
             required String concepto,
             required double precio,
             Value<DateTime> fecha = const Value.absent(),
+            Value<String?> establecimientoId = const Value.absent(),
             Value<DateTime?> createdAt = const Value.absent(),
             Value<DateTime?> updatedAt = const Value.absent(),
             Value<String?> syncId = const Value.absent(),
@@ -6932,6 +7610,7 @@ class $$GastosTableTableManager extends RootTableManager<
             concepto: concepto,
             precio: precio,
             fecha: fecha,
+            establecimientoId: establecimientoId,
             createdAt: createdAt,
             updatedAt: updatedAt,
             syncId: syncId,
@@ -8203,6 +8882,240 @@ typedef $$BonoPagosTableProcessedTableManager = ProcessedTableManager<
     (BonoPago, $$BonoPagosTableReferences),
     BonoPago,
     PrefetchHooks Function({bool bonoId})>;
+typedef $$EstablecimientosTableCreateCompanionBuilder
+    = EstablecimientosCompanion Function({
+  required String id,
+  required String nombre,
+  Value<String?> direccion,
+  Value<String?> telefono,
+  Value<bool> esDefault,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<String?> syncId,
+  Value<bool> deleted,
+  Value<int> rowid,
+});
+typedef $$EstablecimientosTableUpdateCompanionBuilder
+    = EstablecimientosCompanion Function({
+  Value<String> id,
+  Value<String> nombre,
+  Value<String?> direccion,
+  Value<String?> telefono,
+  Value<bool> esDefault,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<String?> syncId,
+  Value<bool> deleted,
+  Value<int> rowid,
+});
+
+class $$EstablecimientosTableFilterComposer
+    extends Composer<_$AppDatabase, $EstablecimientosTable> {
+  $$EstablecimientosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get nombre => $composableBuilder(
+      column: $table.nombre, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get direccion => $composableBuilder(
+      column: $table.direccion, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get telefono => $composableBuilder(
+      column: $table.telefono, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get esDefault => $composableBuilder(
+      column: $table.esDefault, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get syncId => $composableBuilder(
+      column: $table.syncId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnFilters(column));
+}
+
+class $$EstablecimientosTableOrderingComposer
+    extends Composer<_$AppDatabase, $EstablecimientosTable> {
+  $$EstablecimientosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get nombre => $composableBuilder(
+      column: $table.nombre, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get direccion => $composableBuilder(
+      column: $table.direccion, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get telefono => $composableBuilder(
+      column: $table.telefono, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get esDefault => $composableBuilder(
+      column: $table.esDefault, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get syncId => $composableBuilder(
+      column: $table.syncId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnOrderings(column));
+}
+
+class $$EstablecimientosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EstablecimientosTable> {
+  $$EstablecimientosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get nombre =>
+      $composableBuilder(column: $table.nombre, builder: (column) => column);
+
+  GeneratedColumn<String> get direccion =>
+      $composableBuilder(column: $table.direccion, builder: (column) => column);
+
+  GeneratedColumn<String> get telefono =>
+      $composableBuilder(column: $table.telefono, builder: (column) => column);
+
+  GeneratedColumn<bool> get esDefault =>
+      $composableBuilder(column: $table.esDefault, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncId =>
+      $composableBuilder(column: $table.syncId, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+}
+
+class $$EstablecimientosTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $EstablecimientosTable,
+    Establecimiento,
+    $$EstablecimientosTableFilterComposer,
+    $$EstablecimientosTableOrderingComposer,
+    $$EstablecimientosTableAnnotationComposer,
+    $$EstablecimientosTableCreateCompanionBuilder,
+    $$EstablecimientosTableUpdateCompanionBuilder,
+    (
+      Establecimiento,
+      BaseReferences<_$AppDatabase, $EstablecimientosTable, Establecimiento>
+    ),
+    Establecimiento,
+    PrefetchHooks Function()> {
+  $$EstablecimientosTableTableManager(
+      _$AppDatabase db, $EstablecimientosTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EstablecimientosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$EstablecimientosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$EstablecimientosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> nombre = const Value.absent(),
+            Value<String?> direccion = const Value.absent(),
+            Value<String?> telefono = const Value.absent(),
+            Value<bool> esDefault = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<String?> syncId = const Value.absent(),
+            Value<bool> deleted = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              EstablecimientosCompanion(
+            id: id,
+            nombre: nombre,
+            direccion: direccion,
+            telefono: telefono,
+            esDefault: esDefault,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            syncId: syncId,
+            deleted: deleted,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String nombre,
+            Value<String?> direccion = const Value.absent(),
+            Value<String?> telefono = const Value.absent(),
+            Value<bool> esDefault = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<String?> syncId = const Value.absent(),
+            Value<bool> deleted = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              EstablecimientosCompanion.insert(
+            id: id,
+            nombre: nombre,
+            direccion: direccion,
+            telefono: telefono,
+            esDefault: esDefault,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            syncId: syncId,
+            deleted: deleted,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$EstablecimientosTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $EstablecimientosTable,
+    Establecimiento,
+    $$EstablecimientosTableFilterComposer,
+    $$EstablecimientosTableOrderingComposer,
+    $$EstablecimientosTableAnnotationComposer,
+    $$EstablecimientosTableCreateCompanionBuilder,
+    $$EstablecimientosTableUpdateCompanionBuilder,
+    (
+      Establecimiento,
+      BaseReferences<_$AppDatabase, $EstablecimientosTable, Establecimiento>
+    ),
+    Establecimiento,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -8225,4 +9138,6 @@ class $AppDatabaseManager {
       $$BonoConsumosTableTableManager(_db, _db.bonoConsumos);
   $$BonoPagosTableTableManager get bonoPagos =>
       $$BonoPagosTableTableManager(_db, _db.bonoPagos);
+  $$EstablecimientosTableTableManager get establecimientos =>
+      $$EstablecimientosTableTableManager(_db, _db.establecimientos);
 }

@@ -57,6 +57,22 @@ class ExtrasServicio extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+// Tabla de establecimientos (centros físicos) — solo Ultra plan
+class Establecimientos extends Table {
+  TextColumn get id => text()();
+  TextColumn get nombre => text()();
+  TextColumn get direccion => text().nullable()();
+  TextColumn get telefono => text().nullable()();
+  BoolColumn get esDefault => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get createdAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+  TextColumn get syncId => text().unique().nullable()();
+  BoolColumn get deleted => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 // Tabla de citas
 class Citas extends Table {
   TextColumn get id => text()();
@@ -71,6 +87,10 @@ class Citas extends Table {
   // Traducción ocurre solo en UI, no en BD
   TextColumn get metodoPago => text().nullable()();
   TextColumn get notas => text().nullable()();
+  // Número de trabajador (1-based); 1 = único/por defecto
+  IntColumn get trabajador => integer().withDefault(const Constant(1))();
+  // Centro físico (Ultra); null = sin filtro de establecimiento
+  TextColumn get establecimientoId => text().nullable()();
   // Auditoría para sincronización (nullable para migración)
   DateTimeColumn get createdAt => dateTime().nullable()();
   DateTimeColumn get updatedAt => dateTime().nullable()();
@@ -99,6 +119,8 @@ class Gastos extends Table {
   TextColumn get concepto => text()();
   RealColumn get precio => real()();
   DateTimeColumn get fecha => dateTime().withDefault(currentDateAndTime)(); // Fecha del gasto
+  // Centro físico (Ultra); null = sin filtro de establecimiento
+  TextColumn get establecimientoId => text().nullable()();
   // Auditoría para sincronización (nullable para migración)
   DateTimeColumn get createdAt => dateTime().nullable()();
   DateTimeColumn get updatedAt => dateTime().nullable()();
@@ -175,7 +197,7 @@ class BonoPagos extends Table {
 // Importa las tablas arriba definidas
 
 @DriftDatabase(
-  tables: [Clientes, Servicios, Citas, ExtrasServicio,ExtrasCita,Gastos,Bonos,BonoConsumos,BonoPagos],
+  tables: [Clientes, Servicios, Citas, ExtrasServicio, ExtrasCita, Gastos, Bonos, BonoConsumos, BonoPagos, Establecimientos],
 )
 class AppDatabase extends _$AppDatabase {
   final String? userId;
@@ -216,13 +238,13 @@ class AppDatabase extends _$AppDatabase {
     final userDir = await getUserDir();
     return File(p.join(userDir.path, 'negocio_app.sqlite'));
   }
-  
+
   Future<void> closeDatabase() async {
     await close();
   }
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -286,6 +308,65 @@ class AppDatabase extends _$AppDatabase {
 
       // v3 → v4: sin cambios de columnas (v3 usaba borrar-recrear, ya tiene el schema correcto)
       // Esta versión solo formaliza la estrategia incremental. No-op para BDs en v3.
+
+      // v4 → v5: multi-agenda — columna trabajador en citas
+      if (from < 5) {
+        await customStatement(
+          'ALTER TABLE citas ADD COLUMN trabajador INTEGER NOT NULL DEFAULT 1',
+        );
+      }
+
+      // v5 → v6: multi-establecimiento — tabla establecimientos + columnas FK
+      if (from < 6) {
+        await m.createTable(establecimientos);
+        await customStatement('ALTER TABLE citas ADD COLUMN establecimiento_id TEXT');
+        await customStatement('ALTER TABLE gastos ADD COLUMN establecimiento_id TEXT');
+      }
+    },
+    beforeOpen: (details) async {
+      // Safety net: ensures trabajador column exists even if v5 migration was interrupted.
+      final cols5 = await customSelect(
+        "SELECT name FROM pragma_table_info('citas') WHERE name='trabajador'",
+      ).get();
+      if (cols5.isEmpty) {
+        await customStatement(
+          'ALTER TABLE citas ADD COLUMN trabajador INTEGER NOT NULL DEFAULT 1',
+        );
+      }
+
+      // Safety net: ensures establecimientos table and FK columns exist (v6).
+      final tables = await customSelect(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='establecimientos'",
+      ).get();
+      if (tables.isEmpty) {
+        await customStatement('''
+          CREATE TABLE IF NOT EXISTS establecimientos (
+            id TEXT NOT NULL PRIMARY KEY,
+            nombre TEXT NOT NULL,
+            direccion TEXT,
+            telefono TEXT,
+            es_default INTEGER NOT NULL DEFAULT 0,
+            created_at INTEGER,
+            updated_at INTEGER,
+            sync_id TEXT UNIQUE,
+            deleted INTEGER NOT NULL DEFAULT 0
+          )
+        ''');
+      }
+
+      final citasCols = await customSelect(
+        "SELECT name FROM pragma_table_info('citas') WHERE name='establecimiento_id'",
+      ).get();
+      if (citasCols.isEmpty) {
+        await customStatement('ALTER TABLE citas ADD COLUMN establecimiento_id TEXT');
+      }
+
+      final gastosCols = await customSelect(
+        "SELECT name FROM pragma_table_info('gastos') WHERE name='establecimiento_id'",
+      ).get();
+      if (gastosCols.isEmpty) {
+        await customStatement('ALTER TABLE gastos ADD COLUMN establecimiento_id TEXT');
+      }
     },
   );
 }

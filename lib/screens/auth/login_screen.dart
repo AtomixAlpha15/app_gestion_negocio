@@ -67,6 +67,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
+  void _showSessionConflictDialog() {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Sesión activa'),
+        content: const Text(
+          'Ya tienes la sesión iniciada en otro dispositivo.\n\n'
+          '¿Quieres cerrar todas las sesiones activas y continuar en este dispositivo?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              ref.read(authStateProvider.notifier).login(
+                email: _emailController.text.trim(),
+                password: _passwordController.text,
+                keepSession: _keepSession,
+                forceLogin: true,
+              );
+            },
+            child: const Text('Cerrar sesiones y continuar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
@@ -83,7 +115,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           Navigator.of(context).popUntil((route) => route.isFirst);
         },
         onError: (message) {
-          setState(() => _errorMessage = message);
+          if (next.errorCode == 'SESSION_CONFLICT') {
+            _showSessionConflictDialog();
+          } else {
+            setState(() => _errorMessage = message);
+          }
         },
         onLoading: () {},
         onUnauthenticated: () {},

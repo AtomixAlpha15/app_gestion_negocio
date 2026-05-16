@@ -57,7 +57,7 @@ class AuthController extends StateNotifier<AuthState> {
       final user = await authService.getCurrentUser();
       state = AuthState.authenticated(user: user['user']);
     } on ApiException catch (e) {
-      state = AuthState.error(message: e.message);
+      state = AuthState.error(message: e.message, code: e.code);
     } catch (e) {
       state = AuthState.error(message: e.toString().replaceFirst('Exception: ', ''));
     }
@@ -67,15 +67,16 @@ class AuthController extends StateNotifier<AuthState> {
     required String email,
     required String password,
     bool keepSession = false,
+    bool forceLogin = false,
   }) async {
     state = const AuthState.loading();
     try {
-      await authService.login(email: email, password: password);
+      await authService.login(email: email, password: password, forceLogin: forceLogin);
       await _saveKeepSession(keepSession);
       final user = await authService.getCurrentUser();
       state = AuthState.authenticated(user: user['user']);
     } on ApiException catch (e) {
-      state = AuthState.error(message: e.message);
+      state = AuthState.error(message: e.message, code: e.code);
     } catch (e) {
       state = AuthState.error(message: e.toString().replaceFirst('Exception: ', ''));
     }
@@ -104,7 +105,7 @@ sealed class AuthState {
   const factory AuthState.unauthenticated() = _Unauthenticated;
   const factory AuthState.loading() = _Loading;
   const factory AuthState.authenticated({required Map<String, dynamic> user}) = _Authenticated;
-  const factory AuthState.error({required String message}) = _Error;
+  const factory AuthState.error({required String message, String? code}) = _Error;
 
   T when<T>({
     required T Function() onUnauthenticated,
@@ -121,6 +122,12 @@ sealed class AuthState {
   }
 
   bool get isAuthenticated => this is _Authenticated;
+
+  // Código de error específico (p.ej. 'SESSION_CONFLICT', 'PLAN_REQUIRED')
+  String? get errorCode => switch (this) {
+    _Error(:final code) => code,
+    _ => null,
+  };
 }
 
 class _Unauthenticated extends AuthState {
@@ -138,5 +145,6 @@ class _Authenticated extends AuthState {
 
 class _Error extends AuthState {
   final String message;
-  const _Error({required this.message});
+  final String? code;
+  const _Error({required this.message, this.code});
 }

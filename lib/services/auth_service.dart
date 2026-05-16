@@ -25,8 +25,13 @@ class AuthService {
   Future<void> login({
     required String email,
     required String password,
+    bool forceLogin = false,
   }) async {
-    final data = await apiService.login(email: email, password: password);
+    final data = await apiService.login(
+      email: email,
+      password: password,
+      forceLogin: forceLogin,
+    );
     await _saveUserId(data['user']['id'] as String);
   }
 
@@ -35,7 +40,8 @@ class AuthService {
   }
 
   Future<void> logout() async {
-    await apiService.logout();
+    // Notifica al backend ANTES de borrar el token local
+    await apiService.logoutDevice();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kCurrentUserIdKey);
   }

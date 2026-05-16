@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' hide ChangeNotifierProvider;
 import '../providers/settings_provider.dart';
+import '../providers/auth_provider.dart';
+import '../providers/establecimientos_provider.dart';
+import '../utils/responsive.dart';
+import '../widgets/custom_nav.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -8,6 +13,7 @@ import 'package:path/path.dart' as p;
 import '../services/app_database.dart';
 import '../services/backup_services.dart';
 import '../l10n/app_localizations.dart';
+import 'suscripcion_screen.dart';
 
 class AjustesScreen extends StatelessWidget {
   const AjustesScreen({super.key});
@@ -18,27 +24,47 @@ class AjustesScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).settingsTitle),
         centerTitle: false,
+        actions: const [UserAvatarAction()],
       ),
       body: const _AjustesBody(),
     );
   }
 }
 
-class _AjustesBody extends StatelessWidget {
+class _AjustesBody extends ConsumerWidget {
   const _AjustesBody();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final loc = AppLocalizations.of(context);
+    final plan = ref.watch(authStateProvider).when(
+      onAuthenticated: (user) => user['plan'] as String? ?? 'basic',
+      onUnauthenticated: () => 'basic',
+      onLoading: () => 'basic',
+      onError: (_) => 'basic',
+    );
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       children: [
+        if (isMobile(context)) ...[
+          _SectionHeader(icon: Icons.account_circle_outlined, label: 'Cuenta'),
+          const _TileCuenta(),
+          const SizedBox(height: 8),
+        ],
+        _SectionHeader(icon: Icons.workspace_premium_outlined, label: 'Suscripción'),
+        const _TileSuscripcion(),
+        const SizedBox(height: 8),
         _SectionHeader(icon: Icons.palette_outlined, label: loc.settingsAppearance),
         const _TileApariencia(),
         const SizedBox(height: 8),
         _SectionHeader(icon: Icons.business_outlined, label: loc.settingsCompany),
         const _TileEmpresa(),
         const SizedBox(height: 8),
+        if (plan == 'ultra') ...[
+          _SectionHeader(icon: Icons.store_rounded, label: 'Locales'),
+          const _TileLocales(),
+          const SizedBox(height: 8),
+        ],
         _SectionHeader(icon: Icons.notifications_outlined, label: loc.settingsNotifications),
         const _TileNotificaciones(),
         const SizedBox(height: 8),
@@ -51,6 +77,224 @@ class _AjustesBody extends StatelessWidget {
         _SectionHeader(icon: Icons.settings_backup_restore_outlined, label: loc.settingsSystem),
         const _TileSistema(),
         const SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
+/* ─── LOCALES (Ultra) ────────────────────────────────────────────────────── */
+
+class _TileLocales extends StatelessWidget {
+  const _TileLocales();
+
+  @override
+  Widget build(BuildContext context) {
+    final estProvider = context.watch<EstablecimientosProvider>();
+    final settings = context.watch<SettingsProvider>();
+    final locales = estProvider.establecimientos;
+    final cs = Theme.of(context).colorScheme;
+
+    return _SettingsCard(children: [
+      // Lista de locales existentes
+      for (final local in locales)
+        ListTile(
+          leading: CircleAvatar(
+            backgroundColor: local.id == settings.establecimientoActualId
+                ? cs.primaryContainer
+                : cs.surfaceContainerHigh,
+            child: Icon(
+              Icons.store_rounded,
+              size: 18,
+              color: local.id == settings.establecimientoActualId
+                  ? cs.primary
+                  : cs.onSurfaceVariant,
+            ),
+          ),
+          title: Text(local.nombre,
+              style: const TextStyle(fontWeight: FontWeight.w500)),
+          subtitle: local.direccion != null && local.direccion!.isNotEmpty
+              ? Text(local.direccion!, maxLines: 1, overflow: TextOverflow.ellipsis)
+              : null,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 20),
+                tooltip: 'Editar',
+                onPressed: () => _editarLocal(context, estProvider, local),
+              ),
+              if (locales.length > 1)
+                IconButton(
+                  icon: Icon(Icons.delete_outline, size: 20, color: cs.error),
+                  tooltip: 'Eliminar',
+                  onPressed: () => _confirmarEliminar(context, estProvider, settings, local),
+                ),
+            ],
+          ),
+          onTap: () => settings.setEstablecimientoActualId(local.id),
+        ),
+      // Botón para añadir un nuevo local
+      ListTile(
+        leading: CircleAvatar(
+          backgroundColor: cs.secondaryContainer,
+          child: Icon(Icons.add_rounded, color: cs.onSecondaryContainer, size: 20),
+        ),
+        title: const Text('Añadir local'),
+        onTap: () => _crearLocal(context, estProvider),
+      ),
+    ]);
+  }
+
+  Future<void> _crearLocal(BuildContext context, EstablecimientosProvider prov) async {
+    final result = await showDialog<Map<String, String?>>(
+      context: context,
+      builder: (_) => const _LocalDialog(),
+    );
+    if (result != null) {
+      await prov.crearEstablecimiento(
+        nombre: result['nombre']!,
+        direccion: result['direccion'],
+        telefono: result['telefono'],
+      );
+    }
+  }
+
+  Future<void> _editarLocal(
+      BuildContext context, EstablecimientosProvider prov, Establecimiento local) async {
+    final result = await showDialog<Map<String, String?>>(
+      context: context,
+      builder: (_) => _LocalDialog(local: local),
+    );
+    if (result != null) {
+      await prov.actualizarEstablecimiento(
+        id: local.id,
+        nombre: result['nombre']!,
+        direccion: result['direccion'],
+        telefono: result['telefono'],
+      );
+    }
+  }
+
+  Future<void> _confirmarEliminar(
+    BuildContext context,
+    EstablecimientosProvider prov,
+    SettingsProvider settings,
+    Establecimiento local,
+  ) async {
+    final cs = Theme.of(context).colorScheme;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar local'),
+        content: Text('¿Eliminar "${local.nombre}"? Las citas asociadas no se borran.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: cs.error),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      // Si el local eliminado era el activo, cambiar al primero disponible
+      if (settings.establecimientoActualId == local.id) {
+        final resto = prov.establecimientos.where((e) => e.id != local.id).toList();
+        if (resto.isNotEmpty) settings.setEstablecimientoActualId(resto.first.id);
+      }
+      await prov.eliminarEstablecimiento(local.id);
+    }
+  }
+}
+
+class _LocalDialog extends StatefulWidget {
+  final Establecimiento? local;
+  const _LocalDialog({this.local});
+
+  @override
+  State<_LocalDialog> createState() => _LocalDialogState();
+}
+
+class _LocalDialogState extends State<_LocalDialog> {
+  late final TextEditingController _nombre;
+  late final TextEditingController _direccion;
+  late final TextEditingController _telefono;
+
+  @override
+  void initState() {
+    super.initState();
+    _nombre    = TextEditingController(text: widget.local?.nombre ?? '');
+    _direccion = TextEditingController(text: widget.local?.direccion ?? '');
+    _telefono  = TextEditingController(text: widget.local?.telefono ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nombre.dispose();
+    _direccion.dispose();
+    _telefono.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final editing = widget.local != null;
+    return AlertDialog(
+      title: Text(editing ? 'Editar local' : 'Nuevo local'),
+      content: SizedBox(
+        width: 360,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _nombre,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Nombre *',
+                prefixIcon: Icon(Icons.store_rounded),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _direccion,
+              decoration: const InputDecoration(
+                labelText: 'Dirección',
+                prefixIcon: Icon(Icons.location_on_outlined),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _telefono,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Teléfono',
+                prefixIcon: Icon(Icons.phone_outlined),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final nombre = _nombre.text.trim();
+            if (nombre.isEmpty) return;
+            Navigator.of(context).pop({
+              'nombre':    nombre,
+              'direccion': _direccion.text.trim().isEmpty ? null : _direccion.text.trim(),
+              'telefono':  _telefono.text.trim().isEmpty ? null : _telefono.text.trim(),
+            });
+          },
+          child: Text(editing ? 'Guardar' : 'Crear'),
+        ),
       ],
     );
   }
@@ -113,6 +357,99 @@ class _SettingsCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/* ─── 0. CUENTA ─────────────────────────────────────────────────────────── */
+class _TileCuenta extends ConsumerWidget {
+  const _TileCuenta();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+    final displayName = authState.when(
+      onAuthenticated: (user) => user['display_name'] as String? ?? '',
+      onUnauthenticated: () => '',
+      onLoading: () => '',
+      onError: (_) => '',
+    );
+    final email = authState.when(
+      onAuthenticated: (user) => user['email'] as String? ?? '',
+      onUnauthenticated: () => '',
+      onLoading: () => '',
+      onError: (_) => '',
+    );
+    final cs = Theme.of(context).colorScheme;
+
+    return _SettingsCard(children: [
+      ListTile(
+        leading: CircleAvatar(
+          backgroundColor: cs.secondaryContainer,
+          child: Text(
+            displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+            style: TextStyle(
+              color: cs.onSecondaryContainer,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        title: Text(
+          displayName.isNotEmpty ? displayName : 'Usuario',
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: email.isNotEmpty ? Text(email) : null,
+      ),
+      ListTile(
+        leading: Icon(Icons.logout_rounded, color: cs.error),
+        title: Text(
+          'Cerrar sesión',
+          style: TextStyle(color: cs.error, fontWeight: FontWeight.w500),
+        ),
+        onTap: () async {
+          await ref.read(authStateProvider.notifier).logout();
+        },
+      ),
+    ]);
+  }
+}
+
+/* ─── 0b. SUSCRIPCIÓN ───────────────────────────────────────────────────── */
+class _TileSuscripcion extends ConsumerWidget {
+  const _TileSuscripcion();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+    final plan = authState.when(
+      onAuthenticated: (user) => user['plan'] as String? ?? 'basic',
+      onUnauthenticated: () => 'basic',
+      onLoading: () => 'basic',
+      onError: (_) => 'basic',
+    );
+    final planLabel = switch (plan) {
+      'basic' => 'Basic',
+      'pro' => 'Pro',
+      'ultra' => 'Ultra',
+      _ => plan,
+    };
+    final cs = Theme.of(context).colorScheme;
+
+    return _SettingsCard(children: [
+      ListTile(
+        leading: CircleAvatar(
+          backgroundColor: cs.secondaryContainer,
+          child: Icon(Icons.workspace_premium_outlined,
+              color: cs.onSecondaryContainer, size: 20),
+        ),
+        title: Text('Plan $planLabel',
+            style: const TextStyle(fontWeight: FontWeight.w600)),
+        subtitle: const Text('Ver planes y gestionar suscripción'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SuscripcionScreen()),
+        ),
+      ),
+    ]);
   }
 }
 

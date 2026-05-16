@@ -1,12 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:uuid/uuid.dart';
 
 class ApiException implements Exception {
   final String message;
   final int? statusCode;
-  const ApiException(this.message, {this.statusCode});
+  final String? code;
+  const ApiException(this.message, {this.statusCode, this.code});
 
   @override
   String toString() => message;
@@ -23,11 +26,23 @@ class ApiService {
   }
 
   static const String _tokenKey = 'jwt_token';
+  static const String _deviceIdKey = 'device_id';
+
+  static const _kTimeout = Duration(seconds: 10);
 
   final FlutterSecureStorage _secureStorage;
 
   ApiService({FlutterSecureStorage? secureStorage})
       : _secureStorage = secureStorage ?? const FlutterSecureStorage();
+
+  // Devuelve un UUID estable por instalación — persiste entre reinicios
+  Future<String> getDeviceId() async {
+    final stored = await _secureStorage.read(key: _deviceIdKey);
+    if (stored != null) return stored;
+    final newId = const Uuid().v4();
+    await _secureStorage.write(key: _deviceIdKey, value: newId);
+    return newId;
+  }
 
   // Auth endpoints
   Future<Map<String, dynamic>> register({
@@ -36,6 +51,7 @@ class ApiService {
     required String displayName,
   }) async {
     try {
+      final deviceId = await getDeviceId();
       final response = await http.post(
         Uri.parse('$baseUrl/auth/register'),
         headers: {'Content-Type': 'application/json'},
@@ -43,8 +59,9 @@ class ApiService {
           'email': email,
           'password': password,
           'display_name': displayName,
+          'device_id': deviceId,
         }),
-      );
+      ).timeout(_kTimeout);
 
       if (response.statusCode == 201) {
         final data = jsonDecode(response.body);
@@ -57,6 +74,8 @@ class ApiService {
       rethrow;
     } on SocketException {
       throw const ApiException('Sin conexión al servidor. Comprueba tu red.');
+    } on TimeoutException {
+      throw const ApiException('El servidor tardó demasiado. Comprueba tu red.');
     } catch (e) {
       throw ApiException('Error inesperado: $e');
     }
@@ -65,16 +84,20 @@ class ApiService {
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
+    bool forceLogin = false,
   }) async {
     try {
+      final deviceId = await getDeviceId();
       final response = await http.post(
         Uri.parse('$baseUrl/auth/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
           'password': password,
+          'device_id': deviceId,
+          if (forceLogin) 'force_login': true,
         }),
-      );
+      ).timeout(_kTimeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -87,6 +110,8 @@ class ApiService {
       rethrow;
     } on SocketException {
       throw const ApiException('Sin conexión al servidor. Comprueba tu red.');
+    } on TimeoutException {
+      throw const ApiException('El servidor tardó demasiado. Comprueba tu red.');
     } catch (e) {
       throw ApiException('Error inesperado: $e');
     }
@@ -96,7 +121,35 @@ class ApiService {
     return await _get('/auth/me');
   }
 
-  Future<void> logout() async {
+  // Billing endpoints
+  Future<Map<String, dynamic>> getSubscription() async {
+    return await _get('/billing/subscription');
+  }
+
+  Future<String> createCheckoutSession({
+    required String plan,
+    required String billingPeriod,
+  }) async {
+    final data = await post('/billing/create-checkout-session', body: {
+      'plan': plan,
+      'billing_period': billingPeriod,
+    });
+    return data['checkout_url'] as String;
+  }
+
+  Future<String> getBillingPortalUrl() async {
+    final data = await post('/billing/portal', body: {});
+    return data['portal_url'] as String;
+  }
+
+  // Notifica al backend que esta sesión se cierra y borra el token local
+  Future<void> logoutDevice() async {
+    try {
+      final deviceId = await getDeviceId();
+      await post('/auth/logout', body: {'device_id': deviceId});
+    } catch (_) {
+      // Si el backend no está disponible, igual cerramos sesión localmente
+    }
     await _secureStorage.delete(key: _tokenKey);
   }
 
@@ -106,7 +159,7 @@ class ApiService {
     final response = await http.get(
       Uri.parse('$baseUrl$endpoint'),
       headers: _getHeaders(token),
-    );
+    ).timeout(_kTimeout);
     return _handleResponse(response);
   }
 
@@ -117,7 +170,7 @@ class ApiService {
       Uri.parse('$baseUrl$endpoint'),
       headers: _getHeaders(token),
       body: jsonEncode(body),
-    );
+    ).timeout(_kTimeout);
     return _handleResponse(response);
   }
 
@@ -128,7 +181,7 @@ class ApiService {
       Uri.parse('$baseUrl$endpoint'),
       headers: _getHeaders(token),
       body: jsonEncode(body),
-    );
+    ).timeout(_kTimeout);
     return _handleResponse(response);
   }
 
@@ -138,7 +191,7 @@ class ApiService {
     final response = await http.delete(
       Uri.parse('$baseUrl$endpoint'),
       headers: _getHeaders(token),
-    );
+    ).timeout(_kTimeout);
     return _handleResponse(response);
   }
 
@@ -149,7 +202,7 @@ class ApiService {
       Uri.parse('$baseUrl/sync'),
       headers: _getHeaders(token),
       body: jsonEncode(body),
-    );
+    ).timeout(_kTimeout);
     return _handleResponse(response);
   }
 
@@ -182,7 +235,15 @@ class ApiService {
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       final raw = body['error'] as String? ?? '';
 
-      // Mapear mensajes del backend a mensajes amigables en español
+      // SESSION_CONFLICT: Basic plan con otra sesión activa
+      if (response.statusCode == 409 && raw == 'SESSION_CONFLICT') {
+        return ApiException(
+          body['message'] as String? ?? 'Ya tienes la sesión iniciada en otro dispositivo.',
+          statusCode: 409,
+          code: 'SESSION_CONFLICT',
+        );
+      }
+
       if (response.statusCode == 409 ||
           raw.toLowerCase().contains('already exists') ||
           raw.toLowerCase().contains('duplicate') ||
@@ -194,6 +255,13 @@ class ApiService {
           raw.toLowerCase().contains('incorrect') ||
           raw.toLowerCase().contains('unauthorized')) {
         return ApiException('Email o contraseña incorrectos.', statusCode: response.statusCode);
+      }
+      if (response.statusCode == 403 && raw == 'PLAN_REQUIRED') {
+        return ApiException(
+          body['message'] as String? ?? 'Esta función no está disponible en tu plan actual.',
+          statusCode: 403,
+          code: 'PLAN_REQUIRED',
+        );
       }
       if (response.statusCode == 422 || raw.toLowerCase().contains('validation')) {
         return ApiException('Datos inválidos. Revisa los campos.', statusCode: response.statusCode);

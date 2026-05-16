@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:uuid/uuid.dart';
 import 'api_service.dart';
 import 'sync_repository.dart';
 
@@ -12,7 +11,7 @@ class SyncService {
   final ApiService apiService;
   final SyncRepository repository;
 
-  final String deviceId = const Uuid().v4();
+  String? _deviceId;
   Timer? _timer;
   bool _syncing = false;
   int _consecutiveErrors = 0;
@@ -22,6 +21,7 @@ class SyncService {
   String? _lastError;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySub;
   bool _online = true;
+  bool _lastSyncSuccess = false;
 
   // Notifica cambios del servidor para que providers recarguen
   VoidCallback? onServerChangesApplied;
@@ -31,11 +31,23 @@ class SyncService {
 
   SyncService({required this.apiService, required this.repository});
 
-  void startPolling({Duration interval = const Duration(seconds: 10)}) {
+  Future<String> _getDeviceId() async {
+    _deviceId ??= await apiService.getDeviceId();
+    return _deviceId!;
+  }
+
+  // plan: 'basic' solo sincroniza al arrancar; 'pro'/'ultra' activan polling
+  void startPolling({
+    Duration interval = const Duration(seconds: 10),
+    String plan = 'basic',
+  }) {
     _timer?.cancel();
-    _timer = Timer.periodic(interval, (_) => _maybeSyncOnce());
     _listenConnectivity();
     _initialSync();
+
+    if (plan != 'basic') {
+      _timer = Timer.periodic(interval, (_) => _maybeSyncOnce());
+    }
   }
 
   void stopPolling() {
@@ -83,7 +95,6 @@ class SyncService {
     // Backoff exponencial: si hay errores consecutivos, saltamos algunos ticks
     if (_consecutiveErrors > 0) {
       final skipTicks = min(_consecutiveErrors - 1, _maxErrors);
-      // Usamos un simple contador modular para el backoff
       final waitTicks = 1 << skipTicks; // 1, 2, 4, 8, 16...
       if (DateTime.now().millisecondsSinceEpoch % (waitTicks * 10000) > 5000) {
         debugPrint('[Sync] Backoff: esperando ($waitTicks ticks entre reintentos)');
@@ -100,9 +111,12 @@ class SyncService {
       return;
     }
     _syncing = true;
-    _updateStatus(SyncStatus.syncing, null);
+    if (!_lastSyncSuccess) {
+      _updateStatus(SyncStatus.syncing, null);
+    }
 
     try {
+      final deviceId = await _getDeviceId();
       final lastSync = await repository.getLastSync();
       final localChanges = await repository.getLocalChanges(lastSync);
 
@@ -132,9 +146,11 @@ class SyncService {
       await repository.saveLastSync(newLastSync);
 
       _consecutiveErrors = 0;
+      _lastSyncSuccess = true;
       _updateStatus(SyncStatus.idle, null);
     } catch (e, stack) {
       _consecutiveErrors++;
+      _lastSyncSuccess = false;
       debugPrint('[Sync] ERROR ($_consecutiveErrors): $e');
       debugPrint('[Sync] Stack: $stack');
       _updateStatus(SyncStatus.error, _friendlyError(e));

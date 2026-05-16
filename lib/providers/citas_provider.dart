@@ -3,7 +3,6 @@ import 'package:drift/drift.dart' as d;
 import 'package:uuid/uuid.dart';
 import '../services/app_database.dart';
 import '../models/movimiento_contable.dart';
-import '../utils/metodo_pago_utils.dart';
 
 class CitasProvider extends ChangeNotifier {
   final AppDatabase db;
@@ -112,13 +111,18 @@ class CitasProvider extends ChangeNotifier {
   }
 
 
-  Future<List<Cita>> obtenerCitasPorDia(DateTime dia) async {
+  Future<List<Cita>> obtenerCitasPorDia(DateTime dia, {String? establecimientoId}) async {
     final inicio = DateTime(dia.year, dia.month, dia.day, 0, 0, 0);
     final fin    = DateTime(dia.year, dia.month, dia.day, 23, 59, 59);
 
-    final q = (db.select(db.citas)
-      ..where((c) => c.inicio.isBiggerOrEqualValue(inicio) & c.inicio.isSmallerOrEqualValue(fin))
-      ..orderBy([(c) => d.OrderingTerm(expression: c.inicio)]));
+    final q = db.select(db.citas)
+      ..where((c) {
+        final base = c.inicio.isBiggerOrEqualValue(inicio) & c.inicio.isSmallerOrEqualValue(fin);
+        if (establecimientoId == null || establecimientoId.isEmpty) return base;
+        // Muestra citas del local activo + citas sin local asignado (datos legacy)
+        return base & (c.establecimientoId.equals(establecimientoId) | c.establecimientoId.isNull());
+      })
+      ..orderBy([(c) => d.OrderingTerm(expression: c.inicio)]);
 
     return q.get();
   }
@@ -133,29 +137,30 @@ class CitasProvider extends ChangeNotifier {
     String? metodoPago,
     String? notas,
     bool pagada = false,
+    int trabajador = 1,
+    String? establecimientoId,
   }) async {
     final citaId = const Uuid().v4();
     final now = DateTime.now();
 
     final companion = CitasCompanion(
-      id:          d.Value(citaId),
-      clienteId:   d.Value(clienteId),
-      servicioId:  d.Value(servicioId),
-      inicio:      d.Value(inicio),
-      fin:         d.Value(fin),
-      precio:      d.Value(precio),
-      metodoPago:  d.Value(metodoPago),
-      notas:       d.Value(notas),
-      pagada:      d.Value(pagada),
-      syncId:      d.Value(const Uuid().v4()),
-      createdAt:   d.Value(now),
-      updatedAt:   d.Value(now),
+      id:                 d.Value(citaId),
+      clienteId:          d.Value(clienteId),
+      servicioId:         d.Value(servicioId),
+      inicio:             d.Value(inicio),
+      fin:                d.Value(fin),
+      precio:             d.Value(precio),
+      metodoPago:         d.Value(metodoPago),
+      notas:              d.Value(notas),
+      pagada:             d.Value(pagada),
+      trabajador:         d.Value(trabajador),
+      establecimientoId:  d.Value(establecimientoId),
+      syncId:             d.Value(const Uuid().v4()),
+      createdAt:          d.Value(now),
+      updatedAt:          d.Value(now),
     );
 
     await db.into(db.citas).insert(companion);
-
-    // Devuelve la cita insertada
-    final cita = await (db.select(db.citas)..where((c) => c.id.equals(citaId))).getSingle();
 
     // Refresca caché del año de la cita (si la estás usando)
     await cargarCitasAnio(inicio.year);
@@ -201,18 +206,22 @@ class CitasProvider extends ChangeNotifier {
     String? metodoPago,
     String? notas,
     bool? pagada,
+    int? trabajador,
+    String? establecimientoId,
   }) async {
     final companion = CitasCompanion(
-      id: d.Value(id),
-      clienteId: d.Value(clienteId),
-      servicioId: d.Value(servicioId),
-      inicio:     d.Value(inicio),
-      fin:        d.Value(fin),
-      precio:     d.Value(precio),
-      metodoPago: metodoPago != null ? d.Value(metodoPago) : const d.Value.absent(),
-      notas:      d.Value(notas),
-      pagada:     pagada == null ? const d.Value.absent() : d.Value(pagada),
-      updatedAt:  d.Value(DateTime.now()),
+      id:                d.Value(id),
+      clienteId:         d.Value(clienteId),
+      servicioId:        d.Value(servicioId),
+      inicio:            d.Value(inicio),
+      fin:               d.Value(fin),
+      precio:            d.Value(precio),
+      metodoPago:        metodoPago != null ? d.Value(metodoPago) : const d.Value.absent(),
+      notas:             d.Value(notas),
+      pagada:            pagada == null ? const d.Value.absent() : d.Value(pagada),
+      trabajador:        trabajador != null ? d.Value(trabajador) : const d.Value.absent(),
+      establecimientoId: establecimientoId != null ? d.Value(establecimientoId) : const d.Value.absent(),
+      updatedAt:         d.Value(DateTime.now()),
     );
 
     await (db.update(db.citas)..where((c) => c.id.equals(id))).write(companion);

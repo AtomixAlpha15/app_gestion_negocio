@@ -11,6 +11,7 @@ import '../providers/settings_provider.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/metodo_pago_utils.dart';
 import '../utils/responsive.dart';
+import '../widgets/custom_nav.dart';
 
 // Helper para Dart < 3
 extension FirstWhereOrNullExtension<E> on List<E> {
@@ -114,6 +115,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
                   tooltip: 'Resumen',
                   onPressed: () => _abrirTotales(totalGastos, beneficiosPorMes),
                 ),
+                const UserAvatarAction(),
               ]
             : null,
       ),

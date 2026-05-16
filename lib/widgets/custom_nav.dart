@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/settings_provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/establecimientos_provider.dart';
 import '../l10n/app_localizations.dart';
+import '../utils/responsive.dart';
 import 'dart:io';
 
 const double _kCollapsedWidth = 72.0;
@@ -181,6 +183,14 @@ class _CustomNavigationRailState extends State<CustomNavigationRail> {
               child: Divider(color: scheme.outlineVariant.withValues(alpha: 0.2), height: 1),
             ),
 
+            // — Selector de local (solo Ultra) —
+            _LocalSwitcher(
+              extended: _extended,
+              railFg: railFg,
+              scheme: scheme,
+              theme: theme,
+            ),
+
             // — Items de navegación —
             Expanded(
               child: ListView(
@@ -292,6 +302,175 @@ class _LogoSection extends StatelessWidget {
               maxLines: 1,
             ),
             secondChild: const SizedBox(height: 18),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Local Switcher (Ultra plan only) ────────────────────────────────────────
+
+class _LocalSwitcher extends ConsumerWidget {
+  final bool extended;
+  final Color railFg;
+  final ColorScheme scheme;
+  final ThemeData theme;
+
+  const _LocalSwitcher({
+    required this.extended,
+    required this.railFg,
+    required this.scheme,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateProvider);
+    final plan = authState.when(
+      onAuthenticated: (user) => user['plan'] as String? ?? 'basic',
+      onUnauthenticated: () => 'basic',
+      onLoading: () => 'basic',
+      onError: (_) => 'basic',
+    );
+
+    if (plan != 'ultra') return const SizedBox.shrink();
+
+    final settings = context.watch<SettingsProvider>();
+    final estProvider = context.watch<EstablecimientosProvider>();
+    final locales = estProvider.establecimientos;
+
+    final current = locales.isEmpty
+        ? null
+        : estProvider.porId(settings.establecimientoActualId) ?? locales.first;
+
+    // Ensure the stored ID matches an actual location
+    if (current != null && settings.establecimientoActualId != current.id) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        settings.setEstablecimientoActualId(current.id);
+      });
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: Tooltip(
+        message: current?.nombre ?? 'Local',
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: locales.length <= 1
+              ? null
+              : () => _showPicker(context, settings, locales, current?.id),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeInOut,
+            height: 38,
+            decoration: BoxDecoration(
+              color: scheme.secondaryContainer.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: scheme.secondary.withValues(alpha: 0.25),
+              ),
+            ),
+            child: Stack(
+              alignment: Alignment.centerLeft,
+              children: [
+                // Icono de tienda — siempre en la columna de iconos
+                Positioned(
+                  left: 0,
+                  width: _kCollapsedWidth - 16,
+                  child: Center(
+                    child: Icon(
+                      Icons.store_rounded,
+                      size: 18,
+                      color: scheme.secondary,
+                    ),
+                  ),
+                ),
+                // Nombre del local — visible solo cuando expandido
+                Positioned(
+                  left: _kCollapsedWidth - 16,
+                  right: locales.length > 1 ? 28 : 8,
+                  child: AnimatedOpacity(
+                    opacity: extended ? 1.0 : 0.0,
+                    duration: Duration(milliseconds: extended ? 220 : 120),
+                    child: Text(
+                      current?.nombre ?? 'Local',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: scheme.onSecondaryContainer,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                // Flecha dropdown — solo si hay más de un local y está expandido
+                if (locales.length > 1)
+                  Positioned(
+                    right: 6,
+                    child: AnimatedOpacity(
+                      opacity: extended ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 180),
+                      child: Icon(
+                        Icons.unfold_more_rounded,
+                        size: 16,
+                        color: scheme.secondary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPicker(
+    BuildContext context,
+    SettingsProvider settings,
+    List<dynamic> locales,
+    String? currentId,
+  ) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cambiar local'),
+        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+        content: SizedBox(
+          width: 280,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final local in locales)
+                ListTile(
+                  leading: Icon(
+                    local.id == currentId
+                        ? Icons.store_rounded
+                        : Icons.store_outlined,
+                    color: local.id == currentId
+                        ? Theme.of(ctx).colorScheme.primary
+                        : null,
+                  ),
+                  title: Text(local.nombre),
+                  subtitle: local.direccion != null && local.direccion!.isNotEmpty
+                      ? Text(local.direccion!, maxLines: 1, overflow: TextOverflow.ellipsis)
+                      : null,
+                  selected: local.id == currentId,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  onTap: () {
+                    settings.setEstablecimientoActualId(local.id);
+                    Navigator.of(ctx).pop();
+                  },
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
           ),
         ],
       ),
@@ -418,6 +597,115 @@ class _NavItemState extends State<_NavItem> {
   }
 }
 
+// ─── User account helpers (shared between desktop rail and mobile AppBar) ────
+
+void showUserAccountMenu(BuildContext context, WidgetRef ref) {
+  final authState = ref.read(authStateProvider);
+  final displayName = authState.when(
+    onAuthenticated: (user) => user['display_name'] as String? ?? '',
+    onUnauthenticated: () => '',
+    onLoading: () => '',
+    onError: (_) => '',
+  );
+  final email = authState.when(
+    onAuthenticated: (user) => user['email'] as String? ?? '',
+    onUnauthenticated: () => '',
+    onLoading: () => '',
+    onError: (_) => '',
+  );
+  final scheme = Theme.of(context).colorScheme;
+  final theme = Theme.of(context);
+
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (ctx) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [scheme.secondary, scheme.secondary.withValues(alpha: 0.7)],
+              ),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Icon(Icons.person_rounded, color: scheme.onSecondary, size: 32),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            displayName,
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            email,
+            style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 8),
+          ListTile(
+            leading: Icon(Icons.logout_rounded, color: scheme.error),
+            title: Text(
+              'Cerrar sesión',
+              style: TextStyle(color: scheme.error, fontWeight: FontWeight.w500),
+            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            onTap: () async {
+              Navigator.of(ctx).pop();
+              await ref.read(authStateProvider.notifier).logout();
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// Avatar del usuario para la AppBar en móvil. En escritorio no renderiza nada.
+class UserAvatarAction extends ConsumerWidget {
+  const UserAvatarAction({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!isMobile(context)) return const SizedBox.shrink();
+
+    final authState = ref.watch(authStateProvider);
+    final displayName = authState.when(
+      onAuthenticated: (user) => user['display_name'] as String? ?? '',
+      onUnauthenticated: () => '',
+      onLoading: () => '',
+      onError: (_) => '',
+    );
+    final initials = displayName.isNotEmpty ? displayName[0].toUpperCase() : '?';
+    final scheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: () => showUserAccountMenu(context, ref),
+        child: CircleAvatar(
+          radius: 18,
+          backgroundColor: scheme.secondaryContainer,
+          child: Text(
+            initials,
+            style: TextStyle(
+              color: scheme.onSecondaryContainer,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ─── User Chip ───────────────────────────────────────────────────────────────
 
 class _UserChip extends ConsumerWidget {
@@ -435,73 +723,12 @@ class _UserChip extends ConsumerWidget {
     required this.settings,
   });
 
-  void _showAccountMenu(BuildContext context, WidgetRef ref, String displayName, String email) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Avatar + datos de usuario
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [scheme.secondary, scheme.secondary.withValues(alpha: 0.7)],
-                ),
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Icon(Icons.person_rounded, color: scheme.onSecondary, size: 32),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              displayName,
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              email,
-              style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 24),
-            const Divider(),
-            const SizedBox(height: 8),
-            // Cerrar sesión
-            ListTile(
-              leading: Icon(Icons.logout_rounded, color: scheme.error),
-              title: Text(
-                'Cerrar sesión',
-                style: TextStyle(color: scheme.error, fontWeight: FontWeight.w500),
-              ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              onTap: () async {
-                Navigator.of(ctx).pop();
-                await ref.read(authStateProvider.notifier).logout();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateProvider);
 
     final displayName = authState.when(
       onAuthenticated: (user) => user['display_name'] as String? ?? '',
-      onUnauthenticated: () => '',
-      onLoading: () => '',
-      onError: (_) => '',
-    );
-
-    final email = authState.when(
-      onAuthenticated: (user) => user['email'] as String? ?? '',
       onUnauthenticated: () => '',
       onLoading: () => '',
       onError: (_) => '',
@@ -521,7 +748,7 @@ class _UserChip extends ConsumerWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          onTap: () => _showAccountMenu(context, ref, displayName, email),
+          onTap: () => showUserAccountMenu(context, ref),
           splashColor: scheme.primary.withValues(alpha: 0.1),
           child: SizedBox(
             height: 44,

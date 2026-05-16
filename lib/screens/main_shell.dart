@@ -94,8 +94,8 @@ class _MainShellState extends ConsumerState<MainShell> {
                   label: 'Clientes',
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.spa_outlined),
-                  selectedIcon: Icon(Icons.spa),
+                  icon: Icon(Icons.room_service_outlined),
+                  selectedIcon: Icon(Icons.room_service),
                   label: 'Servicios',
                 ),
                 NavigationDestination(

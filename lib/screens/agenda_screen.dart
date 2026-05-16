@@ -11,6 +11,7 @@ import '../providers/settings_provider.dart';
 import '../services/app_database.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/responsive.dart';
+import '../widgets/custom_nav.dart';
 
 extension FirstWhereOrNullExtension<E> on List<E> {
   E? firstWhereOrNull(bool Function(E) test) {
@@ -32,6 +33,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
   DateTime fechaSeleccionada = DateTime.now();
   TimeOfDay horaInicio = const TimeOfDay(hour: 8, minute: 0);
   TimeOfDay horaFin = const TimeOfDay(hour: 20, minute: 0);
+  late SettingsProvider _settingsRef;
 
   // Día izquierdo
   List<Cita> _citasIzq = [];
@@ -56,13 +58,19 @@ class _AgendaScreenState extends State<AgendaScreen> {
     super.initState();
     _scrollIzq.addListener(_syncFromIzq);
     _scrollDer.addListener(_syncFromDer);
+    _settingsRef = context.read<SettingsProvider>();
     cargarCitasDia();
     context.read<ServiciosProvider>().cargarServicios();
     context.read<ClientesProvider>().cargarClientes();
+    // Recargar citas al cambiar de local activo
+    _settingsRef.addListener(_onSettingsChanged);
   }
+
+  void _onSettingsChanged() => cargarCitasDia();
 
   @override
   void dispose() {
+    _settingsRef.removeListener(_onSettingsChanged);
     _scrollIzq.removeListener(_syncFromIzq);
     _scrollDer.removeListener(_syncFromDer);
     _scrollIzq.dispose();
@@ -107,13 +115,17 @@ class _AgendaScreenState extends State<AgendaScreen> {
     final provider = context.read<CitasProvider>();
     final serviciosProvider = context.read<ServiciosProvider>();
     final extrasProvider = context.read<ExtrasServicioProvider>();
+    final settings = context.read<SettingsProvider>();
     final db = extrasProvider.db;
     final serviciosMap = {for (var s in serviciosProvider.servicios) s.id: s.nombre};
+    final estId = settings.establecimientoActualId.isNotEmpty
+        ? settings.establecimientoActualId
+        : null;
 
     final fechaDer = fechaSeleccionada.add(const Duration(days: 1));
     final results = await Future.wait([
-      provider.obtenerCitasPorDia(fechaSeleccionada),
-      provider.obtenerCitasPorDia(fechaDer),
+      provider.obtenerCitasPorDia(fechaSeleccionada, establecimientoId: estId),
+      provider.obtenerCitasPorDia(fechaDer, establecimientoId: estId),
     ]);
 
     final extrasResults = await Future.wait([
@@ -135,13 +147,20 @@ class _AgendaScreenState extends State<AgendaScreen> {
     cargarCitasDia();
   }
 
-  Future<void> _abrirDialogoCrear(DateTime inicio, DateTime fin) async {
+  Future<void> _abrirDialogoCrear(DateTime inicio, DateTime fin, int trabajador) async {
+    final settings = context.read<SettingsProvider>();
+    final estId = settings.establecimientoActualId.isNotEmpty
+        ? settings.establecimientoActualId
+        : null;
     final result = await showDialog(
       context: context,
       builder: (_) => NuevaCitaDialog(
         fecha: inicio,
         horaInicial: TimeOfDay(hour: inicio.hour, minute: inicio.minute),
         horaFinal: TimeOfDay(hour: fin.hour, minute: fin.minute),
+        trabajador: trabajador,
+        numTrabajadores: settings.numeroEmpleados,
+        establecimientoId: estId,
       ),
     );
     if (result == true) cargarCitasDia();
@@ -159,6 +178,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
       precio: cita.precio,
       pagada: cita.pagada,
       notas: cita.notas,
+      trabajador: cita.trabajador,
+      establecimientoId: cita.establecimientoId,
     );
     await citasProv.cargarCitasAnio(nuevoInicio.year);
     cargarCitasDia();
@@ -173,6 +194,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
     Map<String, List<String>> extras,
     ScrollController scroll,
   ) {
+    final numT = context.read<SettingsProvider>().numeroEmpleados;
     return AgendaVisual(
       fecha: fecha,
       horaInicio: horaInicio,
@@ -182,10 +204,15 @@ class _AgendaScreenState extends State<AgendaScreen> {
       zoom: _zoom,
       onZoomChanged: (z) => setState(() => _zoom = z),
       scrollController: scroll,
+      numTrabajadores: numT,
       onEditarCita: (cita) async {
         final result = await showDialog(
           context: context,
-          builder: (_) => NuevaCitaDialog(fecha: cita.inicio, cita: cita),
+          builder: (_) => NuevaCitaDialog(
+            fecha: cita.inicio,
+            cita: cita,
+            numTrabajadores: numT,
+          ),
         );
         if (result == true) cargarCitasDia();
       },
@@ -304,6 +331,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
             ),
           ],
           const SizedBox(width: 16),
+          const UserAvatarAction(),
         ],
       ),
       body: cargandoCitas
@@ -346,9 +374,14 @@ class _AgendaScreenState extends State<AgendaScreen> {
                 ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
+          final estId = context.read<SettingsProvider>().establecimientoActualId;
           final result = await showDialog(
             context: context,
-            builder: (_) => NuevaCitaDialog(fecha: fechaSeleccionada, horaInicial: horaInicio),
+            builder: (_) => NuevaCitaDialog(
+              fecha: fechaSeleccionada,
+              horaInicial: horaInicio,
+              establecimientoId: estId.isNotEmpty ? estId : null,
+            ),
           );
           if (result == true) cargarCitasDia();
         },
@@ -425,11 +458,12 @@ class AgendaVisual extends StatefulWidget {
   final List<Cita> citas;
   final Map<String, List<String>> servicioYExtrasPorCita;
   final void Function(Cita cita)? onEditarCita;
-  final void Function(DateTime inicio, DateTime fin)? onCrearCita;
+  final void Function(DateTime inicio, DateTime fin, int trabajador)? onCrearCita;
   final void Function(Cita cita, DateTime nuevoInicio, DateTime nuevoFin)? onMoverCita;
   final double zoom;
   final ValueChanged<double>? onZoomChanged;
   final ScrollController? scrollController;
+  final int numTrabajadores;
 
   const AgendaVisual({
     super.key,
@@ -444,6 +478,7 @@ class AgendaVisual extends StatefulWidget {
     this.zoom = 1.0,
     this.onZoomChanged,
     this.scrollController,
+    this.numTrabajadores = 1,
   });
 
   @override
@@ -451,14 +486,27 @@ class AgendaVisual extends StatefulWidget {
 }
 
 class _AgendaVisualState extends State<AgendaVisual> {
-  static const double _labelW = 88.0;
-  static const double _padTop = 16.0;
+  static const double _labelWDesktop = 88.0;
+  static const double _labelWMobile = 52.0;
+  static const double _padTopDesktop = 16.0;
+  static const double _padTopMultiDesktop = 36.0;
+  static const double _padTopMobile = 48.0;
   static const double _padBot = 64.0;
+
+  // Actualizado en build() según plataforma; leído en callbacks de gestos
+  double _padTop = _padTopDesktop;
   static const int _hoverDurMin = 60;
 
-  // Hover preview state
+  // Hover preview state (desktop)
   double? _hoverY;
+  int _hoverColumna = 1;
   bool _sobreVacio = false;
+
+  // Tap preview state (mobile)
+  double? _tapPreviewY;
+  DateTime? _tapPreviewInicio;
+  DateTime? _tapPreviewFin;
+  int _tapPreviewTrabajador = 1;
 
   // Drag state
   Cita? _citaDrag;
@@ -472,19 +520,29 @@ class _AgendaVisualState extends State<AgendaVisual> {
   double _alturaPorMin = 1;
   int _minutosTotales = 720;
   int _horaIniMin = 480;
+  double _colW = 0; // ancho de cada columna de trabajador; 0 = modo single
 
   int _snapMin(double minutos) => (minutos / 30).round() * 30;
 
-  bool _esSobreCita(double y) {
+  int _columnaDesdeX(double x, double labelW) {
+    if (_colW <= 0 || widget.numTrabajadores <= 1) return 1;
+    final col = ((x - labelW) / _colW).floor() + 1;
+    return col.clamp(1, widget.numTrabajadores);
+  }
+
+  bool _esSobreCitaEnColumna(double y, int columna) {
     final minAbsoluto = _horaIniMin + (y - _padTop) / _alturaPorMin;
     for (final cita in widget.citas) {
       if (cita.id == _citaDrag?.id) continue;
+      if (widget.numTrabajadores > 1 && cita.trabajador != columna) continue;
       final ini = cita.inicio.hour * 60.0 + cita.inicio.minute;
       final fin = cita.fin.hour * 60.0 + cita.fin.minute;
       if (minAbsoluto > ini && minAbsoluto < fin) return true;
     }
     return false;
   }
+
+  bool _esSobreCita(double y) => _esSobreCitaEnColumna(y, 1);
 
   @override
   Widget build(BuildContext context) {
@@ -497,6 +555,10 @@ class _AgendaVisualState extends State<AgendaVisual> {
     final clientes = context.watch<ClientesProvider>().clientes;
     final hoy = DateTime.now();
     final hoySolo = DateTime(hoy.year, hoy.month, hoy.day);
+    final mobile = isMobile(context);
+    final labelW = mobile ? _labelWMobile : _labelWDesktop;
+    final multiAgenda = !mobile && widget.numTrabajadores > 1;
+    _padTop = mobile ? _padTopMobile : (multiAgenda ? _padTopMultiDesktop : _padTopDesktop);
 
     return Column(
       children: [
@@ -527,18 +589,19 @@ class _AgendaVisualState extends State<AgendaVisual> {
               final alturaContenido = alturaBase * widget.zoom;
               _alturaPorMin = alturaContenido / _minutosTotales;
               final totalH = alturaContenido + _padTop + _padBot;
+              _colW = multiAgenda
+                  ? (constraints.maxWidth - labelW) / widget.numTrabajadores
+                  : 0;
 
               final horas = List.generate(
                 widget.horaFin.hour - widget.horaInicio.hour + 1,
                 (i) => widget.horaInicio.hour + i,
               );
 
-              // ── Calcular previsualización hover ──────────────────────────
+              // ── Calcular previsualización hover (desktop) ─────────────────
               DateTime? hoverInicio;
               DateTime? hoverFin;
-              if (_hoverY != null && _sobreVacio) {
-                // Restamos la mitad de la duración para que el ratón quede
-                // centrado en la previsualización.
+              if (!mobile && _hoverY != null && _sobreVacio) {
                 final minRaw = (_hoverY! - _padTop) / _alturaPorMin;
                 final minSnap =
                     _snapMin(minRaw - _hoverDurMin / 2).clamp(0, _minutosTotales - _hoverDurMin);
@@ -547,6 +610,9 @@ class _AgendaVisualState extends State<AgendaVisual> {
                     widget.fecha.day, minAbs ~/ 60, minAbs % 60);
                 hoverFin = hoverInicio.add(const Duration(hours: 1));
               }
+
+              // ── Previsualización tap (móvil) ──────────────────────────────
+              // _tapPreviewInicio/_tapPreviewFin ya calculados en el handler
 
               // ── Calcular posición del drag ────────────────────────────────
               int? dragMinSnap;
@@ -559,312 +625,480 @@ class _AgendaVisualState extends State<AgendaVisual> {
                     _snapMin(minRaw).clamp(0, _minutosTotales - durMin);
               }
 
-              return SingleChildScrollView(
-                controller: widget.scrollController,
-                child: SizedBox(
-                  height: totalH,
-                  child: MouseRegion(
-                    onHover: (event) {
-                      final y = event.localPosition.dy;
-                      final x = event.localPosition.dx;
-                      final enZona =
-                          x > _labelW && y > _padTop && y < totalH - _padBot;
-                      setState(() {
-                        if (enZona && _citaDrag == null) {
-                          _hoverY = y;
-                          _sobreVacio = !_esSobreCita(y);
-                        } else {
-                          _hoverY = null;
-                          _sobreVacio = false;
-                        }
-                      });
-                    },
-                    onExit: (_) => setState(() {
-                      _hoverY = null;
-                      _sobreVacio = false;
-                    }),
-                    child: Stack(
-                      children: [
-                        // ── Líneas de horas ──────────────────────────────────
-                        // Texto y línea como Positioned separados para que la
-                        // línea quede en el píxel exacto y las citas cuadren.
-                        ...horas.expand((h) {
-                          final top = _padTop +
-                              (h - widget.horaInicio.hour) * 60 * _alturaPorMin;
-                          return [
-                            Positioned(
-                              top: top,
-                              left: _labelW,
-                              right: 0,
-                              child: Divider(
-                                thickness: 1,
-                                color: scheme.outlineVariant,
-                                height: 0,
-                              ),
+              Widget stack = Stack(
+                children: [
+                  // ── Cabeceras de trabajadores (multi-agenda desktop) ───────
+                  if (multiAgenda) ...[
+                    for (int w = 1; w <= widget.numTrabajadores; w++)
+                      Positioned(
+                        left: labelW + (w - 1) * _colW,
+                        width: _colW,
+                        top: 0,
+                        height: _padTop,
+                        child: Center(
+                          child: Text(
+                            'T$w',
+                            style: text.labelSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: scheme.primary,
                             ),
-                            Positioned(
-                              top: top - 9,
-                              left: 0,
-                              width: _labelW - 8,
-                              child: Text(
-                                '${h.toString().padLeft(2, '0')}:00',
-                                style: text.labelSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                                textAlign: TextAlign.right,
-                              ),
-                            ),
-                          ];
-                        }),
+                          ),
+                        ),
+                      ),
+                    for (int w = 1; w < widget.numTrabajadores; w++)
+                      Positioned(
+                        left: labelW + w * _colW,
+                        top: 0,
+                        bottom: 0,
+                        width: 1,
+                        child: Container(color: scheme.outlineVariant),
+                      ),
+                  ],
 
-                        // ── Previsualización hover (detrás de citas) ─────────
-                        if (hoverInicio != null && hoverFin != null) ...[
-                          () {
-                            final ini = hoverInicio!;
-                            final fin = hoverFin!;
-                            final minDesde =
-                                (ini.hour * 60 + ini.minute) - _horaIniMin;
-                            final top = _padTop + minDesde * _alturaPorMin;
-                            final height = _hoverDurMin * _alturaPorMin;
-                            return Positioned(
-                              left: _labelW,
-                              right: 16,
-                              top: top,
-                              height: height,
-                              child: GestureDetector(
-                                onTap: () =>
-                                    widget.onCrearCita?.call(ini, fin),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: scheme.primary.withValues(alpha: 0.15),
-                                    border: Border.all(
-                                      color: scheme.primary.withValues(alpha: 0.6),
-                                      width: 2,
+                  // ── Líneas de horas ────────────────────────────────────────
+                  ...horas.expand((h) {
+                    final top = _padTop +
+                        (h - widget.horaInicio.hour) * 60 * _alturaPorMin;
+                    return [
+                      Positioned(
+                        top: top,
+                        left: labelW,
+                        right: 0,
+                        child: Divider(
+                          thickness: 1,
+                          color: scheme.outlineVariant,
+                          height: 0,
+                        ),
+                      ),
+                      Positioned(
+                        top: top - 9,
+                        left: 0,
+                        width: labelW - 4,
+                        child: Text(
+                          '${h.toString().padLeft(2, '0')}:00',
+                          style: text.labelSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: scheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.right,
+                        ),
+                      ),
+                    ];
+                  }),
+
+                  // ── Previsualización hover desktop ─────────────────────────
+                  if (!mobile && hoverInicio != null && hoverFin != null) ...[
+                    () {
+                      final ini = hoverInicio!;
+                      final fin = hoverFin!;
+                      final minDesde = (ini.hour * 60 + ini.minute) - _horaIniMin;
+                      final top = _padTop + minDesde * _alturaPorMin;
+                      final height = _hoverDurMin * _alturaPorMin;
+                      final hLeft = multiAgenda
+                          ? labelW + (_hoverColumna - 1) * _colW + 2
+                          : labelW;
+                      final hWidth = multiAgenda ? _colW - 4 : null;
+                      final hRight = multiAgenda ? null : 8.0;
+                      return Positioned(
+                        left: hLeft,
+                        width: hWidth,
+                        right: hRight,
+                        top: top,
+                        height: height,
+                        child: GestureDetector(
+                          onTap: () => widget.onCrearCita?.call(ini, fin, _hoverColumna),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: scheme.primary.withValues(alpha: 0.15),
+                              border: Border.all(
+                                color: scheme.primary.withValues(alpha: 0.6),
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: LayoutBuilder(
+                              builder: (_, c) => c.maxHeight < 40
+                                  ? Center(
+                                      child: Icon(Icons.add_circle_outline,
+                                          color: scheme.primary, size: 18),
+                                    )
+                                  : Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.add_circle_outline,
+                                            color: scheme.primary, size: 28),
+                                        if (c.maxHeight >= 60) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Nueva cita',
+                                            style: text.labelSmall?.copyWith(
+                                              color: scheme.primary,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ],
                                     ),
-                                    borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      );
+                    }(),
+                  ],
+
+                  // ── Previsualización tap móvil ─────────────────────────────
+                  if (mobile && _tapPreviewInicio != null && _tapPreviewFin != null) ...[
+                    () {
+                      final ini = _tapPreviewInicio!;
+                      final fin = _tapPreviewFin!;
+                      final minDesde = (ini.hour * 60 + ini.minute) - _horaIniMin;
+                      final top = _padTop + minDesde * _alturaPorMin;
+                      final height = _hoverDurMin * _alturaPorMin;
+                      return Positioned(
+                        left: labelW,
+                        right: 8,
+                        top: top,
+                        height: height,
+                        child: GestureDetector(
+                          onTap: () {
+                            widget.onCrearCita?.call(ini, fin, _tapPreviewTrabajador);
+                            setState(() {
+                              _tapPreviewY = null;
+                              _tapPreviewInicio = null;
+                              _tapPreviewFin = null;
+                            });
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: scheme.primary.withValues(alpha: 0.18),
+                              border: Border.all(
+                                color: scheme.primary.withValues(alpha: 0.7),
+                                width: 2,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_circle_outline,
+                                    color: scheme.primary, size: 22),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Nueva cita',
+                                  style: text.labelSmall?.copyWith(
+                                    color: scheme.primary,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }(),
+                  ],
+
+                  // ── Bloques de citas ───────────────────────────────────────
+                  ...widget.citas.map((cita) {
+                    final minIni = (cita.inicio.hour * 60 +
+                            cita.inicio.minute) -
+                        _horaIniMin;
+                    final durMin =
+                        cita.fin.difference(cita.inicio).inMinutes;
+                    final top = _padTop + minIni * _alturaPorMin;
+                    final height =
+                        (durMin * _alturaPorMin).clamp(28.0, double.infinity);
+
+                    final cliente = clientes
+                        .firstWhereOrNull((c) => c.id == cita.clienteId);
+                    final nombreCliente = cliente?.nombre ?? 'Cliente';
+                    final nombreServicioYExtras =
+                        (widget.servicioYExtrasPorCita[cita.id] ?? [])
+                            .join(' + ');
+
+                    final esPasada = cita.inicio.isBefore(hoySolo);
+                    final impagada =
+                        (cita.metodoPago == null ||
+                            cita.metodoPago!.isEmpty) &&
+                        esPasada;
+
+                    final Color bg = impagada
+                        ? scheme.tertiaryContainer
+                        : scheme.secondaryContainer;
+                    final Color fg = impagada
+                        ? scheme.onTertiaryContainer
+                        : scheme.onSecondaryContainer;
+
+                    final bool esDragActual = _citaDrag?.id == cita.id;
+                    final horaFormato =
+                        '${cita.inicio.hour.toString().padLeft(2, '0')}:${cita.inicio.minute.toString().padLeft(2, '0')}'
+                        ' - '
+                        '${cita.fin.hour.toString().padLeft(2, '0')}:${cita.fin.minute.toString().padLeft(2, '0')}';
+
+                    final int w = cita.trabajador.clamp(1, widget.numTrabajadores);
+                    final cLeft = multiAgenda ? labelW + (w - 1) * _colW + 2 : labelW;
+                    final cWidth = multiAgenda ? _colW - 4 : null;
+                    final cRight = multiAgenda ? null : 8.0;
+
+                    return Positioned(
+                      left: cLeft,
+                      width: cWidth,
+                      right: cRight,
+                      top: top,
+                      height: height,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: esDragActual
+                            ? null
+                            : () => widget.onEditarCita?.call(cita),
+                        onPanStart: (d) {
+                          setState(() {
+                            _citaDrag = cita;
+                            _dragStartOffsetMin =
+                                d.localPosition.dy / _alturaPorMin;
+                            _dragCurrentY = top + d.localPosition.dy;
+                            _hoverY = null;
+                            _sobreVacio = false;
+                            _tapPreviewY = null;
+                            _tapPreviewInicio = null;
+                            _tapPreviewFin = null;
+                          });
+                        },
+                        onPanUpdate: (d) => setState(
+                            () => _dragCurrentY += d.delta.dy),
+                        onPanEnd: (_) {
+                          if (_citaDrag != null && dragMinSnap != null) {
+                            final cita = _citaDrag!;
+                            final snap = dragMinSnap;
+                            final durMin =
+                                cita.fin.difference(cita.inicio).inMinutes;
+                            final minAbs = _horaIniMin + snap;
+                            final nuevoInicio = DateTime(
+                                widget.fecha.year,
+                                widget.fecha.month,
+                                widget.fecha.day,
+                                minAbs ~/ 60,
+                                minAbs % 60);
+                            final nuevoFin = nuevoInicio
+                                .add(Duration(minutes: durMin));
+                            widget.onMoverCita
+                                ?.call(cita, nuevoInicio, nuevoFin);
+                          }
+                          setState(() => _citaDrag = null);
+                        },
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.grab,
+                          child: Opacity(
+                            opacity: esDragActual ? 0.4 : 1.0,
+                            child: Card(
+                              color: bg,
+                              elevation: esDragActual ? 2 : 1,
+                              margin: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: scheme.outlineVariant.withValues(alpha: 0.5),
+                                  width: 0.5,
+                                ),
+                              ),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [bg, bg.withValues(alpha: 0.8)],
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 6,
+                                  ),
+                                  child: Row(
                                     children: [
-                                      Icon(
-                                        Icons.add_circle_outline,
-                                        color: scheme.primary,
-                                        size: 32,
+                                      Flexible(
+                                        flex: 2,
+                                        child: Text(
+                                          nombreCliente,
+                                          style: text.labelMedium?.copyWith(
+                                            color: fg,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
-                                      const SizedBox(height: 4),
+                                      if (nombreServicioYExtras.isNotEmpty) ...[
+                                        const SizedBox(width: 8),
+                                        Flexible(
+                                          flex: 2,
+                                          child: Text(
+                                            nombreServicioYExtras,
+                                            style: text.labelSmall?.copyWith(
+                                              color: fg.withValues(alpha: 0.85),
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                      const SizedBox(width: 8),
                                       Text(
-                                        'Nueva cita',
+                                        horaFormato,
                                         style: text.labelSmall?.copyWith(
-                                          color: scheme.primary,
-                                          fontWeight: FontWeight.bold,
+                                          color: fg.withValues(alpha: 0.7),
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
                               ),
-                            );
-                          }(),
-                        ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
 
-                        // ── Bloques de citas ─────────────────────────────────
-                        ...widget.citas.map((cita) {
-                          final minIni = (cita.inicio.hour * 60 +
-                                  cita.inicio.minute) -
-                              _horaIniMin;
-                          final durMin =
-                              cita.fin.difference(cita.inicio).inMinutes;
-                          final top = _padTop + minIni * _alturaPorMin;
-                          final height =
-                              (durMin * _alturaPorMin).clamp(28.0, double.infinity);
+                  // ── Previsualización flotante del drag ─────────────────────
+                  if (_citaDrag != null && dragMinSnap != null) ...[
+                    () {
+                      final citaDrag = _citaDrag!;
+                      final snap = dragMinSnap!;
+                      final durMin =
+                          citaDrag.fin.difference(citaDrag.inicio).inMinutes;
+                      final dragTop = _padTop + snap * _alturaPorMin;
+                      final dragH =
+                          (durMin * _alturaPorMin).clamp(28.0, double.infinity);
+                      final minAbs = _horaIniMin + snap;
+                      final hIni = minAbs ~/ 60;
+                      final mIni = minAbs % 60;
+                      final hFin = (minAbs + durMin) ~/ 60;
+                      final mFin = (minAbs + durMin) % 60;
 
-                          final cliente = clientes
-                              .firstWhereOrNull((c) => c.id == cita.clienteId);
-                          final nombreCliente = cliente?.nombre ?? 'Cliente';
-                          final nombreServicioYExtras =
-                              (widget.servicioYExtrasPorCita[cita.id] ?? [])
-                                  .join(' + ');
+                      final int dw = citaDrag.trabajador.clamp(1, widget.numTrabajadores);
+                      final dLeft = multiAgenda ? labelW + (dw - 1) * _colW + 2 : labelW;
+                      final dWidth = multiAgenda ? _colW - 4 : null;
+                      final dRight = multiAgenda ? null : 8.0;
 
-                          final esPasada = cita.inicio.isBefore(hoySolo);
-                          final impagada =
-                              (cita.metodoPago == null ||
-                                  cita.metodoPago!.isEmpty) &&
-                              esPasada;
-
-                          final Color bg = impagada
-                              ? scheme.tertiaryContainer
-                              : scheme.secondaryContainer;
-                          final Color fg = impagada
-                              ? scheme.onTertiaryContainer
-                              : scheme.onSecondaryContainer;
-
-                          final bool esDragActual = _citaDrag?.id == cita.id;
-                          final horaFormato = '${cita.inicio.hour.toString().padLeft(2, '0')}:${cita.inicio.minute.toString().padLeft(2, '0')} - ${cita.fin.hour.toString().padLeft(2, '0')}:${cita.fin.minute.toString().padLeft(2, '0')}';
-
-                          return Positioned(
-                            left: _labelW,
-                            right: 16,
-                            top: top,
-                            height: height,
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: esDragActual
-                                  ? null
-                                  : () => widget.onEditarCita?.call(cita),
-                              onPanStart: (d) {
-                                setState(() {
-                                  _citaDrag = cita;
-                                  _dragStartOffsetMin =
-                                      d.localPosition.dy / _alturaPorMin;
-                                  _dragCurrentY = top + d.localPosition.dy;
-                                  _hoverY = null;
-                                  _sobreVacio = false;
-                                });
-                              },
-                              onPanUpdate: (d) => setState(
-                                  () => _dragCurrentY += d.delta.dy),
-                              onPanEnd: (_) {
-                                if (_citaDrag != null && dragMinSnap != null) {
-                                  final cita = _citaDrag!;
-                                  final snap = dragMinSnap;
-                                  final durMin =
-                                      cita.fin.difference(cita.inicio).inMinutes;
-                                  final minAbs = _horaIniMin + snap;
-                                  final nuevoInicio = DateTime(
-                                      widget.fecha.year,
-                                      widget.fecha.month,
-                                      widget.fecha.day,
-                                      minAbs ~/ 60,
-                                      minAbs % 60);
-                                  final nuevoFin = nuevoInicio
-                                      .add(Duration(minutes: durMin));
-                                  widget.onMoverCita
-                                      ?.call(cita, nuevoInicio, nuevoFin);
-                                }
-                                setState(() => _citaDrag = null);
-                              },
-                              child: MouseRegion(
-                                cursor: SystemMouseCursors.grab,
-                                child: Opacity(
-                                  opacity: esDragActual ? 0.4 : 1.0,
-                                  child: Card(
-                                    color: bg,
-                                    elevation: esDragActual ? 2 : 1,
-                                    margin: EdgeInsets.zero,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      side: BorderSide(
-                                        color: scheme.outlineVariant.withValues(alpha: 0.5),
-                                        width: 0.5,
-                                      ),
-                                    ),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(12),
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                          colors: [
-                                            bg,
-                                            bg.withValues(alpha: 0.8),
-                                          ],
-                                        ),
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 8,
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Text(
-                                              nombreCliente,
-                                              style: text.labelMedium?.copyWith(
-                                                color: fg,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            SizedBox(width: 15),
-                                            if (nombreServicioYExtras.isNotEmpty)
-                                              Text(
-                                                nombreServicioYExtras,
-                                                style: text.labelSmall?.copyWith(
-                                                  color: fg.withValues(alpha: 0.85),
-                                                ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            SizedBox(width: 15),
-                                            Text(
-                                              horaFormato,
-                                              style: text.labelSmall?.copyWith(
-                                                color: fg.withValues(alpha: 0.7),
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                      return Positioned(
+                        left: dLeft,
+                        width: dWidth,
+                        right: dRight,
+                        top: dragTop,
+                        height: dragH,
+                        child: IgnorePointer(
+                          child: Card(
+                            color: scheme.primaryContainer,
+                            elevation: 6,
+                            margin: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: BorderSide(color: scheme.primary, width: 2),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(6.0),
+                              child: Text(
+                                '${hIni.toString().padLeft(2, '0')}:${mIni.toString().padLeft(2, '0')}'
+                                ' - '
+                                '${hFin.toString().padLeft(2, '0')}:${mFin.toString().padLeft(2, '0')}',
+                                style: text.bodySmall?.copyWith(
+                                    color: scheme.onPrimaryContainer),
                               ),
                             ),
-                          );
-                        }),
+                          ),
+                        ),
+                      );
+                    }(),
+                  ],
+                ],
+              );
 
-                        // ── Previsualización flotante del drag ───────────────
-                        if (_citaDrag != null && dragMinSnap != null) ...[
-                          () {
-                            final citaDrag = _citaDrag!;
-                            final snap = dragMinSnap!;
-                            final durMin =
-                                citaDrag.fin.difference(citaDrag.inicio).inMinutes;
-                            final dragTop = _padTop + snap * _alturaPorMin;
-                            final dragH =
-                                (durMin * _alturaPorMin).clamp(28.0, double.infinity);
-                            final minAbs = _horaIniMin + snap;
-                            final hIni = minAbs ~/ 60;
-                            final mIni = minAbs % 60;
-                            final hFin = (minAbs + durMin) ~/ 60;
-                            final mFin = (minAbs + durMin) % 60;
+              // En móvil envolvemos el Stack con GestureDetector para el tap
+              if (mobile) {
+                stack = GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTapUp: (details) {
+                    final y = details.localPosition.dy;
+                    final x = details.localPosition.dx;
+                    if (x <= labelW || y <= _padTop || y >= totalH - _padBot) {
+                      setState(() {
+                        _tapPreviewY = null;
+                        _tapPreviewInicio = null;
+                        _tapPreviewFin = null;
+                      });
+                      return;
+                    }
+                    if (_esSobreCita(y)) return;
 
-                            return Positioned(
-                              left: _labelW,
-                              right: 16,
-                              top: dragTop,
-                              height: dragH,
-                              child: IgnorePointer(
-                                child: Card(
-                                  color: scheme.primaryContainer,
-                                  elevation: 6,
-                                  margin: EdgeInsets.zero,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    side: BorderSide(
-                                        color: scheme.primary, width: 2),
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(6.0),
-                                    child: Text(
-                                      '${hIni.toString().padLeft(2, '0')}:${mIni.toString().padLeft(2, '0')}'
-                                      ' - '
-                                      '${hFin.toString().padLeft(2, '0')}:${mFin.toString().padLeft(2, '0')}',
-                                      style: text.bodySmall?.copyWith(
-                                          color: scheme.onPrimaryContainer),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            );
-                          }(),
-                        ],
-                      ],
-                    ),
-                  ),
+                    // Si ya hay preview y se toca dentro de él → abrir diálogo
+                    if (_tapPreviewInicio != null) {
+                      final previewMinDesde =
+                          (_tapPreviewInicio!.hour * 60 + _tapPreviewInicio!.minute) -
+                              _horaIniMin;
+                      final previewTop = _padTop + previewMinDesde * _alturaPorMin;
+                      final previewBot = previewTop + _hoverDurMin * _alturaPorMin;
+                      if (y >= previewTop && y <= previewBot) {
+                        widget.onCrearCita?.call(_tapPreviewInicio!, _tapPreviewFin!, _tapPreviewTrabajador);
+                        setState(() {
+                          _tapPreviewY = null;
+                          _tapPreviewInicio = null;
+                          _tapPreviewFin = null;
+                        });
+                        return;
+                      }
+                    }
+
+                    // Primer toque (o toque fuera del preview anterior): mostrar preview
+                    final minRaw = (y - _padTop) / _alturaPorMin;
+                    final minSnap = _snapMin(minRaw - _hoverDurMin / 2)
+                        .clamp(0, _minutosTotales - _hoverDurMin);
+                    final minAbs = _horaIniMin + minSnap;
+                    final ini = DateTime(widget.fecha.year, widget.fecha.month,
+                        widget.fecha.day, minAbs ~/ 60, minAbs % 60);
+                    setState(() {
+                      _tapPreviewY = y;
+                      _tapPreviewInicio = ini;
+                      _tapPreviewFin = ini.add(const Duration(hours: 1));
+                    });
+                  },
+                  child: stack,
+                );
+              }
+
+              return SingleChildScrollView(
+                controller: widget.scrollController,
+                child: SizedBox(
+                  height: totalH,
+                  child: mobile
+                      ? stack
+                      : MouseRegion(
+                          onHover: (event) {
+                            final y = event.localPosition.dy;
+                            final x = event.localPosition.dx;
+                            final enZona = x > labelW &&
+                                y > _padTop &&
+                                y < totalH - _padBot;
+                            setState(() {
+                              if (enZona && _citaDrag == null) {
+                                _hoverY = y;
+                                _hoverColumna = _columnaDesdeX(x, labelW);
+                                _sobreVacio = !_esSobreCitaEnColumna(y, _hoverColumna);
+                              } else {
+                                _hoverY = null;
+                                _sobreVacio = false;
+                              }
+                            });
+                          },
+                          onExit: (_) => setState(() {
+                            _hoverY = null;
+                            _sobreVacio = false;
+                          }),
+                          child: stack,
+                        ),
                 ),
               );
             },
@@ -885,6 +1119,9 @@ class NuevaCitaDialog extends StatefulWidget {
   final TimeOfDay? horaInicial;
   final TimeOfDay? horaFinal;
   final Cita? cita;
+  final int trabajador;
+  final int numTrabajadores;
+  final String? establecimientoId;
 
   const NuevaCitaDialog({
     super.key,
@@ -892,6 +1129,9 @@ class NuevaCitaDialog extends StatefulWidget {
     this.horaInicial,
     this.horaFinal,
     this.cita,
+    this.trabajador = 1,
+    this.numTrabajadores = 1,
+    this.establecimientoId,
   });
 
   @override
@@ -907,6 +1147,7 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
   List<String> extrasSeleccionados = [];
   bool pagada = false;
   String? metodoPago;
+  int _trabajador = 1;
 
   @override
   void initState() {
@@ -919,9 +1160,13 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
       horaFin =
           TimeOfDay(hour: widget.cita!.fin.hour, minute: widget.cita!.fin.minute);
       notas = widget.cita!.notas;
+      metodoPago = widget.cita!.metodoPago;
+      pagada = widget.cita!.pagada;
+      _trabajador = widget.cita!.trabajador;
     } else {
       horaInicio = widget.horaInicial ?? const TimeOfDay(hour: 9, minute: 0);
       horaFin = widget.horaFinal ?? TimeOfDay(hour: horaInicio!.hour + 1, minute: 0);
+      _trabajador = widget.trabajador;
     }
   }
 
@@ -1056,6 +1301,27 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                         ),
                       ],
                     ),
+                    if (widget.numTrabajadores > 1) ...[
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Text('Trabajador:', style: text.labelMedium),
+                          const SizedBox(width: 12),
+                          ...List.generate(widget.numTrabajadores, (i) {
+                            final w = i + 1;
+                            final sel = _trabajador == w;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: FilterChip(
+                                label: Text('T$w'),
+                                selected: sel,
+                                onSelected: (_) => setState(() => _trabajador = w),
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                    ],
                     if (servicioId != null) ...[
                       const SizedBox(height: 16),
                       FutureBuilder<List<ExtrasServicioData>>(
@@ -1227,6 +1493,8 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                             precio: precioFinal,
                             pagada: (metodoPagoFinal != null && metodoPagoFinal.isNotEmpty),
                             notas: notas,
+                            trabajador: _trabajador,
+                            establecimientoId: widget.cita!.establecimientoId ?? widget.establecimientoId,
                           );
                         } else {
                           citaId = await citasProv.insertarCita(
@@ -1238,6 +1506,8 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                             metodoPago: metodoPagoFinal,
                             notas: notas,
                             pagada: (metodoPagoFinal != null && metodoPagoFinal.isNotEmpty),
+                            trabajador: _trabajador,
+                            establecimientoId: widget.establecimientoId,
                           );
 
                           if (hayBonoDisponible) {

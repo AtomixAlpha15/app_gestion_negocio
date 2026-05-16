@@ -7,6 +7,7 @@ import 'ficha_cliente_screen.dart';
 import '../widgets/entity_card.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/responsive.dart';
+import '../widgets/custom_nav.dart';
 
 
 class ClientesScreen extends StatefulWidget {
@@ -58,7 +59,10 @@ class _ClientesScreenState extends State<ClientesScreen> {
           }).toList();
 
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context).clientsTitle)),
+      appBar: AppBar(
+        title: Text(AppLocalizations.of(context).clientsTitle),
+        actions: const [UserAvatarAction()],
+      ),
       floatingActionButton: mobile
           ? FloatingActionButton(
               onPressed: () async {
@@ -312,20 +316,21 @@ class _ClienteListTile extends StatelessWidget {
     required this.onTap,
   });
 
-  Color _avatarColor(String name) {
-    const palette = [
-      Color(0xFF4CAF50),
-      Color(0xFF2196F3),
-      Color(0xFF9C27B0),
-      Color(0xFFFF9800),
-      Color(0xFF00BCD4),
-      Color(0xFFE91E63),
-      Color(0xFF607D8B),
-      Color(0xFF795548),
+  Color _avatarBg(String name, ColorScheme scheme) {
+    final options = [
+      scheme.primaryContainer,
+      scheme.secondaryContainer,
+      scheme.tertiaryContainer,
+      scheme.primary.withValues(alpha: 0.75),
+      scheme.secondary.withValues(alpha: 0.75),
+      scheme.tertiary.withValues(alpha: 0.75),
     ];
-    if (name.isEmpty) return palette[0];
-    return palette[name.codeUnitAt(0) % palette.length];
+    if (name.isEmpty) return options[0];
+    return options[name.codeUnitAt(0) % options.length];
   }
+
+  Color _avatarFg(Color bg) =>
+      bg.computeLuminance() > 0.45 ? Colors.black87 : Colors.white;
 
   @override
   Widget build(BuildContext context) {
@@ -333,6 +338,7 @@ class _ClienteListTile extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final hasImg = (imagePath ?? '').trim().isNotEmpty;
     final inicial = nombre.trim().isEmpty ? '?' : nombre.trim()[0].toUpperCase();
+    final bgColor = _avatarBg(nombre, scheme);
 
     return InkWell(
       onTap: onTap,
@@ -343,13 +349,13 @@ class _ClienteListTile extends StatelessWidget {
             CircleAvatar(
               radius: 22,
               backgroundImage: hasImg ? FileImage(File(imagePath!)) : null,
-              backgroundColor: hasImg ? null : _avatarColor(nombre),
+              backgroundColor: hasImg ? null : bgColor,
               child: hasImg
                   ? null
                   : Text(
                       inicial,
                       style: text.titleMedium?.copyWith(
-                        color: Colors.white,
+                        color: _avatarFg(bgColor),
                         fontWeight: FontWeight.bold,
                       ),
                     ),

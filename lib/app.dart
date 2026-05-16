@@ -11,6 +11,7 @@ import 'providers/clientes_provider.dart';
 import 'providers/servicios_provider.dart';
 import 'providers/citas_provider.dart';
 import 'providers/gastos_provider.dart';
+import 'providers/establecimientos_provider.dart';
 import 'services/app_database.dart';
 import 'services/backup_services.dart';
 import 'services/sync_service.dart';
@@ -43,7 +44,10 @@ class _MyAppState extends ConsumerState<MyApp> {
       if (!mounted || _syncService != null) return;
       final auth = ref.read(authStateProvider);
       auth.when(
-        onAuthenticated: (user) => _startSyncWhenReady(user['id'] as String?),
+        onAuthenticated: (user) => _startSyncWhenReady(
+          user['id'] as String?,
+          plan: user['plan'] as String? ?? 'basic',
+        ),
         onUnauthenticated: () {},
         onLoading: () {},
         onError: (_) {},
@@ -51,26 +55,30 @@ class _MyAppState extends ConsumerState<MyApp> {
     });
   }
 
-  void _startSyncWhenReady(String? targetUserId) {
+  void _startSyncWhenReady(String? targetUserId, {String plan = 'basic'}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _syncService != null) return;
       final db = context.read<AppDatabase>();
       if (db.userId == targetUserId) {
-        _startSync(db);
+        _startSync(db, plan: plan);
       } else {
         // La BD aún no está actualizada, reintentar en el siguiente frame
-        _startSyncWhenReady(targetUserId);
+        _startSyncWhenReady(targetUserId, plan: plan);
       }
     });
   }
 
-  void _startSync(AppDatabase db) {
+  void _startSync(AppDatabase db, {String plan = 'basic'}) {
     _syncService = ref.read(syncServiceProvider(db));
     _syncService!.onServerChangesApplied = _reloadProviders;
     // Conectar el notifier del estado de sync para que la UI reaccione
     _syncService!.onStatusChanged =
         ref.read(syncStatusProvider(db).notifier).update;
-    _syncService!.startPolling();
+    _syncService!.startPolling(plan: plan);
+    // Carga inicial de establecimientos (sin esperar la primera sincronización)
+    if (mounted) {
+      context.read<EstablecimientosProvider>().cargarEstablecimientos();
+    }
   }
 
   void _reloadProviders() {
@@ -80,6 +88,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     context.read<ServiciosProvider>().cargarServicios();
     context.read<CitasProvider>().cargarCitasAnio(anio);
     context.read<GastosProvider>().cargarGastosAnio(anio);
+    context.read<EstablecimientosProvider>().cargarEstablecimientos();
     // BonosProvider consulta bajo demanda, no necesita recarga explícita
   }
 
@@ -109,7 +118,10 @@ class _MyAppState extends ConsumerState<MyApp> {
       if (_syncService != null) return;
       // Esperamos a que _switchDatabase complete y el MultiProvider tenga la BD correcta
       next.when(
-        onAuthenticated: (user) => _startSyncWhenReady(user['id'] as String?),
+        onAuthenticated: (user) => _startSyncWhenReady(
+          user['id'] as String?,
+          plan: user['plan'] as String? ?? 'basic',
+        ),
         onUnauthenticated: () {},
         onLoading: () {},
         onError: (_) {},

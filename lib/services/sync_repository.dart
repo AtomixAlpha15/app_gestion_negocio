@@ -19,8 +19,8 @@ class SyncRepository {
   Future<DateTime> getLastSync() async {
     final prefs = await SharedPreferences.getInstance();
     final ms = prefs.getInt(_lastSyncKey);
-    if (ms == null) return DateTime.fromMillisecondsSinceEpoch(0);
-    return DateTime.fromMillisecondsSinceEpoch(ms);
+    if (ms == null) return DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+    return DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true);
   }
 
   Future<void> saveLastSync(DateTime dt) async {
@@ -55,6 +55,8 @@ class SyncRepository {
     if ((pagosCount.data['c'] as int) > 0) return false;
     final gastosCount = await db.customSelect('SELECT COUNT(*) AS c FROM gastos').getSingle();
     if ((gastosCount.data['c'] as int) > 0) return false;
+    final establecimientosCount = await db.customSelect('SELECT COUNT(*) AS c FROM establecimientos').getSingle();
+    if ((establecimientosCount.data['c'] as int) > 0) return false;
     return true;
   }
 
@@ -79,6 +81,7 @@ class SyncRepository {
     }
 
     return [
+      ...await _establecimientosChanges(since),
       ...clientesChanges,
       ...serviciosChanges,
       ...await _extrasServicioChanges(since),
@@ -107,6 +110,29 @@ class SyncRepository {
         'precio_base': r.precio,
         'duracion_minutos': r.duracionMinutos,
         'activo': true,
+        'deleted': r.deleted,
+        'created_at': r.createdAt?.toIso8601String(),
+        'updated_at': r.updatedAt?.toIso8601String(),
+        'sync_id': r.syncId ?? r.id,
+      },
+    )).toList();
+  }
+
+  Future<List<SyncChange>> _establecimientosChanges(DateTime since) async {
+    final rows = await (db.select(db.establecimientos)
+      ..where((t) => t.updatedAt.isBiggerThanValue(since))).get();
+
+    return rows.map((r) => SyncChange(
+      entityType: 'establecimientos',
+      action: r.deleted ? 'delete' : (r.createdAt != null && r.createdAt!.isAfter(since) ? 'create' : 'update'),
+      id: r.id,
+      syncId: r.syncId ?? r.id,
+      data: {
+        'id': r.id,
+        'nombre': r.nombre,
+        'direccion': r.direccion,
+        'telefono': r.telefono,
+        'es_default': r.esDefault,
         'deleted': r.deleted,
         'created_at': r.createdAt?.toIso8601String(),
         'updated_at': r.updatedAt?.toIso8601String(),
@@ -180,9 +206,11 @@ class SyncRepository {
           'fecha': r.inicio.toIso8601String(),
           'duracion_minutos': duracion,
           'precio': r.precio,
-          'metodo_pago': r.metodoPago ?? 'efectivo',
+          'metodo_pago': r.metodoPago,
           'notas': r.notas,
           'completada': r.pagada,
+          'trabajador': r.trabajador,
+          'establecimiento_id': r.establecimientoId,
           'deleted': r.deleted,
           'created_at': r.createdAt?.toIso8601String(),
           'updated_at': r.updatedAt?.toIso8601String(),
@@ -327,6 +355,7 @@ class SyncRepository {
         'concepto': r.concepto,
         'precio': r.precio,
         'fecha': r.fecha.toIso8601String(),
+        'establecimiento_id': r.establecimientoId,
         'deleted': r.deleted,
         'created_at': r.createdAt?.toIso8601String(),
         'updated_at': r.updatedAt?.toIso8601String(),
@@ -348,6 +377,8 @@ class SyncRepository {
     for (final change in changes) {
       try {
         switch (change.entityType) {
+          case 'establecimientos':
+            await _applyEstablecimiento(change);
           case 'clientes':
             await _applyCliente(change);
           case 'servicios':
@@ -373,6 +404,22 @@ class SyncRepository {
         debugPrint('[Sync] Stack: $stack');
       }
     }
+  }
+
+  Future<void> _applyEstablecimiento(SyncChange change) async {
+    final d = change.data;
+    final companion = EstablecimientosCompanion(
+      id: Value(d['id']),
+      nombre: Value(d['nombre'] ?? ''),
+      direccion: Value(d['direccion']),
+      telefono: Value(d['telefono']),
+      esDefault: Value(d['es_default'] ?? false),
+      deleted: Value(d['deleted'] ?? false),
+      syncId: Value(d['sync_id']),
+      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
+      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']) : DateTime.now()),
+    );
+    await db.into(db.establecimientos).insertOnConflictUpdate(companion);
   }
 
   Future<void> _applyCliente(SyncChange change) async {
@@ -422,6 +469,8 @@ class SyncRepository {
       pagada: Value(d['completada'] ?? false),
       metodoPago: Value(d['metodo_pago']),
       notas: Value(d['notas']),
+      trabajador: Value(d['trabajador'] as int? ?? 1),
+      establecimientoId: Value(d['establecimiento_id'] as String?),
       deleted: Value(d['deleted'] ?? false),
       syncId: Value(d['sync_id']),
       updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
@@ -533,6 +582,7 @@ class SyncRepository {
       concepto: Value(d['concepto'] ?? ''),
       precio: Value(_toDouble(d['precio'])),
       fecha: Value(d['fecha'] != null ? DateTime.parse(d['fecha']) : DateTime.now()),
+      establecimientoId: Value(d['establecimiento_id'] as String?),
       deleted: Value(d['deleted'] ?? false),
       syncId: Value(d['sync_id']),
       updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
