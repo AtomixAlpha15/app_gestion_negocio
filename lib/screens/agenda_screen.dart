@@ -48,6 +48,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
   // Zoom compartido entre los dos paneles
   double _zoom = 1.0;
 
+  // Swipe detection
+  int _activePointers = 0;
+  double _dragStartX = 0;
+
   // Scroll sincronizado
   final _scrollIzq = ScrollController();
   final _scrollDer = ScrollController();
@@ -345,14 +349,24 @@ class _AgendaScreenState extends State<AgendaScreen> {
                   children: [
                     _DiaHeader(fecha: fechaSeleccionada),
                     Expanded(
-                      child: GestureDetector(
-                        onHorizontalDragEnd: (details) {
-                          if (details.primaryVelocity != null) {
-                            if (details.primaryVelocity! < 0) {
-                              cambiarFecha(fechaSeleccionada.add(const Duration(days: 1)));
-                            } else {
-                              cambiarFecha(fechaSeleccionada.subtract(const Duration(days: 1)));
+                      child: Listener(
+                        onPointerDown: (_) => _activePointers++,
+                        onPointerUp: (event) {
+                          _activePointers--;
+                          if (_activePointers == 0) {
+                            final dx = event.position.dx - _dragStartX;
+                            if (dx.abs() > 50) {
+                              if (dx > 0) {
+                                cambiarFecha(fechaSeleccionada.subtract(const Duration(days: 1)));
+                              } else {
+                                cambiarFecha(fechaSeleccionada.add(const Duration(days: 1)));
+                              }
                             }
+                          }
+                        },
+                        onPointerMove: (event) {
+                          if (_activePointers == 1) {
+                            _dragStartX = event.position.dx;
                           }
                         },
                         child: _panel(fechaSeleccionada, _citasIzq, _extrasIzq, _scrollIzq),
@@ -934,46 +948,69 @@ class _AgendaVisualState extends State<AgendaVisual> {
                                 ),
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 6,
+                                    horizontal: 6,
+                                    vertical: 4,
                                   ),
-                                  child: Row(
-                                    children: [
-                                      Flexible(
-                                        flex: 2,
-                                        child: Text(
-                                          nombreCliente,
-                                          style: text.labelMedium?.copyWith(
-                                            color: fg,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                      if (nombreServicioYExtras.isNotEmpty) ...[
-                                        const SizedBox(width: 8),
-                                        Flexible(
-                                          flex: 2,
-                                          child: Text(
-                                            nombreServicioYExtras,
-                                            style: text.labelSmall?.copyWith(
-                                              color: fg.withValues(alpha: 0.85),
+                                  child: Builder(
+                                    builder: (ctx) {
+                                      final isNarrow = cWidth != null && cWidth! < 100;
+                                      if (isNarrow) {
+                                        return Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Text(
+                                              horaFormato.split(' - ')[0],
+                                              style: text.labelSmall?.copyWith(
+                                                color: fg,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 10,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
+                                          ],
+                                        );
+                                      }
+                                      return Row(
+                                        children: [
+                                          Flexible(
+                                            flex: 2,
+                                            child: Text(
+                                              nombreCliente,
+                                              style: text.labelMedium?.copyWith(
+                                                color: fg,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
                                           ),
-                                        ),
-                                      ],
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        horaFormato,
-                                        style: text.labelSmall?.copyWith(
-                                          color: fg.withValues(alpha: 0.7),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
+                                          if (nombreServicioYExtras.isNotEmpty) ...[
+                                            const SizedBox(width: 8),
+                                            Flexible(
+                                              flex: 2,
+                                              child: Text(
+                                                nombreServicioYExtras,
+                                                style: text.labelSmall?.copyWith(
+                                                  color: fg.withValues(alpha: 0.85),
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            horaFormato,
+                                            style: text.labelSmall?.copyWith(
+                                              color: fg.withValues(alpha: 0.7),
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
                                   ),
                                 ),
                               ),
