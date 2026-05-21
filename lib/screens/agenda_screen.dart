@@ -1330,21 +1330,28 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                         children: [
                           Text('Trabajador:', style: text.labelMedium),
                           const SizedBox(width: 12),
-                          ...List.generate(widget.numTrabajadores, (i) {
-                            final w = i + 1;
-                            final sel = _trabajador == w;
-                            final label = widget.nombresEmpleados.isNotEmpty && w <= widget.nombresEmpleados.length
-                                ? widget.nombresEmpleados[w - 1]
-                                : 'T$w';
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: FilterChip(
-                                label: Text(label),
-                                selected: sel,
-                                onSelected: (_) => setState(() => _trabajador = w),
+                          Expanded(
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: List.generate(widget.numTrabajadores, (i) {
+                                  final w = i + 1;
+                                  final sel = _trabajador == w;
+                                  final label = widget.nombresEmpleados.isNotEmpty && w <= widget.nombresEmpleados.length
+                                      ? widget.nombresEmpleados[w - 1]
+                                      : 'T$w';
+                                  return Padding(
+                                    padding: const EdgeInsets.only(right: 8),
+                                    child: FilterChip(
+                                      label: Text(label),
+                                      selected: sel,
+                                      onSelected: (_) => setState(() => _trabajador = w),
+                                    ),
+                                  );
+                                }),
                               ),
-                            );
-                          }),
+                            ),
+                          ),
                         ],
                       ),
                     ],
