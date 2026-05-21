@@ -822,6 +822,16 @@ class _TileEmpresa extends StatelessWidget {
         ),
         onTap: () => _editNumeroEmpleados(context, s, loc),
       ),
+
+      // Nombres de empleados
+      if (s.numeroEmpleados > 1)
+        ListTile(
+          leading: const Icon(Icons.badge_outlined),
+          title: const Text('Nombres de empleados'),
+          subtitle: const Text('Personaliza los nombres (T1, T2, etc.)'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => _editNombresEmpleados(context, s),
+        ),
     ]);
   }
 
@@ -857,7 +867,10 @@ class _TileEmpresa extends StatelessWidget {
           controller: ctrl,
           keyboardType: TextInputType.number,
           autofocus: true,
-          decoration: InputDecoration(labelText: loc.settingsEmployeeInput),
+          decoration: InputDecoration(
+            labelText: loc.settingsEmployeeInput,
+            helperText: 'Máximo 10 empleados',
+          ),
         ),
         actions: [
           TextButton(
@@ -866,13 +879,100 @@ class _TileEmpresa extends StatelessWidget {
           FilledButton(
             onPressed: () {
               final n = int.tryParse(ctrl.text) ?? 1;
-              s.setNumeroEmpleados(n < 1 ? 1 : n);
+              s.setNumeroEmpleados(n);
               Navigator.pop(context);
             },
             child: Text(loc.actionSave),
           ),
         ],
       ),
+    );
+  }
+
+  void _editNombresEmpleados(BuildContext context, SettingsProvider s) {
+    showDialog(
+      context: context,
+      builder: (_) => _NombresEmpleadosDialog(settings: s),
+    );
+  }
+}
+
+/* ─── Nombres de Empleados Dialog ──────────────────────────────────────────── */
+class _NombresEmpleadosDialog extends StatefulWidget {
+  final SettingsProvider settings;
+  const _NombresEmpleadosDialog({required this.settings});
+
+  @override
+  State<_NombresEmpleadosDialog> createState() => _NombresEmpleadosDialogState();
+}
+
+class _NombresEmpleadosDialogState extends State<_NombresEmpleadosDialog> {
+  late List<TextEditingController> controllers;
+
+  @override
+  void initState() {
+    super.initState();
+    final n = widget.settings.numeroEmpleados;
+    controllers = List.generate(
+      n,
+      (i) => TextEditingController(text: widget.settings.nombresEmpleados[i]),
+    );
+  }
+
+  @override
+  void dispose() {
+    for (final c in controllers) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return AlertDialog(
+      title: const Text('Nombres de empleados'),
+      content: SizedBox(
+        width: 360,
+        child: ListView(
+          shrinkWrap: true,
+          children: List.generate(
+            controllers.length,
+            (i) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: TextField(
+                controller: controllers[i],
+                autofocus: i == 0,
+                decoration: InputDecoration(
+                  labelText: 'Empleado ${i + 1}',
+                  prefixIcon: const Icon(Icons.person_outline),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () {
+            for (int i = 0; i < controllers.length; i++) {
+              final newName = controllers[i].text.trim();
+              if (newName.isNotEmpty && newName != widget.settings.nombresEmpleados[i]) {
+                widget.settings.setNombreEmpleado(i, newName);
+              }
+            }
+            Navigator.of(context).pop();
+          },
+          child: const Text('Guardar'),
+        ),
+      ],
     );
   }
 }

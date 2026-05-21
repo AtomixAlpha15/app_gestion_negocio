@@ -161,6 +161,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
         trabajador: trabajador,
         numTrabajadores: settings.numeroEmpleados,
         establecimientoId: estId,
+        nombresEmpleados: settings.nombresEmpleados,
       ),
     );
     if (result == true) cargarCitasDia();
@@ -194,7 +195,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
     Map<String, List<String>> extras,
     ScrollController scroll,
   ) {
-    final numT = context.read<SettingsProvider>().numeroEmpleados;
+    final settings = context.read<SettingsProvider>();
+    final numT = settings.numeroEmpleados;
     return AgendaVisual(
       fecha: fecha,
       horaInicio: horaInicio,
@@ -205,6 +207,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
       onZoomChanged: (z) => setState(() => _zoom = z),
       scrollController: scroll,
       numTrabajadores: numT,
+      nombresEmpleados: settings.nombresEmpleados,
       onEditarCita: (cita) async {
         final result = await showDialog(
           context: context,
@@ -212,6 +215,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
             fecha: cita.inicio,
             cita: cita,
             numTrabajadores: numT,
+            nombresEmpleados: settings.nombresEmpleados,
           ),
         );
         if (result == true) cargarCitasDia();
@@ -341,7 +345,18 @@ class _AgendaScreenState extends State<AgendaScreen> {
                   children: [
                     _DiaHeader(fecha: fechaSeleccionada),
                     Expanded(
-                      child: _panel(fechaSeleccionada, _citasIzq, _extrasIzq, _scrollIzq),
+                      child: GestureDetector(
+                        onHorizontalDragEnd: (details) {
+                          if (details.primaryVelocity != null) {
+                            if (details.primaryVelocity! < 0) {
+                              cambiarFecha(fechaSeleccionada.add(const Duration(days: 1)));
+                            } else {
+                              cambiarFecha(fechaSeleccionada.subtract(const Duration(days: 1)));
+                            }
+                          }
+                        },
+                        child: _panel(fechaSeleccionada, _citasIzq, _extrasIzq, _scrollIzq),
+                      ),
                     ),
                   ],
                 )
@@ -374,13 +389,15 @@ class _AgendaScreenState extends State<AgendaScreen> {
                 ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          final estId = context.read<SettingsProvider>().establecimientoActualId;
+          final settings = context.read<SettingsProvider>();
+          final estId = settings.establecimientoActualId;
           final result = await showDialog(
             context: context,
             builder: (_) => NuevaCitaDialog(
               fecha: fechaSeleccionada,
               horaInicial: horaInicio,
               establecimientoId: estId.isNotEmpty ? estId : null,
+              nombresEmpleados: settings.nombresEmpleados,
             ),
           );
           if (result == true) cargarCitasDia();
@@ -464,6 +481,7 @@ class AgendaVisual extends StatefulWidget {
   final ValueChanged<double>? onZoomChanged;
   final ScrollController? scrollController;
   final int numTrabajadores;
+  final List<String> nombresEmpleados;
 
   const AgendaVisual({
     super.key,
@@ -479,6 +497,7 @@ class AgendaVisual extends StatefulWidget {
     this.onZoomChanged,
     this.scrollController,
     this.numTrabajadores = 1,
+    this.nombresEmpleados = const [],
   });
 
   @override
@@ -637,7 +656,9 @@ class _AgendaVisualState extends State<AgendaVisual> {
                         height: _padTop,
                         child: Center(
                           child: Text(
-                            'T$w',
+                            widget.nombresEmpleados.isNotEmpty && w <= widget.nombresEmpleados.length
+                                ? widget.nombresEmpleados[w - 1]
+                                : 'T$w',
                             style: text.labelSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: scheme.primary,
@@ -1122,6 +1143,7 @@ class NuevaCitaDialog extends StatefulWidget {
   final int trabajador;
   final int numTrabajadores;
   final String? establecimientoId;
+  final List<String> nombresEmpleados;
 
   const NuevaCitaDialog({
     super.key,
@@ -1132,6 +1154,7 @@ class NuevaCitaDialog extends StatefulWidget {
     this.trabajador = 1,
     this.numTrabajadores = 1,
     this.establecimientoId,
+    this.nombresEmpleados = const [],
   });
 
   @override
@@ -1310,10 +1333,13 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                           ...List.generate(widget.numTrabajadores, (i) {
                             final w = i + 1;
                             final sel = _trabajador == w;
+                            final label = widget.nombresEmpleados.isNotEmpty && w <= widget.nombresEmpleados.length
+                                ? widget.nombresEmpleados[w - 1]
+                                : 'T$w';
                             return Padding(
                               padding: const EdgeInsets.only(right: 8),
                               child: FilterChip(
-                                label: Text('T$w'),
+                                label: Text(label),
                                 selected: sel,
                                 onSelected: (_) => setState(() => _trabajador = w),
                               ),

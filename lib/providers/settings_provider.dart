@@ -34,6 +34,7 @@ class SettingsProvider extends ChangeNotifier {
   String telefono = "";
   String email = "";
   int numeroEmpleados = 1;
+  List<String> nombresEmpleados = List.generate(10, (i) => 'T${i + 1}'); // T1, T2, ..., T10
 
   // --- PREFERENCIAS DE INTERFAZ ---
   // languageCode: 'es' | 'en' | ... (BCP-47)
@@ -123,7 +124,7 @@ class SettingsProvider extends ChangeNotifier {
   /// Nombre abreviado del día de la semana (lun, mar… / Mon, Tue…).
   String weekdayAbbrev(int weekday) {
     // weekday: 1=Monday … 7=Sunday
-    final date = DateTime(2000, 1, 2 + (weekday - 1)); // 2000-01-03 = lunes
+    final date = DateTime(2000, 1, 3 + (weekday - 1)); // 2000-01-03 = lunes
     return DateFormat('EEE', idioma).format(date);
   }
 
@@ -137,6 +138,7 @@ class SettingsProvider extends ChangeNotifier {
   static const _kTelefono               = 'aj_telefono';
   static const _kEmail                  = 'aj_email';
   static const _kDireccion              = 'aj_direccion';
+  static const _kNombresEmpleados       = 'aj_nombres_empleados';
 
   static const _kIdioma                 = 'aj_idioma';
   static const _kFormatoFecha           = 'aj_formato_fecha';
@@ -164,7 +166,12 @@ class SettingsProvider extends ChangeNotifier {
     telefono        = prefs.getString(_k(_kTelefono))      ?? "";
     email           = prefs.getString(_k(_kEmail))         ?? "";
     direccion       = prefs.getString(_k(_kDireccion))     ?? "";
-    numeroEmpleados = prefs.getInt(_k('numeroEmpleados'))  ?? 1;
+    numeroEmpleados = (prefs.getInt(_k('numeroEmpleados'))  ?? 1).clamp(1, 10);
+
+    final nombresJson = prefs.getStringList(_k(_kNombresEmpleados));
+    if (nombresJson != null && nombresJson.isNotEmpty) {
+      nombresEmpleados = nombresJson;
+    }
 
     // Migración: si se guardó el nombre completo ("Español") convertir a código BCP-47
     final rawIdioma = prefs.getString(_k(_kIdioma)) ?? "es";
@@ -220,6 +227,7 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setString(_k(_kEmail), email);
     await prefs.setString(_k(_kDireccion), direccion);
     await prefs.setInt(_k('numeroEmpleados'), numeroEmpleados);
+    await prefs.setStringList(_k(_kNombresEmpleados), nombresEmpleados);
 
     await prefs.setString(_k(_kIdioma), idioma);
     await prefs.setString(_k(_kFormatoFecha), formatoFecha);
@@ -319,10 +327,17 @@ class SettingsProvider extends ChangeNotifier {
   }
 
   void setNumeroEmpleados(int n) {
-    if (n < 1) n = 1;
-    numeroEmpleados = n;
+    numeroEmpleados = n.clamp(1, 10);
     guardarAjustes();
     notifyListeners();
+  }
+
+  void setNombreEmpleado(int index, String nombre) {
+    if (index >= 0 && index < nombresEmpleados.length) {
+      nombresEmpleados[index] = nombre.trim().isEmpty ? 'T${index + 1}' : nombre.trim();
+      guardarAjustes();
+      notifyListeners();
+    }
   }
 
   void setIdioma(String id) {
