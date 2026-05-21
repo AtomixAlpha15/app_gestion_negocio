@@ -576,7 +576,7 @@ class _AgendaVisualState extends State<AgendaVisual> {
     final hoySolo = DateTime(hoy.year, hoy.month, hoy.day);
     final mobile = isMobile(context);
     final labelW = mobile ? _labelWMobile : _labelWDesktop;
-    final multiAgenda = !mobile && widget.numTrabajadores > 1;
+    final multiAgenda = widget.numTrabajadores > 1;
     _padTop = mobile ? _padTopMobile : (multiAgenda ? _padTopMultiDesktop : _padTopDesktop);
 
     return Column(
