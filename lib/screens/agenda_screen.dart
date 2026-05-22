@@ -48,10 +48,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
   // Zoom compartido entre los dos paneles
   double _zoom = 1.0;
 
-  // Swipe detection
-  int _activePointers = 0;
-  double _dragStartX = 0;
-
   // Scroll sincronizado
   final _scrollIzq = ScrollController();
   final _scrollDer = ScrollController();
@@ -349,24 +345,14 @@ class _AgendaScreenState extends State<AgendaScreen> {
                   children: [
                     _DiaHeader(fecha: fechaSeleccionada),
                     Expanded(
-                      child: Listener(
-                        onPointerDown: (_) => _activePointers++,
-                        onPointerUp: (event) {
-                          _activePointers--;
-                          if (_activePointers == 0) {
-                            final dx = event.position.dx - _dragStartX;
-                            if (dx.abs() > 50) {
-                              if (dx > 0) {
-                                cambiarFecha(fechaSeleccionada.subtract(const Duration(days: 1)));
-                              } else {
-                                cambiarFecha(fechaSeleccionada.add(const Duration(days: 1)));
-                              }
+                      child: GestureDetector(
+                        onHorizontalDragEnd: (details) {
+                          if (_zoom == 1.0 && details.primaryVelocity != null) {
+                            if (details.primaryVelocity! < -500) {
+                              cambiarFecha(fechaSeleccionada.add(const Duration(days: 1)));
+                            } else if (details.primaryVelocity! > 500) {
+                              cambiarFecha(fechaSeleccionada.subtract(const Duration(days: 1)));
                             }
-                          }
-                        },
-                        onPointerMove: (event) {
-                          if (_activePointers == 1) {
-                            _dragStartX = event.position.dx;
                           }
                         },
                         child: _panel(fechaSeleccionada, _citasIzq, _extrasIzq, _scrollIzq),
