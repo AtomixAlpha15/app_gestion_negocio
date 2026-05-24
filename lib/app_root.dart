@@ -13,6 +13,7 @@ import 'providers/servicios_provider.dart';
 import 'providers/extras_servicio_provider.dart';
 import 'providers/citas_provider.dart';
 import 'providers/gastos_provider.dart';
+import 'providers/gastos_fijos_provider.dart';
 import 'providers/bonos_provider.dart';
 import 'providers/contabilidad_provider.dart';
 import 'providers/establecimientos_provider.dart';
@@ -143,6 +144,7 @@ class _AppRootState extends ConsumerState<AppRoot> {
         provider.ChangeNotifierProvider(create: (_) => ExtrasServicioProvider(db)),
         provider.ChangeNotifierProvider(create: (_) => CitasProvider(db)),
         provider.ChangeNotifierProvider(create: (_) => GastosProvider(db)),
+        provider.ChangeNotifierProvider(create: (_) => GastosFijosProvider(db)),
         provider.ChangeNotifierProvider(create: (_) => BonosProvider(db)),
         provider.ChangeNotifierProvider(create: (_) => ContabilidadProvider(db)),
         provider.ChangeNotifierProvider(create: (_) => EstablecimientosProvider(db)),

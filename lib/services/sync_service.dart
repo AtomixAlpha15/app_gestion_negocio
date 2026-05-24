@@ -29,6 +29,9 @@ class SyncService {
   // Notifica cambios de estado de sync para la UI
   void Function(SyncStatus status, String? error)? onStatusChanged;
 
+  // Notifica que otro dispositivo forzó el cierre de esta sesión
+  VoidCallback? onSessionInvalidated;
+
   SyncService({required this.apiService, required this.repository});
 
   Future<String> _getDeviceId() async {
@@ -36,7 +39,6 @@ class SyncService {
     return _deviceId!;
   }
 
-  // plan: 'basic' solo sincroniza al arrancar; 'pro'/'ultra' activan polling
   void startPolling({
     Duration interval = const Duration(seconds: 10),
     String plan = 'basic',
@@ -44,10 +46,7 @@ class SyncService {
     _timer?.cancel();
     _listenConnectivity();
     _initialSync();
-
-    if (plan != 'basic') {
-      _timer = Timer.periodic(interval, (_) => _maybeSyncOnce());
-    }
+    _timer = Timer.periodic(interval, (_) => _maybeSyncOnce());
   }
 
   void stopPolling() {
@@ -149,6 +148,13 @@ class SyncService {
       _lastSyncSuccess = true;
       _updateStatus(SyncStatus.idle, null);
     } catch (e, stack) {
+      // Sesión invalidada por force_login desde otro dispositivo
+      if (e is ApiException && e.code == 'SESSION_INVALIDATED') {
+        debugPrint('[Sync] Sesión invalidada remotamente, cerrando sesión local');
+        stopPolling();
+        onSessionInvalidated?.call();
+        return;
+      }
       _consecutiveErrors++;
       _lastSyncSuccess = false;
       debugPrint('[Sync] ERROR ($_consecutiveErrors): $e');

@@ -1,4 +1,4 @@
-package com.example.app_gestion_negocio
+package app.centerly
 
 import io.flutter.embedding.android.FlutterActivity
 

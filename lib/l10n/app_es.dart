@@ -177,6 +177,18 @@ class AppLocalizationsEs extends AppLocalizations {
   @override String get accountingTabExpenses => 'Gastos';
   @override String get accountingNoExpenses => 'No hay gastos este mes';
   @override String get accountingAnnualSummary => 'Resumen anual';
+  @override String get accountingTabExpensesFixed => 'Gastos fijos';
+  @override String get accountingFixedExpenses => 'Gastos fijos';
+  @override String get accountingFixedExpensesManage => 'Gestionar fijos';
+  @override String get accountingFixedExpensesNew => 'Nuevo gasto fijo';
+  @override String get accountingFixedExpensesNone => 'No hay gastos fijos';
+  @override String get accountingFixedExpenseDeleted => 'Gasto fijo eliminado';
+  @override String get accountingFixedExpenseDeleteConfirm => '¿Eliminar este gasto fijo? Se dejará de aplicar a partir del próximo mes.';
+  @override String get accountingMonthlyExpenses => 'Gastos del mes';
+  @override String get frequencyMonthly => 'Mensual';
+  @override String get frequencyQuarterly => 'Trimestral';
+  @override String get frequencySemiannual => 'Semestral';
+  @override String get frequencyAnnual => 'Anual';
 
   // ── Bonos ────────────────────────────────────────────────────────────────
   @override String get bonosTitle => 'Bonos';

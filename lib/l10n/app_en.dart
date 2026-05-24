@@ -177,6 +177,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override String get accountingTabExpenses => 'Expenses';
   @override String get accountingNoExpenses => 'No expenses this month';
   @override String get accountingAnnualSummary => 'Annual summary';
+  @override String get accountingTabExpensesFixed => 'Fixed expenses';
+  @override String get accountingFixedExpenses => 'Fixed expenses';
+  @override String get accountingFixedExpensesManage => 'Manage fixed';
+  @override String get accountingFixedExpensesNew => 'New fixed expense';
+  @override String get accountingFixedExpensesNone => 'No fixed expenses';
+  @override String get accountingFixedExpenseDeleted => 'Fixed expense deleted';
+  @override String get accountingFixedExpenseDeleteConfirm => 'Delete this fixed expense? It will stop applying from next month.';
+  @override String get accountingMonthlyExpenses => 'Monthly expenses';
+  @override String get frequencyMonthly => 'Monthly';
+  @override String get frequencyQuarterly => 'Quarterly';
+  @override String get frequencySemiannual => 'Semiannual';
+  @override String get frequencyAnnual => 'Annual';
 
   // ── Bonos ────────────────────────────────────────────────────────────────
   @override String get bonosTitle => 'Packages';

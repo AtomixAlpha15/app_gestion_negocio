@@ -11,8 +11,10 @@ import 'providers/clientes_provider.dart';
 import 'providers/servicios_provider.dart';
 import 'providers/citas_provider.dart';
 import 'providers/gastos_provider.dart';
+import 'providers/gastos_fijos_provider.dart';
 import 'providers/establecimientos_provider.dart';
 import 'services/app_database.dart';
+import 'services/api_service.dart';
 import 'services/backup_services.dart';
 import 'services/sync_service.dart';
 import 'l10n/app_localizations.dart';
@@ -71,13 +73,21 @@ class _MyAppState extends ConsumerState<MyApp> {
   void _startSync(AppDatabase db, {String plan = 'basic'}) {
     _syncService = ref.read(syncServiceProvider(db));
     _syncService!.onServerChangesApplied = _reloadProviders;
+    _syncService!.onSessionInvalidated = () {
+      if (mounted) ref.read(authStateProvider.notifier).logout();
+    };
     // Conectar el notifier del estado de sync para que la UI reaccione
     _syncService!.onStatusChanged =
         ref.read(syncStatusProvider(db).notifier).update;
     _syncService!.startPolling(plan: plan);
-    // Carga inicial de establecimientos (sin esperar la primera sincronización)
+    // Carga inicial de establecimientos y gastos fijos (sin esperar la primera sincronización)
     if (mounted) {
       context.read<EstablecimientosProvider>().cargarEstablecimientos();
+      context.read<GastosFijosProvider>().cargar();
+      // Adjuntar ApiService y sincronizar ajustes desde el servidor
+      final api = ApiService();
+      context.read<SettingsProvider>().attachApiService(api);
+      context.read<SettingsProvider>().syncFromServer();
     }
   }
 
@@ -88,18 +98,22 @@ class _MyAppState extends ConsumerState<MyApp> {
     context.read<ServiciosProvider>().cargarServicios();
     context.read<CitasProvider>().cargarCitasAnio(anio);
     context.read<GastosProvider>().cargarGastosAnio(anio);
+    context.read<GastosFijosProvider>().cargar();
     context.read<EstablecimientosProvider>().cargarEstablecimientos();
     // BonosProvider consulta bajo demanda, no necesita recarga explícita
   }
 
-  void _stopSync() {
+  void _stopSync({bool inDispose = false}) {
     _syncService?.stopPolling();
     _syncService = null;
+    if (!inDispose && mounted) {
+      context.read<SettingsProvider>().attachApiService(null);
+    }
   }
 
   @override
   void dispose() {
-    _stopSync();
+    _stopSync(inDispose: true);
     super.dispose();
   }
 
@@ -316,12 +330,18 @@ class _MyAppState extends ConsumerState<MyApp> {
   Widget _buildHome() {
     final authState = ref.watch(authStateProvider);
 
+    // Authenticated → app principal
+    if (authState.isAuthenticated) return const MainShell();
+
+    // Para loading/unauthenticated/error siempre devolvemos el mismo tipo de widget
+    // para que Flutter NO destruya LoginScreen al pasar por el estado loading.
+    // Si se destruyera: los controllers de texto se vacían y ref.listen pierde la
+    // transición error, por lo que el diálogo SESSION_CONFLICT nunca se muestra.
+    // El spinner durante el arranque lo gestiona AppRoot (_initialized=false).
     return authState.when(
-      onAuthenticated: (user) => const MainShell(),
+      onAuthenticated: (_) => const MainShell(),
       onUnauthenticated: () => const LoginScreen(),
-      onLoading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
+      onLoading: () => const LoginScreen(),
       onError: (message) => const LoginScreen(),
     );
   }

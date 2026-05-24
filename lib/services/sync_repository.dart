@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'app_database.dart';
 import 'sync_service.dart';
+import '../utils/image_utils.dart';
 
 class SyncRepository {
   final AppDatabase db;
@@ -57,6 +58,8 @@ class SyncRepository {
     if ((gastosCount.data['c'] as int) > 0) return false;
     final establecimientosCount = await db.customSelect('SELECT COUNT(*) AS c FROM establecimientos').getSingle();
     if ((establecimientosCount.data['c'] as int) > 0) return false;
+    final gastosFijosCount = await db.customSelect('SELECT COUNT(*) AS c FROM gastos_fijos').getSingle();
+    if ((gastosFijosCount.data['c'] as int) > 0) return false;
     return true;
   }
 
@@ -91,6 +94,7 @@ class SyncRepository {
       ...await _bonoConsumosChanges(since),
       ...await _bonoPagosChanges(since),
       ...await _gastosChanges(since),
+      ...await _gastosFijosChanges(since),
     ];
   }
 
@@ -98,24 +102,33 @@ class SyncRepository {
     if (ids.isEmpty) return [];
     final rows = await (db.select(db.servicios)
       ..where((s) => s.id.isIn(ids))).get();
-    return rows.map((r) => SyncChange(
-      entityType: 'servicios',
-      action: 'create',
-      id: r.id,
-      syncId: r.syncId ?? r.id,
-      data: {
-        'id': r.id,
-        'nombre': r.nombre,
-        'descripcion': r.descripcion,
-        'precio_base': r.precio,
-        'duracion_minutos': r.duracionMinutos,
-        'activo': true,
-        'deleted': r.deleted,
-        'created_at': r.createdAt?.toIso8601String(),
-        'updated_at': r.updatedAt?.toIso8601String(),
-        'sync_id': r.syncId ?? r.id,
-      },
-    )).toList();
+    final result = <SyncChange>[];
+    for (final r in rows) {
+      String? imagenBase64;
+      if (r.imagenPath != null && r.imagenPath!.isNotEmpty) {
+        imagenBase64 = await compressImageToBase64(r.imagenPath!);
+      }
+      result.add(SyncChange(
+        entityType: 'servicios',
+        action: 'create',
+        id: r.id,
+        syncId: r.syncId ?? r.id,
+        data: {
+          'id': r.id,
+          'nombre': r.nombre,
+          'descripcion': r.descripcion,
+          'precio_base': r.precio,
+          'duracion_minutos': r.duracionMinutos,
+          'activo': true,
+          'imagen_base64': imagenBase64,
+          'deleted': r.deleted,
+          'created_at': r.createdAt?.toIso8601String(),
+          'updated_at': r.updatedAt?.toIso8601String(),
+          'sync_id': r.syncId ?? r.id,
+        },
+      ));
+    }
+    return result;
   }
 
   Future<List<SyncChange>> _establecimientosChanges(DateTime since) async {
@@ -145,47 +158,65 @@ class SyncRepository {
     final rows = await (db.select(db.clientes)
       ..where((t) => t.updatedAt.isBiggerThanValue(since))).get();
 
-    return rows.map((r) => SyncChange(
-      entityType: 'clientes',
-      action: r.deleted ? 'delete' : (r.createdAt != null && r.createdAt!.isAfter(since) ? 'create' : 'update'),
-      id: r.id,
-      syncId: r.syncId ?? r.id,
-      data: {
-        'id': r.id,
-        'nombre': r.nombre,
-        'telefono': r.telefono,
-        'email': r.email,
-        'notas': r.notas,
-        'deleted': r.deleted,
-        'created_at': r.createdAt?.toIso8601String(),
-        'updated_at': r.updatedAt?.toIso8601String(),
-        'sync_id': r.syncId ?? r.id,
-      },
-    )).toList();
+    final result = <SyncChange>[];
+    for (final r in rows) {
+      String? imagenBase64;
+      if (r.imagenPath != null && r.imagenPath!.isNotEmpty) {
+        imagenBase64 = await compressImageToBase64(r.imagenPath!);
+      }
+      result.add(SyncChange(
+        entityType: 'clientes',
+        action: r.deleted ? 'delete' : (r.createdAt != null && r.createdAt!.isAfter(since) ? 'create' : 'update'),
+        id: r.id,
+        syncId: r.syncId ?? r.id,
+        data: {
+          'id': r.id,
+          'nombre': r.nombre,
+          'telefono': r.telefono,
+          'email': r.email,
+          'notas': r.notas,
+          'imagen_base64': imagenBase64,
+          'deleted': r.deleted,
+          'created_at': r.createdAt?.toIso8601String(),
+          'updated_at': r.updatedAt?.toIso8601String(),
+          'sync_id': r.syncId ?? r.id,
+        },
+      ));
+    }
+    return result;
   }
 
   Future<List<SyncChange>> _serviciosChanges(DateTime since) async {
     final rows = await (db.select(db.servicios)
       ..where((t) => t.updatedAt.isBiggerThanValue(since))).get();
 
-    return rows.map((r) => SyncChange(
-      entityType: 'servicios',
-      action: r.deleted ? 'delete' : (r.createdAt != null && r.createdAt!.isAfter(since) ? 'create' : 'update'),
-      id: r.id,
-      syncId: r.syncId ?? r.id,
-      data: {
-        'id': r.id,
-        'nombre': r.nombre,
-        'descripcion': r.descripcion,
-        'precio_base': r.precio,
-        'duracion_minutos': r.duracionMinutos,
-        'activo': true,
-        'deleted': r.deleted,
-        'created_at': r.createdAt?.toIso8601String(),
-        'updated_at': r.updatedAt?.toIso8601String(),
-        'sync_id': r.syncId ?? r.id,
-      },
-    )).toList();
+    final result = <SyncChange>[];
+    for (final r in rows) {
+      String? imagenBase64;
+      if (r.imagenPath != null && r.imagenPath!.isNotEmpty) {
+        imagenBase64 = await compressImageToBase64(r.imagenPath!);
+      }
+      result.add(SyncChange(
+        entityType: 'servicios',
+        action: r.deleted ? 'delete' : (r.createdAt != null && r.createdAt!.isAfter(since) ? 'create' : 'update'),
+        id: r.id,
+        syncId: r.syncId ?? r.id,
+        data: {
+          'id': r.id,
+          'nombre': r.nombre,
+          'descripcion': r.descripcion,
+          'precio_base': r.precio,
+          'duracion_minutos': r.duracionMinutos,
+          'activo': true,
+          'imagen_base64': imagenBase64,
+          'deleted': r.deleted,
+          'created_at': r.createdAt?.toIso8601String(),
+          'updated_at': r.updatedAt?.toIso8601String(),
+          'sync_id': r.syncId ?? r.id,
+        },
+      ));
+    }
+    return result;
   }
 
   Future<List<SyncChange>> _citasChanges(DateTime since) async {
@@ -364,6 +395,31 @@ class SyncRepository {
     )).toList();
   }
 
+  Future<List<SyncChange>> _gastosFijosChanges(DateTime since) async {
+    final rows = await (db.select(db.gastosFijos)
+      ..where((t) => t.updatedAt.isBiggerThanValue(since))).get();
+
+    return rows.map((r) => SyncChange(
+      entityType: 'gastos_fijos',
+      action: r.deleted ? 'delete' : (r.createdAt != null && r.createdAt!.isAfter(since) ? 'create' : 'update'),
+      id: r.id,
+      syncId: r.syncId ?? r.id,
+      data: {
+        'id': r.id,
+        'concepto': r.concepto,
+        'precio': r.precio,
+        'frecuencia_meses': r.frecuenciaMeses,
+        'fecha_inicio': r.fechaInicio.toIso8601String(),
+        'fecha_fin': r.fechaFin?.toIso8601String(),
+        'establecimiento_id': r.establecimientoId,
+        'deleted': r.deleted,
+        'created_at': r.createdAt?.toIso8601String(),
+        'updated_at': r.updatedAt?.toIso8601String(),
+        'sync_id': r.syncId ?? r.id,
+      },
+    )).toList();
+  }
+
   // PostgreSQL NUMERIC/DECIMAL llega como String desde la librería pg de Node.js
   double _toDouble(dynamic v, {double fallback = 0.0}) {
     if (v == null) return fallback;
@@ -397,6 +453,8 @@ class SyncRepository {
             await _applyBonoPago(change);
           case 'gastos':
             await _applyGasto(change);
+          case 'gastos_fijos':
+            await _applyGastoFijo(change);
         }
       } catch (e, stack) {
         debugPrint('[Sync] ERROR aplicando ${change.entityType}/${change.id}: $e');
@@ -424,12 +482,23 @@ class SyncRepository {
 
   Future<void> _applyCliente(SyncChange change) async {
     final d = change.data;
+
+    // Si el servidor envía imagen_base64, decodificarla y guardar en disco
+    Value<String?> imagenPathValue = const Value.absent();
+    final rawBase64 = d['imagen_base64'] as String?;
+    if (rawBase64 != null && rawBase64.isNotEmpty) {
+      final dir = await db.getClientImagesDir();
+      final savedPath = await saveBase64AsImage(rawBase64, d['id'] as String, dir);
+      imagenPathValue = Value(savedPath);
+    }
+
     final companion = ClientesCompanion(
       id: Value(d['id']),
       nombre: Value(d['nombre'] ?? ''),
       telefono: Value(d['telefono']),
       email: Value(d['email']),
       notas: Value(d['notas']),
+      imagenPath: imagenPathValue,
       deleted: Value(d['deleted'] ?? false),
       syncId: Value(d['sync_id']),
       updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
@@ -440,12 +509,23 @@ class SyncRepository {
 
   Future<void> _applyServicio(SyncChange change) async {
     final d = change.data;
+
+    // Si el servidor envía imagen_base64, decodificarla y guardar en disco
+    Value<String?> imagenPathValue = const Value.absent();
+    final rawBase64 = d['imagen_base64'] as String?;
+    if (rawBase64 != null && rawBase64.isNotEmpty) {
+      final dir = await db.getServiceImagesDir();
+      final savedPath = await saveBase64AsImage(rawBase64, d['id'] as String, dir);
+      imagenPathValue = Value(savedPath);
+    }
+
     final companion = ServiciosCompanion(
       id: Value(d['id']),
       nombre: Value(d['nombre'] ?? ''),
       descripcion: Value(d['descripcion']),
       precio: Value(_toDouble(d['precio_base'])),
       duracionMinutos: Value(d['duracion_minutos'] ?? 60),
+      imagenPath: imagenPathValue,
       deleted: Value(d['deleted'] ?? false),
       syncId: Value(d['sync_id']),
       updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
@@ -589,5 +669,23 @@ class SyncRepository {
       createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']) : DateTime.now()),
     );
     await db.into(db.gastos).insertOnConflictUpdate(companion);
+  }
+
+  Future<void> _applyGastoFijo(SyncChange change) async {
+    final d = change.data;
+    final companion = GastosFijosCompanion(
+      id: Value(d['id']),
+      concepto: Value(d['concepto'] ?? ''),
+      precio: Value(_toDouble(d['precio'])),
+      frecuenciaMeses: Value((d['frecuencia_meses'] as num?)?.toInt() ?? 1),
+      fechaInicio: Value(d['fecha_inicio'] != null ? DateTime.parse(d['fecha_inicio']) : DateTime.now()),
+      fechaFin: Value(d['fecha_fin'] != null ? DateTime.parse(d['fecha_fin']) : null),
+      establecimientoId: Value(d['establecimiento_id'] as String?),
+      deleted: Value(d['deleted'] ?? false),
+      syncId: Value(d['sync_id']),
+      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
+      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']) : DateTime.now()),
+    );
+    await db.into(db.gastosFijos).insertOnConflictUpdate(companion);
   }
 }

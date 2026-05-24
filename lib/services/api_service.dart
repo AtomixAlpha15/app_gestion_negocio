@@ -142,6 +142,10 @@ class ApiService {
     return data['portal_url'] as String;
   }
 
+  Future<Map<String, dynamic>> cancelSubscription() async {
+    return await post('/billing/cancel', body: {});
+  }
+
   // Notifica al backend que esta sesión se cierra y borra el token local
   Future<void> logoutDevice() async {
     try {
@@ -158,7 +162,7 @@ class ApiService {
     final token = await _getToken();
     final response = await http.get(
       Uri.parse('$baseUrl$endpoint'),
-      headers: _getHeaders(token),
+      headers: await _buildHeaders(token),
     ).timeout(_kTimeout);
     return _handleResponse(response);
   }
@@ -168,7 +172,7 @@ class ApiService {
     final token = await _getToken();
     final response = await http.post(
       Uri.parse('$baseUrl$endpoint'),
-      headers: _getHeaders(token),
+      headers: await _buildHeaders(token),
       body: jsonEncode(body),
     ).timeout(_kTimeout);
     return _handleResponse(response);
@@ -179,7 +183,7 @@ class ApiService {
     final token = await _getToken();
     final response = await http.put(
       Uri.parse('$baseUrl$endpoint'),
-      headers: _getHeaders(token),
+      headers: await _buildHeaders(token),
       body: jsonEncode(body),
     ).timeout(_kTimeout);
     return _handleResponse(response);
@@ -190,9 +194,18 @@ class ApiService {
     final token = await _getToken();
     final response = await http.delete(
       Uri.parse('$baseUrl$endpoint'),
-      headers: _getHeaders(token),
+      headers: await _buildHeaders(token),
     ).timeout(_kTimeout);
     return _handleResponse(response);
+  }
+
+  // Settings endpoints
+  Future<Map<String, dynamic>> getSettings() async {
+    return await _get('/settings');
+  }
+
+  Future<Map<String, dynamic>> saveSettings(Map<String, dynamic> settings) async {
+    return await put('/settings', body: {'settings': settings});
   }
 
   // Sync endpoint
@@ -200,18 +213,22 @@ class ApiService {
     final token = await _getToken();
     final response = await http.post(
       Uri.parse('$baseUrl/sync'),
-      headers: _getHeaders(token),
+      headers: await _buildHeaders(token),
       body: jsonEncode(body),
     ).timeout(_kTimeout);
     return _handleResponse(response);
   }
 
   // Helper methods
-  Map<String, String> _getHeaders(String? token) {
-    final headers = <String, String>{'Content-Type': 'application/json'};
-    if (token != null) {
-      headers['Authorization'] = 'Bearer $token';
-    }
+  String? _cachedDeviceId;
+
+  Future<Map<String, String>> _buildHeaders(String? token) async {
+    _cachedDeviceId ??= await getDeviceId();
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      'X-Device-ID': _cachedDeviceId!,
+    };
+    if (token != null) headers['Authorization'] = 'Bearer $token';
     return headers;
   }
 
@@ -250,11 +267,25 @@ class ApiService {
           raw.toLowerCase().contains('ya existe')) {
         return ApiException('Este email ya está registrado.', statusCode: response.statusCode);
       }
+      if (response.statusCode == 401 && raw == 'SESSION_INVALIDATED') {
+        return ApiException(
+          'Sesión cerrada desde otro dispositivo.',
+          statusCode: 401,
+          code: 'SESSION_INVALIDATED',
+        );
+      }
       if (response.statusCode == 401 ||
           raw.toLowerCase().contains('invalid credentials') ||
           raw.toLowerCase().contains('incorrect') ||
           raw.toLowerCase().contains('unauthorized')) {
         return ApiException('Email o contraseña incorrectos.', statusCode: response.statusCode);
+      }
+      if (response.statusCode == 403 && raw == 'EMAIL_NOT_VERIFIED') {
+        return ApiException(
+          body['message'] as String? ?? 'Debes verificar tu email antes de iniciar sesión.',
+          statusCode: 403,
+          code: 'EMAIL_NOT_VERIFIED',
+        );
       }
       if (response.statusCode == 403 && raw == 'PLAN_REQUIRED') {
         return ApiException(

@@ -5235,6 +5235,578 @@ class EstablecimientosCompanion extends UpdateCompanion<Establecimiento> {
   }
 }
 
+class $GastosFijosTable extends GastosFijos
+    with TableInfo<$GastosFijosTable, GastosFijo> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $GastosFijosTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _conceptoMeta =
+      const VerificationMeta('concepto');
+  @override
+  late final GeneratedColumn<String> concepto = GeneratedColumn<String>(
+      'concepto', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _precioMeta = const VerificationMeta('precio');
+  @override
+  late final GeneratedColumn<double> precio = GeneratedColumn<double>(
+      'precio', aliasedName, false,
+      type: DriftSqlType.double, requiredDuringInsert: true);
+  static const VerificationMeta _frecuenciaMesesMeta =
+      const VerificationMeta('frecuenciaMeses');
+  @override
+  late final GeneratedColumn<int> frecuenciaMeses = GeneratedColumn<int>(
+      'frecuencia_meses', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _fechaInicioMeta =
+      const VerificationMeta('fechaInicio');
+  @override
+  late final GeneratedColumn<DateTime> fechaInicio = GeneratedColumn<DateTime>(
+      'fecha_inicio', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
+  static const VerificationMeta _fechaFinMeta =
+      const VerificationMeta('fechaFin');
+  @override
+  late final GeneratedColumn<DateTime> fechaFin = GeneratedColumn<DateTime>(
+      'fecha_fin', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _establecimientoIdMeta =
+      const VerificationMeta('establecimientoId');
+  @override
+  late final GeneratedColumn<String> establecimientoId =
+      GeneratedColumn<String>('establecimiento_id', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _syncIdMeta = const VerificationMeta('syncId');
+  @override
+  late final GeneratedColumn<String> syncId = GeneratedColumn<String>(
+      'sync_id', aliasedName, true,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
+  static const VerificationMeta _deletedMeta =
+      const VerificationMeta('deleted');
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+      'deleted', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        concepto,
+        precio,
+        frecuenciaMeses,
+        fechaInicio,
+        fechaFin,
+        establecimientoId,
+        createdAt,
+        updatedAt,
+        syncId,
+        deleted
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'gastos_fijos';
+  @override
+  VerificationContext validateIntegrity(Insertable<GastosFijo> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('concepto')) {
+      context.handle(_conceptoMeta,
+          concepto.isAcceptableOrUnknown(data['concepto']!, _conceptoMeta));
+    } else if (isInserting) {
+      context.missing(_conceptoMeta);
+    }
+    if (data.containsKey('precio')) {
+      context.handle(_precioMeta,
+          precio.isAcceptableOrUnknown(data['precio']!, _precioMeta));
+    } else if (isInserting) {
+      context.missing(_precioMeta);
+    }
+    if (data.containsKey('frecuencia_meses')) {
+      context.handle(
+          _frecuenciaMesesMeta,
+          frecuenciaMeses.isAcceptableOrUnknown(
+              data['frecuencia_meses']!, _frecuenciaMesesMeta));
+    } else if (isInserting) {
+      context.missing(_frecuenciaMesesMeta);
+    }
+    if (data.containsKey('fecha_inicio')) {
+      context.handle(
+          _fechaInicioMeta,
+          fechaInicio.isAcceptableOrUnknown(
+              data['fecha_inicio']!, _fechaInicioMeta));
+    } else if (isInserting) {
+      context.missing(_fechaInicioMeta);
+    }
+    if (data.containsKey('fecha_fin')) {
+      context.handle(_fechaFinMeta,
+          fechaFin.isAcceptableOrUnknown(data['fecha_fin']!, _fechaFinMeta));
+    }
+    if (data.containsKey('establecimiento_id')) {
+      context.handle(
+          _establecimientoIdMeta,
+          establecimientoId.isAcceptableOrUnknown(
+              data['establecimiento_id']!, _establecimientoIdMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    if (data.containsKey('sync_id')) {
+      context.handle(_syncIdMeta,
+          syncId.isAcceptableOrUnknown(data['sync_id']!, _syncIdMeta));
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(_deletedMeta,
+          deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  GastosFijo map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return GastosFijo(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
+      concepto: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}concepto'])!,
+      precio: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}precio'])!,
+      frecuenciaMeses: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}frecuencia_meses'])!,
+      fechaInicio: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}fecha_inicio'])!,
+      fechaFin: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}fecha_fin']),
+      establecimientoId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}establecimiento_id']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+      syncId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_id']),
+      deleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}deleted'])!,
+    );
+  }
+
+  @override
+  $GastosFijosTable createAlias(String alias) {
+    return $GastosFijosTable(attachedDatabase, alias);
+  }
+}
+
+class GastosFijo extends DataClass implements Insertable<GastosFijo> {
+  final String id;
+  final String concepto;
+  final double precio;
+  final int frecuenciaMeses;
+  final DateTime fechaInicio;
+  final DateTime? fechaFin;
+  final String? establecimientoId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+  final String? syncId;
+  final bool deleted;
+  const GastosFijo(
+      {required this.id,
+      required this.concepto,
+      required this.precio,
+      required this.frecuenciaMeses,
+      required this.fechaInicio,
+      this.fechaFin,
+      this.establecimientoId,
+      this.createdAt,
+      this.updatedAt,
+      this.syncId,
+      required this.deleted});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['concepto'] = Variable<String>(concepto);
+    map['precio'] = Variable<double>(precio);
+    map['frecuencia_meses'] = Variable<int>(frecuenciaMeses);
+    map['fecha_inicio'] = Variable<DateTime>(fechaInicio);
+    if (!nullToAbsent || fechaFin != null) {
+      map['fecha_fin'] = Variable<DateTime>(fechaFin);
+    }
+    if (!nullToAbsent || establecimientoId != null) {
+      map['establecimiento_id'] = Variable<String>(establecimientoId);
+    }
+    if (!nullToAbsent || createdAt != null) {
+      map['created_at'] = Variable<DateTime>(createdAt);
+    }
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<DateTime>(updatedAt);
+    }
+    if (!nullToAbsent || syncId != null) {
+      map['sync_id'] = Variable<String>(syncId);
+    }
+    map['deleted'] = Variable<bool>(deleted);
+    return map;
+  }
+
+  GastosFijosCompanion toCompanion(bool nullToAbsent) {
+    return GastosFijosCompanion(
+      id: Value(id),
+      concepto: Value(concepto),
+      precio: Value(precio),
+      frecuenciaMeses: Value(frecuenciaMeses),
+      fechaInicio: Value(fechaInicio),
+      fechaFin: fechaFin == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fechaFin),
+      establecimientoId: establecimientoId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(establecimientoId),
+      createdAt: createdAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
+      syncId:
+          syncId == null && nullToAbsent ? const Value.absent() : Value(syncId),
+      deleted: Value(deleted),
+    );
+  }
+
+  factory GastosFijo.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return GastosFijo(
+      id: serializer.fromJson<String>(json['id']),
+      concepto: serializer.fromJson<String>(json['concepto']),
+      precio: serializer.fromJson<double>(json['precio']),
+      frecuenciaMeses: serializer.fromJson<int>(json['frecuenciaMeses']),
+      fechaInicio: serializer.fromJson<DateTime>(json['fechaInicio']),
+      fechaFin: serializer.fromJson<DateTime?>(json['fechaFin']),
+      establecimientoId:
+          serializer.fromJson<String?>(json['establecimientoId']),
+      createdAt: serializer.fromJson<DateTime?>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
+      syncId: serializer.fromJson<String?>(json['syncId']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'concepto': serializer.toJson<String>(concepto),
+      'precio': serializer.toJson<double>(precio),
+      'frecuenciaMeses': serializer.toJson<int>(frecuenciaMeses),
+      'fechaInicio': serializer.toJson<DateTime>(fechaInicio),
+      'fechaFin': serializer.toJson<DateTime?>(fechaFin),
+      'establecimientoId': serializer.toJson<String?>(establecimientoId),
+      'createdAt': serializer.toJson<DateTime?>(createdAt),
+      'updatedAt': serializer.toJson<DateTime?>(updatedAt),
+      'syncId': serializer.toJson<String?>(syncId),
+      'deleted': serializer.toJson<bool>(deleted),
+    };
+  }
+
+  GastosFijo copyWith(
+          {String? id,
+          String? concepto,
+          double? precio,
+          int? frecuenciaMeses,
+          DateTime? fechaInicio,
+          Value<DateTime?> fechaFin = const Value.absent(),
+          Value<String?> establecimientoId = const Value.absent(),
+          Value<DateTime?> createdAt = const Value.absent(),
+          Value<DateTime?> updatedAt = const Value.absent(),
+          Value<String?> syncId = const Value.absent(),
+          bool? deleted}) =>
+      GastosFijo(
+        id: id ?? this.id,
+        concepto: concepto ?? this.concepto,
+        precio: precio ?? this.precio,
+        frecuenciaMeses: frecuenciaMeses ?? this.frecuenciaMeses,
+        fechaInicio: fechaInicio ?? this.fechaInicio,
+        fechaFin: fechaFin.present ? fechaFin.value : this.fechaFin,
+        establecimientoId: establecimientoId.present
+            ? establecimientoId.value
+            : this.establecimientoId,
+        createdAt: createdAt.present ? createdAt.value : this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+        syncId: syncId.present ? syncId.value : this.syncId,
+        deleted: deleted ?? this.deleted,
+      );
+  GastosFijo copyWithCompanion(GastosFijosCompanion data) {
+    return GastosFijo(
+      id: data.id.present ? data.id.value : this.id,
+      concepto: data.concepto.present ? data.concepto.value : this.concepto,
+      precio: data.precio.present ? data.precio.value : this.precio,
+      frecuenciaMeses: data.frecuenciaMeses.present
+          ? data.frecuenciaMeses.value
+          : this.frecuenciaMeses,
+      fechaInicio:
+          data.fechaInicio.present ? data.fechaInicio.value : this.fechaInicio,
+      fechaFin: data.fechaFin.present ? data.fechaFin.value : this.fechaFin,
+      establecimientoId: data.establecimientoId.present
+          ? data.establecimientoId.value
+          : this.establecimientoId,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      syncId: data.syncId.present ? data.syncId.value : this.syncId,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GastosFijo(')
+          ..write('id: $id, ')
+          ..write('concepto: $concepto, ')
+          ..write('precio: $precio, ')
+          ..write('frecuenciaMeses: $frecuenciaMeses, ')
+          ..write('fechaInicio: $fechaInicio, ')
+          ..write('fechaFin: $fechaFin, ')
+          ..write('establecimientoId: $establecimientoId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncId: $syncId, ')
+          ..write('deleted: $deleted')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      concepto,
+      precio,
+      frecuenciaMeses,
+      fechaInicio,
+      fechaFin,
+      establecimientoId,
+      createdAt,
+      updatedAt,
+      syncId,
+      deleted);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is GastosFijo &&
+          other.id == this.id &&
+          other.concepto == this.concepto &&
+          other.precio == this.precio &&
+          other.frecuenciaMeses == this.frecuenciaMeses &&
+          other.fechaInicio == this.fechaInicio &&
+          other.fechaFin == this.fechaFin &&
+          other.establecimientoId == this.establecimientoId &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.syncId == this.syncId &&
+          other.deleted == this.deleted);
+}
+
+class GastosFijosCompanion extends UpdateCompanion<GastosFijo> {
+  final Value<String> id;
+  final Value<String> concepto;
+  final Value<double> precio;
+  final Value<int> frecuenciaMeses;
+  final Value<DateTime> fechaInicio;
+  final Value<DateTime?> fechaFin;
+  final Value<String?> establecimientoId;
+  final Value<DateTime?> createdAt;
+  final Value<DateTime?> updatedAt;
+  final Value<String?> syncId;
+  final Value<bool> deleted;
+  final Value<int> rowid;
+  const GastosFijosCompanion({
+    this.id = const Value.absent(),
+    this.concepto = const Value.absent(),
+    this.precio = const Value.absent(),
+    this.frecuenciaMeses = const Value.absent(),
+    this.fechaInicio = const Value.absent(),
+    this.fechaFin = const Value.absent(),
+    this.establecimientoId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncId = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  GastosFijosCompanion.insert({
+    required String id,
+    required String concepto,
+    required double precio,
+    required int frecuenciaMeses,
+    required DateTime fechaInicio,
+    this.fechaFin = const Value.absent(),
+    this.establecimientoId = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.syncId = const Value.absent(),
+    this.deleted = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : id = Value(id),
+        concepto = Value(concepto),
+        precio = Value(precio),
+        frecuenciaMeses = Value(frecuenciaMeses),
+        fechaInicio = Value(fechaInicio);
+  static Insertable<GastosFijo> custom({
+    Expression<String>? id,
+    Expression<String>? concepto,
+    Expression<double>? precio,
+    Expression<int>? frecuenciaMeses,
+    Expression<DateTime>? fechaInicio,
+    Expression<DateTime>? fechaFin,
+    Expression<String>? establecimientoId,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<String>? syncId,
+    Expression<bool>? deleted,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (concepto != null) 'concepto': concepto,
+      if (precio != null) 'precio': precio,
+      if (frecuenciaMeses != null) 'frecuencia_meses': frecuenciaMeses,
+      if (fechaInicio != null) 'fecha_inicio': fechaInicio,
+      if (fechaFin != null) 'fecha_fin': fechaFin,
+      if (establecimientoId != null) 'establecimiento_id': establecimientoId,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (syncId != null) 'sync_id': syncId,
+      if (deleted != null) 'deleted': deleted,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  GastosFijosCompanion copyWith(
+      {Value<String>? id,
+      Value<String>? concepto,
+      Value<double>? precio,
+      Value<int>? frecuenciaMeses,
+      Value<DateTime>? fechaInicio,
+      Value<DateTime?>? fechaFin,
+      Value<String?>? establecimientoId,
+      Value<DateTime?>? createdAt,
+      Value<DateTime?>? updatedAt,
+      Value<String?>? syncId,
+      Value<bool>? deleted,
+      Value<int>? rowid}) {
+    return GastosFijosCompanion(
+      id: id ?? this.id,
+      concepto: concepto ?? this.concepto,
+      precio: precio ?? this.precio,
+      frecuenciaMeses: frecuenciaMeses ?? this.frecuenciaMeses,
+      fechaInicio: fechaInicio ?? this.fechaInicio,
+      fechaFin: fechaFin ?? this.fechaFin,
+      establecimientoId: establecimientoId ?? this.establecimientoId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      syncId: syncId ?? this.syncId,
+      deleted: deleted ?? this.deleted,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (concepto.present) {
+      map['concepto'] = Variable<String>(concepto.value);
+    }
+    if (precio.present) {
+      map['precio'] = Variable<double>(precio.value);
+    }
+    if (frecuenciaMeses.present) {
+      map['frecuencia_meses'] = Variable<int>(frecuenciaMeses.value);
+    }
+    if (fechaInicio.present) {
+      map['fecha_inicio'] = Variable<DateTime>(fechaInicio.value);
+    }
+    if (fechaFin.present) {
+      map['fecha_fin'] = Variable<DateTime>(fechaFin.value);
+    }
+    if (establecimientoId.present) {
+      map['establecimiento_id'] = Variable<String>(establecimientoId.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (syncId.present) {
+      map['sync_id'] = Variable<String>(syncId.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('GastosFijosCompanion(')
+          ..write('id: $id, ')
+          ..write('concepto: $concepto, ')
+          ..write('precio: $precio, ')
+          ..write('frecuenciaMeses: $frecuenciaMeses, ')
+          ..write('fechaInicio: $fechaInicio, ')
+          ..write('fechaFin: $fechaFin, ')
+          ..write('establecimientoId: $establecimientoId, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('syncId: $syncId, ')
+          ..write('deleted: $deleted, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5249,6 +5821,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $BonoPagosTable bonoPagos = $BonoPagosTable(this);
   late final $EstablecimientosTable establecimientos =
       $EstablecimientosTable(this);
+  late final $GastosFijosTable gastosFijos = $GastosFijosTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5263,7 +5836,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         bonos,
         bonoConsumos,
         bonoPagos,
-        establecimientos
+        establecimientos,
+        gastosFijos
       ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
@@ -9116,6 +9690,267 @@ typedef $$EstablecimientosTableProcessedTableManager = ProcessedTableManager<
     ),
     Establecimiento,
     PrefetchHooks Function()>;
+typedef $$GastosFijosTableCreateCompanionBuilder = GastosFijosCompanion
+    Function({
+  required String id,
+  required String concepto,
+  required double precio,
+  required int frecuenciaMeses,
+  required DateTime fechaInicio,
+  Value<DateTime?> fechaFin,
+  Value<String?> establecimientoId,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<String?> syncId,
+  Value<bool> deleted,
+  Value<int> rowid,
+});
+typedef $$GastosFijosTableUpdateCompanionBuilder = GastosFijosCompanion
+    Function({
+  Value<String> id,
+  Value<String> concepto,
+  Value<double> precio,
+  Value<int> frecuenciaMeses,
+  Value<DateTime> fechaInicio,
+  Value<DateTime?> fechaFin,
+  Value<String?> establecimientoId,
+  Value<DateTime?> createdAt,
+  Value<DateTime?> updatedAt,
+  Value<String?> syncId,
+  Value<bool> deleted,
+  Value<int> rowid,
+});
+
+class $$GastosFijosTableFilterComposer
+    extends Composer<_$AppDatabase, $GastosFijosTable> {
+  $$GastosFijosTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get concepto => $composableBuilder(
+      column: $table.concepto, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get precio => $composableBuilder(
+      column: $table.precio, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get frecuenciaMeses => $composableBuilder(
+      column: $table.frecuenciaMeses,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get fechaInicio => $composableBuilder(
+      column: $table.fechaInicio, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get fechaFin => $composableBuilder(
+      column: $table.fechaFin, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get establecimientoId => $composableBuilder(
+      column: $table.establecimientoId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get syncId => $composableBuilder(
+      column: $table.syncId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnFilters(column));
+}
+
+class $$GastosFijosTableOrderingComposer
+    extends Composer<_$AppDatabase, $GastosFijosTable> {
+  $$GastosFijosTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get concepto => $composableBuilder(
+      column: $table.concepto, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get precio => $composableBuilder(
+      column: $table.precio, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get frecuenciaMeses => $composableBuilder(
+      column: $table.frecuenciaMeses,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get fechaInicio => $composableBuilder(
+      column: $table.fechaInicio, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get fechaFin => $composableBuilder(
+      column: $table.fechaFin, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get establecimientoId => $composableBuilder(
+      column: $table.establecimientoId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get syncId => $composableBuilder(
+      column: $table.syncId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+      column: $table.deleted, builder: (column) => ColumnOrderings(column));
+}
+
+class $$GastosFijosTableAnnotationComposer
+    extends Composer<_$AppDatabase, $GastosFijosTable> {
+  $$GastosFijosTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get concepto =>
+      $composableBuilder(column: $table.concepto, builder: (column) => column);
+
+  GeneratedColumn<double> get precio =>
+      $composableBuilder(column: $table.precio, builder: (column) => column);
+
+  GeneratedColumn<int> get frecuenciaMeses => $composableBuilder(
+      column: $table.frecuenciaMeses, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaInicio => $composableBuilder(
+      column: $table.fechaInicio, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get fechaFin =>
+      $composableBuilder(column: $table.fechaFin, builder: (column) => column);
+
+  GeneratedColumn<String> get establecimientoId => $composableBuilder(
+      column: $table.establecimientoId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get syncId =>
+      $composableBuilder(column: $table.syncId, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+}
+
+class $$GastosFijosTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $GastosFijosTable,
+    GastosFijo,
+    $$GastosFijosTableFilterComposer,
+    $$GastosFijosTableOrderingComposer,
+    $$GastosFijosTableAnnotationComposer,
+    $$GastosFijosTableCreateCompanionBuilder,
+    $$GastosFijosTableUpdateCompanionBuilder,
+    (GastosFijo, BaseReferences<_$AppDatabase, $GastosFijosTable, GastosFijo>),
+    GastosFijo,
+    PrefetchHooks Function()> {
+  $$GastosFijosTableTableManager(_$AppDatabase db, $GastosFijosTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$GastosFijosTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$GastosFijosTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$GastosFijosTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<String> id = const Value.absent(),
+            Value<String> concepto = const Value.absent(),
+            Value<double> precio = const Value.absent(),
+            Value<int> frecuenciaMeses = const Value.absent(),
+            Value<DateTime> fechaInicio = const Value.absent(),
+            Value<DateTime?> fechaFin = const Value.absent(),
+            Value<String?> establecimientoId = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<String?> syncId = const Value.absent(),
+            Value<bool> deleted = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GastosFijosCompanion(
+            id: id,
+            concepto: concepto,
+            precio: precio,
+            frecuenciaMeses: frecuenciaMeses,
+            fechaInicio: fechaInicio,
+            fechaFin: fechaFin,
+            establecimientoId: establecimientoId,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            syncId: syncId,
+            deleted: deleted,
+            rowid: rowid,
+          ),
+          createCompanionCallback: ({
+            required String id,
+            required String concepto,
+            required double precio,
+            required int frecuenciaMeses,
+            required DateTime fechaInicio,
+            Value<DateTime?> fechaFin = const Value.absent(),
+            Value<String?> establecimientoId = const Value.absent(),
+            Value<DateTime?> createdAt = const Value.absent(),
+            Value<DateTime?> updatedAt = const Value.absent(),
+            Value<String?> syncId = const Value.absent(),
+            Value<bool> deleted = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              GastosFijosCompanion.insert(
+            id: id,
+            concepto: concepto,
+            precio: precio,
+            frecuenciaMeses: frecuenciaMeses,
+            fechaInicio: fechaInicio,
+            fechaFin: fechaFin,
+            establecimientoId: establecimientoId,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            syncId: syncId,
+            deleted: deleted,
+            rowid: rowid,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ));
+}
+
+typedef $$GastosFijosTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $GastosFijosTable,
+    GastosFijo,
+    $$GastosFijosTableFilterComposer,
+    $$GastosFijosTableOrderingComposer,
+    $$GastosFijosTableAnnotationComposer,
+    $$GastosFijosTableCreateCompanionBuilder,
+    $$GastosFijosTableUpdateCompanionBuilder,
+    (GastosFijo, BaseReferences<_$AppDatabase, $GastosFijosTable, GastosFijo>),
+    GastosFijo,
+    PrefetchHooks Function()>;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -9140,4 +9975,6 @@ class $AppDatabaseManager {
       $$BonoPagosTableTableManager(_db, _db.bonoPagos);
   $$EstablecimientosTableTableManager get establecimientos =>
       $$EstablecimientosTableTableManager(_db, _db.establecimientos);
+  $$GastosFijosTableTableManager get gastosFijos =>
+      $$GastosFijosTableTableManager(_db, _db.gastosFijos);
 }

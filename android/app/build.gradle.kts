@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.app_gestion_negocio"
+    namespace = "app.centerly"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         // Unique Application ID
-        applicationId = "com.sergiomc.appgestionnegocio"
+        applicationId = "app.centerly"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion  // flutter_secure_storage v9 requiere minSdk >= 23

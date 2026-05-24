@@ -4,6 +4,7 @@ import '../providers/clientes_provider.dart';
 import '../providers/servicios_provider.dart';
 import '../providers/citas_provider.dart';
 import '../providers/gastos_provider.dart';
+import '../providers/gastos_fijos_provider.dart';
 import '../services/app_database.dart';
 import '../models/movimiento_contable.dart';
 import '../providers/contabilidad_provider.dart';
@@ -83,20 +84,26 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
     final clientes = context.watch<ClientesProvider>().clientes;
     final servicios = context.watch<ServiciosProvider>().servicios;
     final gastosProvider = context.watch<GastosProvider>();
+    final gastosFijosProvider = context.watch<GastosFijosProvider>();
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final mobile = isMobile(context);
 
     final gastosMes = gastosProvider.gastosPorMes(mesActual, anioActual);
-    final totalGastos = gastosMes.fold<double>(0.0, (a, g) => a + g.precio);
+    final gastosFijosMes = gastosFijosProvider.gastosFijosParaMes(mesActual, anioActual);
+    final totalGastosManual = gastosMes.fold<double>(0.0, (a, g) => a + g.precio);
+    final totalGastosFijo = gastosFijosMes.fold<double>(0.0, (a, g) => a + g.precio);
+    final totalGastos = totalGastosManual + totalGastosFijo;
 
     final beneficiosPorMes = List.generate(12, (i) {
       final mes = i + 1;
       final citas = context.watch<CitasProvider>().citasPorMes(mes, anioActual);
       final gastos = gastosProvider.gastosPorMes(mes, anioActual);
+      final gastosFijos = gastosFijosProvider.gastosFijosParaMes(mes, anioActual);
       final fact = citas.where((c) => (c.metodoPago ?? '').isNotEmpty).fold<double>(0.0, (a, c) => a + c.precio);
       final g = gastos.fold<double>(0.0, (a, gasto) => a + gasto.precio);
-      return fact - g;
+      final gf = gastosFijos.fold<double>(0.0, (a, gasto) => a + gasto.precio);
+      return fact - (g + gf);
     });
 
     return Scaffold(
@@ -1001,116 +1008,475 @@ class GastosTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final gastosProvider = context.watch<GastosProvider>();
+    final gastosFijosProvider = context.watch<GastosFijosProvider>();
     final gastos = gastosProvider.gastosPorMes(mes, anio);
+    final gastosFijos = gastosFijosProvider.gastosFijosParaMes(mes, anio);
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final l = AppLocalizations.of(context);
+
+    final hayGastosManual = gastos.isNotEmpty;
+    final hayGastosFijo = gastosFijos.isNotEmpty;
+    final noHayNada = !hayGastosManual && !hayGastosFijo;
 
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.all(16),
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton.icon(
-              icon: const Icon(Icons.add),
-              label: Text(AppLocalizations.of(context).accountingNewExpense),
-              onPressed: () async {
-                await showDialog(
-                  context: context,
-                  builder: (_) => DialogNuevoGasto(mes: mes, anio: anio),
-                );
-                gastosProvider.gastosPorMes(mes, anio);
-              },
-            ),
+          child: Row(
+            children: [
+              FilledButton.icon(
+                icon: const Icon(Icons.add),
+                label: Text(l.accountingNewExpense),
+                onPressed: () async {
+                  await showDialog(
+                    context: context,
+                    builder: (_) => DialogNuevoGasto(mes: mes, anio: anio),
+                  );
+                },
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.settings),
+                label: Text(l.accountingFixedExpensesManage),
+                onPressed: () => _abrirGestorGastosFijos(context),
+              ),
+            ],
           ),
         ),
         Expanded(
-          child: gastos.isEmpty
+          child: noHayNada
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.receipt, size: 48, color: scheme.outline),
                       const SizedBox(height: 16),
-                      Text(AppLocalizations.of(context).accountingNoExpenses, style: text.bodyLarge),
+                      Text(l.accountingNoExpenses, style: text.bodyLarge),
                     ],
                   ),
                 )
-              : ListView.builder(
-                  itemCount: gastos.length + 1,
+              : ListView(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: scheme.secondaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                          child: Row(
-                            children: [
-                              Expanded(flex: 4, child: Text(AppLocalizations.of(context).accountingDescription, style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
-                              Expanded(flex: 2, child: Text(AppLocalizations.of(context).labelPrice, style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
-                              const Expanded(child: SizedBox()),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-                    final gasto = gastos[index - 1];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Card(
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(color: scheme.outlineVariant, width: 1),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          child: Row(
-                            children: [
-                              Icon(Icons.receipt, size: 18, color: scheme.outline),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                flex: 4,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(gasto.concepto, style: text.bodySmall?.copyWith(fontWeight: FontWeight.w500)),
-                                  ],
-                                ),
-                              ),
-                              Expanded(
-                                flex: 2,
-                                child: Text(
-                                  context.read<SettingsProvider>().formatCurrency(gasto.precio),
-                                  style: text.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-                                ),
-                              ),
-                              Expanded(
-                                child: Align(
-                                  alignment: Alignment.centerRight,
-                                  child: IconButton(
-                                    icon: Icon(Icons.delete_outline, color: scheme.error, size: 18),
-                                    onPressed: () async {
-                                      await gastosProvider.eliminarGasto(gasto.id, anio: anio);
-                                      gastosProvider.gastosPorMes(mes, anio);
-                                    },
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                  children: [
+                    // Sección de gastos fijos
+                    if (hayGastosFijo) ...[
+                      _buildSeccionGastos(
+                        context,
+                        l.accountingFixedExpenses,
+                        gastosFijos,
+                        isFijo: true,
+                        mes: mes,
+                        anio: anio,
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                    // Sección de gastos manuales
+                    if (hayGastosManual) ...[
+                      _buildSeccionGastos(
+                        context,
+                        l.accountingMonthlyExpenses,
+                        gastos,
+                        isFijo: false,
+                        mes: mes,
+                        anio: anio,
+                      ),
+                    ],
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSeccionGastos(
+    BuildContext context,
+    String titulo,
+    List gastosList,
+    {required bool isFijo,
+    required int mes,
+    required int anio}
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final settings = context.read<SettingsProvider>();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(
+            titulo,
+            style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
+        ...gastosList.asMap().entries.map((entry) {
+          final gasto = entry.value;
+          String frecuencia = '';
+
+          if (isFijo) {
+            frecuencia = _getFrequenciaLabel(context, gasto.frecuenciaMeses);
+          }
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Card(
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(color: scheme.outlineVariant, width: 1),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(
+                      isFijo ? Icons.repeat : Icons.receipt,
+                      size: 18,
+                      color: scheme.outline,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      flex: 4,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(gasto.concepto,
+                              style: text.bodySmall?.copyWith(fontWeight: FontWeight.w500)),
+                          if (isFijo && frecuencia.isNotEmpty)
+                            Text(frecuencia,
+                                style: text.labelSmall?.copyWith(
+                                  color: scheme.outline,
+                                  fontWeight: FontWeight.w400,
+                                )),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Text(
+                        settings.formatCurrency(gasto.precio),
+                        style: text.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: IconButton(
+                          icon: Icon(Icons.delete_outline, color: scheme.error, size: 18),
+                          onPressed: () async {
+                            if (isFijo) {
+                              await _confirmarEliminarGastoFijo(context, gasto);
+                            } else {
+                              final gastosProvider = context.read<GastosProvider>();
+                              await gastosProvider.eliminarGasto(gasto.id, anio: anio);
+                            }
+                          },
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  String _getFrequenciaLabel(BuildContext context, int frecuenciaMeses) {
+    final l = AppLocalizations.of(context);
+    switch (frecuenciaMeses) {
+      case 1:
+        return l.frequencyMonthly;
+      case 3:
+        return l.frequencyQuarterly;
+      case 6:
+        return l.frequencySemiannual;
+      case 12:
+        return l.frequencyAnnual;
+      default:
+        return '';
+    }
+  }
+
+  Future<void> _confirmarEliminarGastoFijo(BuildContext context, GastosFijo gasto) async {
+    final l = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(l.accountingFixedExpenseDeleteConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppLocalizations.of(context).actionCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      await context.read<GastosFijosProvider>().eliminar(gasto.id);
+    }
+  }
+
+  Future<void> _abrirGestorGastosFijos(BuildContext context) async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => GestorGastosFijosSheet(),
+    );
+  }
+}
+
+// Bottom sheet para gestionar gastos fijos
+class GestorGastosFijosSheet extends StatelessWidget {
+  const GestorGastosFijosSheet({super.key});
+
+  String _getFrequenciaLabel(BuildContext context, int frecuenciaMeses) {
+    final l = AppLocalizations.of(context);
+    switch (frecuenciaMeses) {
+      case 1:
+        return l.frequencyMonthly;
+      case 3:
+        return l.frequencyQuarterly;
+      case 6:
+        return l.frequencySemiannual;
+      case 12:
+        return l.frequencyAnnual;
+      default:
+        return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final gastosFijosProvider = context.watch<GastosFijosProvider>();
+    final gastosFijos = gastosFijosProvider.gastosFijosActivos;
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final settings = context.read<SettingsProvider>();
+    final l = AppLocalizations.of(context);
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.8,
+      minChildSize: 0.4,
+      builder: (_, sc) => ListView(
+        controller: sc,
+        padding: const EdgeInsets.all(18),
+        children: [
+          Row(
+            children: [
+              Text(l.accountingFixedExpensesManage,
+                  style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w600)),
+              const Spacer(),
+              FilledButton.icon(
+                icon: const Icon(Icons.add),
+                label: Text(l.accountingFixedExpensesNew),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await showDialog(
+                    context: context,
+                    builder: (_) => const DialogNuevoGastoFijo(),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          if (gastosFijos.isEmpty)
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.repeat, size: 48, color: scheme.outline),
+                  const SizedBox(height: 16),
+                  Text(l.accountingFixedExpensesNone, style: text.bodyLarge),
+                ],
+              ),
+            )
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: gastosFijos.map((gasto) {
+                final frecuencia = _getFrequenciaLabel(context, gasto.frecuenciaMeses);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(color: scheme.outlineVariant, width: 1),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      child: Row(
+                        children: [
+                          Icon(Icons.repeat, size: 18, color: scheme.outline),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(gasto.concepto,
+                                    style: text.bodySmall?.copyWith(fontWeight: FontWeight.w500)),
+                                Text(frecuencia,
+                                    style: text.labelSmall?.copyWith(
+                                      color: scheme.outline,
+                                      fontWeight: FontWeight.w400,
+                                    )),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            settings.formatCurrency(gasto.precio),
+                            style: text.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(width: 10),
+                          IconButton(
+                            icon: Icon(Icons.delete_outline, color: scheme.error, size: 18),
+                            onPressed: () async {
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder: (_) => AlertDialog(
+                                  title: Text(l.accountingFixedExpenseDeleteConfirm),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, false),
+                                      child: Text(l.actionCancel),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () => Navigator.pop(context, true),
+                                      child: const Text('Eliminar'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirmed == true && context.mounted) {
+                                await gastosFijosProvider.eliminar(gasto.id);
+                              }
+                            },
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// Diálogo para nuevo gasto fijo
+class DialogNuevoGastoFijo extends StatefulWidget {
+  const DialogNuevoGastoFijo({super.key});
+
+  @override
+  State<DialogNuevoGastoFijo> createState() => _DialogNuevoGastoFijoState();
+}
+
+class _DialogNuevoGastoFijoState extends State<DialogNuevoGastoFijo> {
+  final _conceptoController = TextEditingController();
+  final _precioController = TextEditingController();
+  int _frecuenciaSeleccionada = 1; // 1=mensual por defecto
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    final l = AppLocalizations.of(context);
+
+    return AlertDialog(
+      title: Text(l.accountingFixedExpensesNew,
+          style: text.headlineSmall?.copyWith(fontWeight: FontWeight.w600)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _conceptoController,
+            decoration: InputDecoration(
+              labelText: l.accountingCategory,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _precioController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: '${l.labelPrice} (${context.read<SettingsProvider>().simboloMoneda})',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            ),
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<int>(
+            value: _frecuenciaSeleccionada,
+            items: [
+              DropdownMenuItem(value: 1, child: Text(l.frequencyMonthly)),
+              DropdownMenuItem(value: 3, child: Text(l.frequencyQuarterly)),
+              DropdownMenuItem(value: 6, child: Text(l.frequencySemiannual)),
+              DropdownMenuItem(value: 12, child: Text(l.frequencyAnnual)),
+            ],
+            onChanged: (val) {
+              if (val != null) setState(() => _frecuenciaSeleccionada = val);
+            },
+            decoration: InputDecoration(
+              labelText: 'Frecuencia',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l.actionCancel),
+        ),
+        FilledButton.icon(
+          icon: const Icon(Icons.add),
+          onPressed: () async {
+            final concepto = _conceptoController.text.trim();
+            final precio = double.tryParse(_precioController.text.trim().replaceAll(',', '.'));
+            if (concepto.isEmpty || precio == null || precio <= 0) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Introduce un concepto y un precio válido')),
+                );
+              }
+              return;
+            }
+            final gastosFijosProvider = context.read<GastosFijosProvider>();
+            await gastosFijosProvider.crear(
+              concepto: concepto,
+              precio: precio,
+              frecuenciaMeses: _frecuenciaSeleccionada,
+              fechaInicio: DateTime(DateTime.now().year, DateTime.now().month, 1),
+            );
+            if (mounted && context.mounted) {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(l.accountingExpenseCreated)),
+              );
+            }
+          },
+          label: Text(l.actionSave),
         ),
       ],
     );

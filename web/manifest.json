@@ -1,11 +1,11 @@
 {
-    "name": "app_gestion_negocio",
-    "short_name": "app_gestion_negocio",
+    "name": "Centerly",
+    "short_name": "Centerly",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Centerly - Gestión de negocio para empresas basadas en citas.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

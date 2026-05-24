@@ -177,6 +177,18 @@ abstract class AppLocalizations {
   String get accountingTabExpenses;
   String get accountingNoExpenses;
   String get accountingAnnualSummary;
+  String get accountingTabExpensesFixed;
+  String get accountingFixedExpenses;
+  String get accountingFixedExpensesManage;
+  String get accountingFixedExpensesNew;
+  String get accountingFixedExpensesNone;
+  String get accountingFixedExpenseDeleted;
+  String get accountingFixedExpenseDeleteConfirm;
+  String get accountingMonthlyExpenses;
+  String get frequencyMonthly;
+  String get frequencyQuarterly;
+  String get frequencySemiannual;
+  String get frequencyAnnual;
 
   // ── Bonos ────────────────────────────────────────────────────────────────
   String get bonosTitle;

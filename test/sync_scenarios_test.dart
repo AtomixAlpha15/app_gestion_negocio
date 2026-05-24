@@ -3,10 +3,10 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:app_gestion_negocio/services/api_service.dart';
-import 'package:app_gestion_negocio/services/sync_service.dart';
-import 'package:app_gestion_negocio/services/sync_repository.dart';
-import 'package:app_gestion_negocio/services/app_database.dart';
+import 'package:centerly/services/api_service.dart';
+import 'package:centerly/services/sync_service.dart';
+import 'package:centerly/services/sync_repository.dart';
+import 'package:centerly/services/app_database.dart';
 
 // ── Mocks / Fakes ──────────────────────────────────────────────────────────
 

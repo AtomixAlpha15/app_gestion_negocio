@@ -192,12 +192,29 @@ class BonoPagos extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+// Gastos fijos (recurrentes)
+class GastosFijos extends Table {
+  TextColumn get id => text()();
+  TextColumn get concepto => text()();
+  RealColumn get precio => real()();
+  IntColumn get frecuenciaMeses => integer()(); // 1=mensual, 3=trimestral, 6=semestral, 12=anual
+  DateTimeColumn get fechaInicio => dateTime()(); // primer mes en que aplica
+  DateTimeColumn get fechaFin => dateTime().nullable()(); // null=activo; se rellena al eliminar
+  TextColumn get establecimientoId => text().nullable()();
+  // Auditoría para sincronización
+  DateTimeColumn get createdAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+  TextColumn get syncId => text().unique().nullable()();
+  BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
+  @override
+  Set<Column> get primaryKey => {id};
+}
 
 // Importa las tablas arriba definidas
 
 @DriftDatabase(
-  tables: [Clientes, Servicios, Citas, ExtrasServicio, ExtrasCita, Gastos, Bonos, BonoConsumos, BonoPagos, Establecimientos],
+  tables: [Clientes, Servicios, Citas, ExtrasServicio, ExtrasCita, Gastos, Bonos, BonoConsumos, BonoPagos, Establecimientos, GastosFijos],
 )
 class AppDatabase extends _$AppDatabase {
   final String? userId;
@@ -244,7 +261,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -321,6 +338,11 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(establecimientos);
         await customStatement('ALTER TABLE citas ADD COLUMN establecimiento_id TEXT');
         await customStatement('ALTER TABLE gastos ADD COLUMN establecimiento_id TEXT');
+      }
+
+      // v6 → v7: gastos fijos (recurrentes)
+      if (from < 7) {
+        await m.createTable(gastosFijos);
       }
     },
     beforeOpen: (details) async {

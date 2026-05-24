@@ -4,11 +4,20 @@ import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import '../services/api_service.dart';
 
 class SettingsProvider extends ChangeNotifier {
   final String? userId;
 
   SettingsProvider({this.userId});
+
+  ApiService? _apiService;
+  bool _applyingFromServer = false;
+  DateTime? _settingsLocalUpdatedAt;
+
+  void attachApiService(ApiService? api) {
+    _apiService = api;
+  }
 
   String _k(String key) =>
       (userId != null && userId!.isNotEmpty) ? '${userId}_$key' : key;
@@ -54,10 +63,10 @@ class SettingsProvider extends ChangeNotifier {
   int diasInactividad = 30;
 
   // --- NUEVO MODELO DE COLORES ---
-  Color _colorBase = const Color(0xFF6750A4);
+  Color _colorBase = const Color(0xFF4A9FE2);
   bool _usarPaletaAuto = true;
-  Color _colorSecundarioManual = const Color(0xFF625B71);
-  Color _colorTerciarioManual = const Color(0xFF7D5260);
+  Color _colorSecundarioManual = const Color(0xFF4A9FE2);
+  Color _colorTerciarioManual = const Color(0xFF2D7ACC);
 
   Color get colorBase => _colorBase;
   bool get usarPaletaAuto => _usarPaletaAuto;
@@ -156,6 +165,7 @@ class SettingsProvider extends ChangeNotifier {
   // ---------- CARGAR ----------
   Future<void> cargarAjustes() async {
     final prefs = await SharedPreferences.getInstance();
+    bool needsSave = false;
 
     fuente        = prefs.getString(_k(_kFuente))        ?? "Roboto";
     tamanoFuente  = prefs.getDouble(_k(_kTamanoFuente))  ?? 1.0;
@@ -184,20 +194,38 @@ class SettingsProvider extends ChangeNotifier {
     notifClientesInactivos = prefs.getBool(_k(_kNotifClientesInactivos))  ?? false;
     diasInactividad        = prefs.getInt(_k(_kDiasInactividad))          ?? 30;
 
-    final baseInt = prefs.getInt(_k(_kColorBase));
-    if (baseInt != null) _colorBase = Color(baseInt);
+    // Migración de color por defecto: si el usuario nunca personalizó el color
+    // (versión del tema < 2), resetear al nuevo azul
+    final themeVersion = prefs.getInt(_k('themeVersion')) ?? 1;
+    if (themeVersion < 2) {
+      _colorBase = const Color(0xFF4A9FE2);
+      _colorSecundarioManual = const Color(0xFF4A9FE2);
+      _colorTerciarioManual = const Color(0xFF2D7ACC);
+      needsSave = true;
+    } else {
+      final baseInt = prefs.getInt(_k(_kColorBase));
+      if (baseInt != null) _colorBase = Color(baseInt);
+
+      final secManInt = prefs.getInt(_k(_kColorSecundarioManual));
+      if (secManInt != null) _colorSecundarioManual = Color(secManInt);
+
+      final terManInt = prefs.getInt(_k(_kColorTerciarioManual));
+      if (terManInt != null) _colorTerciarioManual = Color(terManInt);
+    }
 
     _usarPaletaAuto = prefs.getBool(_k(_kUsarPaletaAuto)) ?? true;
-
-    final secManInt = prefs.getInt(_k(_kColorSecundarioManual));
-    if (secManInt != null) _colorSecundarioManual = Color(secManInt);
-
-    final terManInt = prefs.getInt(_k(_kColorTerciarioManual));
-    if (terManInt != null) _colorTerciarioManual = Color(terManInt);
 
     intervaloBackupDias = prefs.getInt(_k('intervaloBackupDias')) ?? 7;
     final lastIso = prefs.getString(_k('ultimaFechaBackup'));
     ultimaFechaBackup = lastIso != null ? DateTime.tryParse(lastIso) : null;
+
+    final syncedIso = prefs.getString(_k('settingsLocalUpdatedAt'));
+    _settingsLocalUpdatedAt = syncedIso != null ? DateTime.tryParse(syncedIso) : null;
+
+    // Guardar si hubo cambios de migración
+    if (needsSave) {
+      await guardarAjustes();
+    }
 
     establecimientoActualId = prefs.getString(_k('establecimientoActualId')) ?? '';
 
@@ -237,6 +265,7 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setBool(_k(_kNotifClientesInactivos), notifClientesInactivos);
     await prefs.setInt(_k(_kDiasInactividad), diasInactividad);
 
+    await prefs.setInt(_k('themeVersion'), 2);
     await prefs.setInt(_k(_kColorBase), _colorBase.toARGB32());
     await prefs.setBool(_k(_kUsarPaletaAuto), _usarPaletaAuto);
     await prefs.setInt(_k(_kColorSecundarioManual), _colorSecundarioManual.toARGB32());
@@ -245,6 +274,20 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setInt(_k('intervaloBackupDias'), intervaloBackupDias);
     await prefs.setString(_k('ultimaFechaBackup'), ultimaFechaBackup?.toIso8601String() ?? '');
     await prefs.setString(_k('establecimientoActualId'), establecimientoActualId);
+
+    if (!_applyingFromServer) {
+      _settingsLocalUpdatedAt = DateTime.now().toUtc();
+      await prefs.setString(_k('settingsLocalUpdatedAt'), _settingsLocalUpdatedAt!.toIso8601String());
+      if (_apiService != null) _pushToServer();
+    }
+  }
+
+  void _pushToServer() async {
+    try {
+      await _apiService!.saveSettings(toSyncMap());
+    } catch (e) {
+      debugPrint('[Settings] Push to server failed: $e');
+    }
   }
 
   // --------- SETTERS REACTIVOS ---------
@@ -462,10 +505,10 @@ class SettingsProvider extends ChangeNotifier {
     tamanoFuente = 1.0;
     oscuro = false;
 
-    _colorBase = const Color(0xFF6750A4);
+    _colorBase = const Color(0xFF4A9FE2);
     _usarPaletaAuto = true;
-    _colorSecundarioManual = const Color(0xFF625B71);
-    _colorTerciarioManual  = const Color(0xFF7D5260);
+    _colorSecundarioManual = const Color(0xFF4A9FE2);
+    _colorTerciarioManual  = const Color(0xFF2D7ACC);
 
     logoPath = "";
     nombreEmpresa = "Mi Empresa";
@@ -482,5 +525,84 @@ class SettingsProvider extends ChangeNotifier {
 
     guardarAjustes();
     notifyListeners();
+  }
+
+  // ---------- SYNC CON SERVIDOR ----------
+
+  Map<String, dynamic> toSyncMap() {
+    return {
+      'fuente': fuente,
+      'tamanoFuente': tamanoFuente,
+      'oscuro': oscuro,
+      'usarPaletaAuto': _usarPaletaAuto,
+      'colorBase': _colorBase.toARGB32(),
+      'colorSecundarioManual': _colorSecundarioManual.toARGB32(),
+      'colorTerciarioManual': _colorTerciarioManual.toARGB32(),
+      'nombreEmpresa': nombreEmpresa,
+      'direccion': direccion,
+      'telefono': telefono,
+      'email': email,
+      'numeroEmpleados': numeroEmpleados,
+      'nombresEmpleados': nombresEmpleados,
+      'idioma': idioma,
+      'formatoFecha': formatoFecha,
+      'simboloMoneda': simboloMoneda,
+    };
+  }
+
+  Future<void> applyFromSyncMap(Map<String, dynamic> m) async {
+    _applyingFromServer = true;
+    try {
+      fuente = (m['fuente'] ?? fuente) as String;
+      tamanoFuente = ((m['tamanoFuente'] ?? tamanoFuente) as num).toDouble();
+      oscuro = (m['oscuro'] ?? oscuro) as bool;
+      _usarPaletaAuto = (m['usarPaletaAuto'] ?? _usarPaletaAuto) as bool;
+      _colorBase = Color(((m['colorBase'] ?? _colorBase.toARGB32()) as num).toInt());
+      _colorSecundarioManual = Color(((m['colorSecundarioManual'] ?? _colorSecundarioManual.toARGB32()) as num).toInt());
+      _colorTerciarioManual = Color(((m['colorTerciarioManual'] ?? _colorTerciarioManual.toARGB32()) as num).toInt());
+      nombreEmpresa = (m['nombreEmpresa'] ?? nombreEmpresa) as String;
+      direccion = (m['direccion'] ?? direccion) as String;
+      telefono = (m['telefono'] ?? telefono) as String;
+      email = (m['email'] ?? email) as String;
+      numeroEmpleados = ((m['numeroEmpleados'] ?? numeroEmpleados) as num).toInt().clamp(1, 10);
+      final rawNombres = m['nombresEmpleados'];
+      if (rawNombres is List) nombresEmpleados = rawNombres.cast<String>();
+      idioma = _migrarIdioma((m['idioma'] ?? idioma) as String);
+      formatoFecha = (m['formatoFecha'] ?? formatoFecha) as String;
+      simboloMoneda = (m['simboloMoneda'] ?? simboloMoneda) as String;
+      await guardarAjustes();
+      notifyListeners();
+    } finally {
+      _applyingFromServer = false;
+    }
+  }
+
+  Future<void> syncFromServer() async {
+    if (_apiService == null) return;
+    try {
+      final response = await _apiService!.getSettings();
+      final serverUpdatedAtStr = response['updated_at'] as String?;
+      if (serverUpdatedAtStr == null) {
+        // No hay ajustes en servidor — subimos los locales
+        _pushToServer();
+        return;
+      }
+      final serverUpdatedAt = DateTime.parse(serverUpdatedAtStr);
+      final localUpdatedAt = _settingsLocalUpdatedAt ?? DateTime(2000);
+      if (serverUpdatedAt.isAfter(localUpdatedAt)) {
+        final serverSettings = response['settings'];
+        if (serverSettings is Map<String, dynamic>) {
+          await applyFromSyncMap(serverSettings);
+          _settingsLocalUpdatedAt = serverUpdatedAt;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_k('settingsLocalUpdatedAt'), serverUpdatedAt.toIso8601String());
+        }
+      } else {
+        // Local más reciente o igual — subimos al servidor
+        _pushToServer();
+      }
+    } catch (e) {
+      debugPrint('[Settings] Sync from server failed: $e');
+    }
   }
 }

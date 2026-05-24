@@ -12,6 +12,7 @@ class _SuscripcionState {
   final String? planActual;
   final String? planStatus;
   final bool tieneStripeSubscription;
+  final DateTime? planExpiresAt;
 
   const _SuscripcionState({
     this.cargando = false,
@@ -20,6 +21,7 @@ class _SuscripcionState {
     this.planActual,
     this.planStatus,
     this.tieneStripeSubscription = false,
+    this.planExpiresAt,
   });
 
   _SuscripcionState copyWith({
@@ -37,6 +39,7 @@ class _SuscripcionState {
         planActual: planActual ?? this.planActual,
         planStatus: planStatus ?? this.planStatus,
         tieneStripeSubscription: tieneStripeSubscription ?? this.tieneStripeSubscription,
+        planExpiresAt: planExpiresAt,
       );
 }
 
@@ -146,11 +149,14 @@ class _SuscripcionScreenState extends ConsumerState<SuscripcionScreen>
     try {
       final apiService = ref.read(apiServiceProvider);
       final data = await apiService.getSubscription();
-      setState(() => _state = _state.copyWith(
-            cargando: false,
+      final expiresAtStr = data['plan_expires_at'] as String?;
+      final expiresAt = expiresAtStr != null ? DateTime.tryParse(expiresAtStr) : null;
+      setState(() => _state = _SuscripcionState(
+            billingPeriod: _state.billingPeriod,
             planActual: data['plan'] as String? ?? 'basic',
             planStatus: data['plan_status'] as String? ?? 'active',
             tieneStripeSubscription: data['stripe_subscription_id'] != null,
+            planExpiresAt: expiresAt,
           ));
     } catch (e) {
       setState(() => _state = _state.copyWith(cargando: false, error: e.toString()));
@@ -186,6 +192,40 @@ class _SuscripcionScreenState extends ConsumerState<SuscripcionScreen>
     }
   }
 
+  Future<void> _cancelarSuscripcion() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancelar suscripción'),
+        content: const Text(
+          'Tu suscripción se cancelará al final del período actual. '
+          'Seguirás teniendo acceso completo hasta la fecha de renovación.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Mantener plan'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Sí, cancelar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _state = _state.copyWith(cargando: true, error: null));
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      await apiService.cancelSubscription();
+      await _cargarPlan();
+    } catch (e) {
+      setState(() => _state = _state.copyWith(cargando: false, error: e.toString()));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -214,6 +254,7 @@ class _SuscripcionScreenState extends ConsumerState<SuscripcionScreen>
                   _PlanActualBanner(
                     plan: _state.planActual!,
                     status: _state.planStatus ?? 'active',
+                    planExpiresAt: _state.planExpiresAt,
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -281,15 +322,24 @@ class _SuscripcionScreenState extends ConsumerState<SuscripcionScreen>
                 const SizedBox(height: 8),
 
                 // Gestionar suscripción (si ya tiene una)
-                if (_state.tieneStripeSubscription)
+                if (_state.tieneStripeSubscription) ...[
                   ListTile(
                     leading: const Icon(Icons.manage_accounts_outlined),
                     title: const Text('Gestionar suscripción'),
                     subtitle: const Text(
-                        'Cambiar método de pago, cancelar, ver facturas…'),
+                        'Cambiar método de pago, ver facturas…'),
                     trailing: const Icon(Icons.open_in_new, size: 18),
                     onTap: _state.cargando ? null : _gestionarSuscripcion,
                   ),
+                  if (_state.planStatus == 'active')
+                    ListTile(
+                      leading: Icon(Icons.cancel_outlined, color: Colors.red.shade400),
+                      title: Text('Cancelar suscripción',
+                          style: TextStyle(color: Colors.red.shade400)),
+                      subtitle: const Text('El acceso se mantiene hasta el fin del período pagado'),
+                      onTap: _state.cargando ? null : _cancelarSuscripcion,
+                    ),
+                ],
 
                 ListTile(
                   leading: const Icon(Icons.refresh_outlined),
@@ -316,18 +366,36 @@ class _SuscripcionScreenState extends ConsumerState<SuscripcionScreen>
 class _PlanActualBanner extends StatelessWidget {
   final String plan;
   final String status;
-  const _PlanActualBanner({required this.plan, required this.status});
+  final DateTime? planExpiresAt;
+  const _PlanActualBanner({required this.plan, required this.status, this.planExpiresAt});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isActive = status == 'active';
+
+    final isCanceledWithAccess = status == 'canceled' &&
+        planExpiresAt != null &&
+        planExpiresAt!.isAfter(DateTime.now());
+
+    final badgeColor = switch (status) {
+      'active' => Colors.green.shade600,
+      'canceled' when isCanceledWithAccess => Colors.orange.shade700,
+      'past_due' => cs.error,
+      _ => cs.error,
+    };
     final statusLabel = switch (status) {
       'active' => 'Activo',
       'past_due' => 'Pago pendiente',
       'canceled' => 'Cancelado',
       _ => status,
     };
+
+    String? expiryNote;
+    if (isCanceledWithAccess) {
+      final d = planExpiresAt!;
+      expiryNote =
+          'Acceso hasta el ${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -346,7 +414,7 @@ class _PlanActualBanner extends StatelessWidget {
                 Text('Plan actual',
                     style: TextStyle(
                         fontSize: 12,
-                        color: cs.onPrimaryContainer.withOpacity(0.7))),
+                        color: cs.onPrimaryContainer.withValues(alpha: 0.7))),
                 Text(
                   _nombrePlan(plan),
                   style: TextStyle(
@@ -354,13 +422,23 @@ class _PlanActualBanner extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       color: cs.onPrimaryContainer),
                 ),
+                if (expiryNote != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    expiryNote,
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange.shade800,
+                        fontWeight: FontWeight.w500),
+                  ),
+                ],
               ],
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: isActive ? Colors.green.shade600 : cs.error,
+              color: badgeColor,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
