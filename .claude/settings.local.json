@@ -20,7 +20,13 @@
       "Bash(\"C:\\\\Users\\\\info\\\\AppData\\\\Local\\\\Android\\\\sdk\\\\platform-tools\\\\adb.exe\" logcat *)",
       "Bash(kill %1)",
       "Bash(\"C:\\\\Users\\\\info\\\\AppData\\\\Local\\\\Android\\\\sdk\\\\platform-tools\\\\adb.exe\" shell *)",
-      "Bash(wait)"
+      "Bash(wait)",
+      "Bash(dart run *)",
+      "Bash(Get-ChildItem -Path \"E:\\\\Cositas\\\\VS\\\\app_gestion_negocio_backend\" -Recurse -Depth 2)",
+      "Bash(Select-Object FullName)",
+      "Read(//e/Cositas/VS/**)",
+      "Bash(npx create-next-app@latest contify_web --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git)",
+      "WebSearch"
     ]
   }
 }
