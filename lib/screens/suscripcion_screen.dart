@@ -151,13 +151,18 @@ class _SuscripcionScreenState extends ConsumerState<SuscripcionScreen>
       final data = await apiService.getSubscription();
       final expiresAtStr = data['plan_expires_at'] as String?;
       final expiresAt = expiresAtStr != null ? DateTime.tryParse(expiresAtStr) : null;
+      final newStatus = data['plan_status'] as String? ?? 'active';
       setState(() => _state = _SuscripcionState(
             billingPeriod: _state.billingPeriod,
             planActual: data['plan'] as String? ?? 'basic',
-            planStatus: data['plan_status'] as String? ?? 'active',
+            planStatus: newStatus,
             tieneStripeSubscription: data['stripe_subscription_id'] != null,
             planExpiresAt: expiresAt,
           ));
+      // Si el plan acaba de activarse, actualizar el AuthState para navegar a la app principal
+      if (newStatus == 'active') {
+        await ref.read(authStateProvider.notifier).refreshUser();
+      }
     } catch (e) {
       setState(() => _state = _state.copyWith(cargando: false, error: e.toString()));
     }

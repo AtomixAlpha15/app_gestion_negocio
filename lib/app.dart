@@ -4,6 +4,7 @@ import 'package:provider/provider.dart' as provider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/main_shell.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/suscripcion_screen.dart';
 import 'providers/settings_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/sync_provider.dart';
@@ -330,16 +331,15 @@ class _MyAppState extends ConsumerState<MyApp> {
   Widget _buildHome() {
     final authState = ref.watch(authStateProvider);
 
-    // Authenticated → app principal
-    if (authState.isAuthenticated) return const MainShell();
-
-    // Para loading/unauthenticated/error siempre devolvemos el mismo tipo de widget
-    // para que Flutter NO destruya LoginScreen al pasar por el estado loading.
-    // Si se destruyera: los controllers de texto se vacían y ref.listen pierde la
-    // transición error, por lo que el diálogo SESSION_CONFLICT nunca se muestra.
-    // El spinner durante el arranque lo gestiona AppRoot (_initialized=false).
     return authState.when(
-      onAuthenticated: (_) => const MainShell(),
+      onAuthenticated: (user) {
+        final planStatus = user['plan_status'] as String? ?? 'active';
+        // Usuario sin suscripción activa → mostrar pantalla de planes obligatoriamente
+        if (planStatus == 'inactive') return const SuscripcionScreen();
+        return const MainShell();
+      },
+      // Para loading/unauthenticated/error siempre devolvemos LoginScreen para que
+      // Flutter no destruya sus controllers de texto entre estados transitorios.
       onUnauthenticated: () => const LoginScreen(),
       onLoading: () => const LoginScreen(),
       onError: (message) => const LoginScreen(),

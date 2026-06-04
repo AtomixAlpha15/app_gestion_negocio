@@ -82,6 +82,15 @@ class AuthController extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> refreshUser() async {
+    try {
+      final user = await authService.getCurrentUser();
+      state = AuthState.authenticated(user: user['user'] as Map<String, dynamic>);
+    } catch (_) {
+      // Si falla, dejamos el estado actual intacto
+    }
+  }
+
   Future<void> logout() async {
     await authService.logout();
     await _saveKeepSession(false);

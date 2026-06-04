@@ -38,6 +38,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
     with TickerProviderStateMixin {
   int mesActual = DateTime.now().month;
   int anioActual = DateTime.now().year;
+  bool _filtrosVisibles = true;
 
   final Map<String, bool> metodoPagoSeleccionado = {
     'Efectivo': false,
@@ -110,28 +111,39 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
       appBar: AppBar(
         title: Text(AppLocalizations.of(context).accountingTitle),
         elevation: 0,
-        actions: mobile
-            ? [
-                IconButton(
-                  icon: const Icon(Icons.filter_list),
-                  tooltip: AppLocalizations.of(context).accountingFilters,
-                  onPressed: () => _abrirFiltros(clientes, servicios),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.summarize_outlined),
-                  tooltip: 'Resumen',
-                  onPressed: () => _abrirTotales(totalGastos, beneficiosPorMes),
-                ),
-                const UserAvatarAction(),
-              ]
-            : null,
+        actions: [
+          if (mobile) ...[
+            IconButton(
+              icon: const Icon(Icons.filter_list),
+              tooltip: AppLocalizations.of(context).accountingFilters,
+              onPressed: () => _abrirFiltros(clientes, servicios),
+            ),
+            IconButton(
+              icon: const Icon(Icons.summarize_outlined),
+              tooltip: 'Resumen',
+              onPressed: () => _abrirTotales(totalGastos, beneficiosPorMes),
+            ),
+          ] else ...[
+            IconButton(
+              icon: Icon(_filtrosVisibles ? Icons.filter_list_off : Icons.filter_list),
+              tooltip: _filtrosVisibles ? 'Ocultar filtros' : 'Mostrar filtros',
+              onPressed: () => setState(() => _filtrosVisibles = !_filtrosVisibles),
+            ),
+          ],
+          const UserAvatarAction(),
+        ],
       ),
       body: mobile
           ? _buildTabContent(context)
           : Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildFiltrosPanel(context, clientes, servicios, scheme, text),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 400),
+                  child: _filtrosVisibles
+                      ? _buildFiltrosPanel(context, clientes, servicios, scheme, text)
+                      : const SizedBox.shrink(),
+                ),
                 Expanded(child: _buildTabContent(context)),
                 _buildTotalesPanel(context, scheme, text, totalGastos, beneficiosPorMes),
               ],
@@ -669,20 +681,20 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       _buildTotalCard(l.accountingPaymentMethodCash, efe, scheme.secondaryContainer, scheme.onSecondaryContainer, Icons.money, text),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       _buildTotalCard(l.accountingPaymentMethodBizum, biz, scheme.secondaryContainer, scheme.onSecondaryContainer, Icons.phone_android, text),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       _buildTotalCard(l.accountingPaymentMethodCard, tar, scheme.secondaryContainer, scheme.onSecondaryContainer, Icons.credit_card, text),
                       const SizedBox(height: 16),
                       Divider(color: scheme.outlineVariant, height: 16),
                       const SizedBox(height: 16),
                       _buildTotalCard(l.accountingRevenue, totalFacturado, scheme.primaryContainer, scheme.onPrimaryContainer, Icons.trending_up, text),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       _buildTotalCard(l.accountingExpenses, totalGastos, scheme.errorContainer, scheme.onErrorContainer, Icons.trending_down, text),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 12),
                       _buildTotalCard(l.accountingProfit, beneficio, scheme.tertiaryContainer, scheme.onTertiaryContainer,
                         beneficio >= 0 ? Icons.check_circle : Icons.error, text),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
                       _buildVistaAnual(text, scheme, beneficiosPorMes),
                     ],
                   ),
@@ -701,7 +713,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(
           children: [
             Icon(icon, color: fgColor, size: 20),
@@ -732,7 +744,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
           crossAxisCount: 3,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          childAspectRatio: 1.1,
+          childAspectRatio: 1.0,
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
           children: List.generate(12, (i) {

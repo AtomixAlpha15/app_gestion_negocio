@@ -728,14 +728,20 @@ class _PreviewChip extends StatelessWidget {
 }
 
 /* ─── 2. EMPRESA ────────────────────────────────────────────────────────── */
-class _TileEmpresa extends StatelessWidget {
+class _TileEmpresa extends ConsumerWidget {
   const _TileEmpresa();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final s = context.watch<SettingsProvider>();
     final cs = Theme.of(context).colorScheme;
     final loc = AppLocalizations.of(context);
+    final plan = ref.watch(authStateProvider).when(
+      onAuthenticated: (user) => user['plan'] as String? ?? 'basic',
+      onUnauthenticated: () => 'basic',
+      onLoading: () => 'basic',
+      onError: (_) => 'basic',
+    );
 
     return _SettingsCard(children: [
       // Logo
@@ -803,28 +809,29 @@ class _TileEmpresa extends StatelessWidget {
         onSave: s.setEmail,
       ),
 
-      // Nº empleados
-      ListTile(
-        leading: const Icon(Icons.people_outline),
-        title: Text(loc.settingsEmployees),
-        subtitle: Text(loc.settingsEmployeesDesc),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('${s.numeroEmpleados}',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: cs.onSurfaceVariant)),
-            const SizedBox(width: 4),
-            const Icon(Icons.chevron_right),
-          ],
+      // Nº empleados (solo Pro/Ultra)
+      if (plan != 'basic')
+        ListTile(
+          leading: const Icon(Icons.people_outline),
+          title: Text(loc.settingsEmployees),
+          subtitle: Text(loc.settingsEmployeesDesc),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('${s.numeroEmpleados}',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: cs.onSurfaceVariant)),
+              const SizedBox(width: 4),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+          onTap: () => _editNumeroEmpleados(context, s, loc),
         ),
-        onTap: () => _editNumeroEmpleados(context, s, loc),
-      ),
 
-      // Nombres de empleados
-      if (s.numeroEmpleados > 1)
+      // Nombres de empleados (solo Pro/Ultra y si hay más de 1)
+      if (plan != 'basic' && s.numeroEmpleados > 1)
         ListTile(
           leading: const Icon(Icons.badge_outlined),
           title: const Text('Nombres de empleados'),

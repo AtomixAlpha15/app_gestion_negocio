@@ -385,44 +385,44 @@ class _BonoFaceplate extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // Indicador de progreso circular
-                Center(
-                  child: SizedBox(
-                    width: 140,
-                    height: 140,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        CircularProgressIndicator(
+                Center(child: SizedBox(
+                  width: 100,
+                  height: 100,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox.expand(
+                        child: CircularProgressIndicator(
                           value: progreso,
-                          strokeWidth: 8,
+                          strokeWidth: 16,
                           backgroundColor: scheme.surface.withValues(alpha:0.3),
                           valueColor: AlwaysStoppedAnimation<Color>(
                             restante > 0 ? scheme.primary : scheme.tertiary,
                           ),
                           strokeCap: StrokeCap.round,
                         ),
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              '$usadas',
-                              style: text.displaySmall?.copyWith(
-                                color: scheme.onSecondaryContainer,
-                                fontWeight: FontWeight.w800,
-                              ),
+                      ),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '$usadas',
+                            style: text.displaySmall?.copyWith(
+                              color: scheme.onSecondaryContainer,
+                              fontWeight: FontWeight.w800,
                             ),
-                            Text(
-                              'de $totales',
-                              style: text.bodySmall?.copyWith(
-                                color: scheme.onSecondaryContainer.withValues(alpha:0.8),
-                              ),
+                          ),
+                          Text(
+                            'de $totales',
+                            style: text.bodySmall?.copyWith(
+                              color: scheme.onSecondaryContainer.withValues(alpha:0.8),
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ),
+                )),
 
                 const SizedBox(height: 20),
 

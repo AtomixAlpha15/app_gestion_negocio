@@ -418,6 +418,7 @@ class _DiaHeader extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final settings = context.watch<SettingsProvider>();
     final esHoy = DateUtils.isSameDay(fecha, DateTime.now());
+    final esFinDeSemana = fecha.weekday == DateTime.saturday || fecha.weekday == DateTime.sunday;
     final diaSemana = settings.weekdayAbbrev(fecha.weekday);
     final mesNombre = settings.monthName(fecha.month);
     final label = settings.idioma == 'en'
@@ -430,7 +431,9 @@ class _DiaHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: esHoy
             ? scheme.primary.withValues(alpha: 0.08)
-            : scheme.surfaceContainerHigh,
+            : esFinDeSemana
+                ? scheme.tertiaryContainer.withValues(alpha: 0.35)
+                : scheme.surfaceContainerHigh,
         border: Border(
           bottom: BorderSide(
             color: esHoy ? scheme.primary.withValues(alpha: 0.3) : scheme.outlineVariant,
@@ -845,8 +848,8 @@ class _AgendaVisualState extends State<AgendaVisual> {
                         esPasada;
 
                     final Color bg = impagada
-                        ? scheme.tertiaryContainer
-                        : scheme.secondaryContainer;
+                        ? scheme.tertiaryContainer.withValues(alpha: 0.60)
+                        : scheme.secondaryContainer.withValues(alpha: 0.60);
                     final Color fg = impagada
                         ? scheme.onTertiaryContainer
                         : scheme.onSecondaryContainer;
@@ -913,14 +916,14 @@ class _AgendaVisualState extends State<AgendaVisual> {
                           child: Opacity(
                             opacity: esDragActual ? 0.4 : 1.0,
                             child: Card(
-                              color: bg,
+                              color: Colors.transparent,
                               elevation: esDragActual ? 2 : 1,
                               margin: EdgeInsets.zero,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 side: BorderSide(
-                                  color: scheme.outlineVariant.withValues(alpha: 0.5),
-                                  width: 0.5,
+                                  color: scheme.outlineVariant,
+                                  width: 1.5,
                                 ),
                               ),
                               child: Container(
@@ -929,7 +932,7 @@ class _AgendaVisualState extends State<AgendaVisual> {
                                   gradient: LinearGradient(
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
-                                    colors: [bg, bg.withValues(alpha: 0.8)],
+                                    colors: [bg, bg.withValues(alpha: 0.45)],
                                   ),
                                 ),
                                 child: Padding(
@@ -939,32 +942,97 @@ class _AgendaVisualState extends State<AgendaVisual> {
                                   ),
                                   child: Builder(
                                     builder: (ctx) {
-                                      final isNarrow = cWidth != null && cWidth! < 100;
-                                      if (isNarrow) {
+                                      final narrowWidth = cWidth ?? 80;
+                                      final hora = horaFormato.split(' - ')[0];
+
+                                      // Tres niveles de layout según espacio disponible
+                                      if (narrowWidth < 60) {
+                                        // Muy estrecho: solo hora
+                                        return Center(
+                                          child: Text(
+                                            hora,
+                                            style: text.labelSmall?.copyWith(
+                                              color: fg,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 9,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        );
+                                      } else if (narrowWidth < 100) {
+                                        // Estrecho: cliente sobre hora
                                         return Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
+                                            Flexible(
+                                              child: Text(
+                                                nombreCliente,
+                                                style: text.labelSmall?.copyWith(
+                                                  color: fg,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 10,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
                                             Text(
-                                              horaFormato.split(' - ')[0],
+                                              hora,
                                               style: text.labelSmall?.copyWith(
-                                                color: fg,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 10,
+                                                color: fg.withValues(alpha: 0.7),
+                                                fontWeight: FontWeight.w500,
+                                                fontSize: 8,
                                               ),
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                           ],
                                         );
+                                      } else if (narrowWidth < 160) {
+                                        // Medio: cliente / servicio+hora
+                                        return Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Flexible(
+                                              child: Text(
+                                                nombreCliente,
+                                                style: text.labelSmall?.copyWith(
+                                                  color: fg,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 10,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            Flexible(
+                                              child: Text(
+                                                nombreServicioYExtras.isNotEmpty
+                                                    ? '$nombreServicioYExtras • $hora'
+                                                    : hora,
+                                                style: text.labelSmall?.copyWith(
+                                                  color: fg.withValues(alpha: 0.75),
+                                                  fontWeight: FontWeight.w500,
+                                                  fontSize: 8,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        );
                                       }
+
+                                      // Ancho: todo en línea
                                       return Row(
                                         children: [
                                           Flexible(
-                                            flex: 2,
                                             child: Text(
                                               nombreCliente,
-                                              style: text.labelMedium?.copyWith(
+                                              style: text.labelSmall?.copyWith(
                                                 color: fg,
                                                 fontWeight: FontWeight.bold,
                                               ),
@@ -973,26 +1041,29 @@ class _AgendaVisualState extends State<AgendaVisual> {
                                             ),
                                           ),
                                           if (nombreServicioYExtras.isNotEmpty) ...[
-                                            const SizedBox(width: 8),
+                                            const SizedBox(width: 6),
                                             Flexible(
-                                              flex: 2,
                                               child: Text(
                                                 nombreServicioYExtras,
                                                 style: text.labelSmall?.copyWith(
                                                   color: fg.withValues(alpha: 0.85),
+                                                  fontSize: 11,
                                                 ),
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
                                           ],
-                                          const SizedBox(width: 8),
+                                          const SizedBox(width: 6),
                                           Text(
-                                            horaFormato,
+                                            hora,
                                             style: text.labelSmall?.copyWith(
                                               color: fg.withValues(alpha: 0.7),
                                               fontWeight: FontWeight.w500,
+                                              fontSize: 10,
                                             ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ],
                                       );

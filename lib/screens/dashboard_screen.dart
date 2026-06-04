@@ -7,6 +7,7 @@ import '../providers/citas_provider.dart';
 import '../providers/clientes_provider.dart';
 import '../providers/servicios_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/gastos_fijos_provider.dart';
 import '../services/app_database.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/responsive.dart';
@@ -88,6 +89,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     final citasProv = context.read<CitasProvider>();
     final clientesProv = context.read<ClientesProvider>();
     final serviciosProv = context.read<ServiciosProvider>();
+    final gastosFijosProv = context.read<GastosFijosProvider>();
     final db = context.read<AppDatabase>();
     final settings = context.read<SettingsProvider>();
 
@@ -133,8 +135,10 @@ class _DashboardScreenState extends State<DashboardScreen>
             ..where((g) => g.fecha.isBetweenValues(inicio, fin)))
           .get();
       final gas = gasRows.fold(0.0, (s, g) => s + g.precio);
+      final gf = gastosFijosProv.gastosFijosParaMes(mes, anio)
+          .fold(0.0, (s, g) => s + g.precio);
       ingresosMeses.add(ing);
-      gastosMeses.add(gas);
+      gastosMeses.add(gas + gf);
       labelsMeses.add(settings.monthAbbrev(mes));
     }
 
