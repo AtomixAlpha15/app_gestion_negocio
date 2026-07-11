@@ -31,6 +31,8 @@ dependencies:
   connectivity_plus: ^6.0.3
   url_launcher: ^6.3.0
   image: ^4.2.0
+  flutter_local_notifications: ^17.2.1
+  timezone: ^0.9.4
 
 dev_dependencies:
   flutter_test:
@@ -76,3 +78,4 @@ flutter:
         - asset: assets/fonts/Tangerine-Regular.ttf
   assets:
     - assets/fonts/
+    - assets/images/

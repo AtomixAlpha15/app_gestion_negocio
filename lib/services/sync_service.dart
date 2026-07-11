@@ -129,11 +129,19 @@ class SyncService {
 
       final response = await apiService.sync(body: body);
 
+      // IDs que el cliente acaba de subir: no sobreescribir con versión del servidor
+      // en este mismo ciclo (el servidor puede devolver la versión previa al edit).
+      final uploadedKeys = {
+        for (final c in localChanges) '${c.entityType}/${c.id}',
+      };
+
       final serverChanges = (response['changes'] as List? ?? [])
           .map((c) => SyncChange.fromJson(c as Map<String, dynamic>))
+          .where((c) => !uploadedKeys.contains('${c.entityType}/${c.id}'))
           .toList();
 
-      debugPrint('[Sync] Recibidos ${serverChanges.length} cambios del servidor');
+      debugPrint('[Sync] Recibidos ${(response['changes'] as List? ?? []).length} cambios del servidor'
+          ' (aplicando ${serverChanges.length} tras filtrar ${uploadedKeys.length} locales)');
 
       if (serverChanges.isNotEmpty) {
         await repository.applyServerChanges(serverChanges);
@@ -151,6 +159,12 @@ class SyncService {
       // Sesión invalidada por force_login desde otro dispositivo
       if (e is ApiException && e.code == 'SESSION_INVALIDATED') {
         debugPrint('[Sync] Sesión invalidada remotamente, cerrando sesión local');
+        stopPolling();
+        onSessionInvalidated?.call();
+        return;
+      }
+      if (e is ApiException && e.code == 'TRIAL_EXPIRED') {
+        debugPrint('[Sync] Trial expirado, cerrando sesión local');
         stopPolling();
         onSessionInvalidated?.call();
         return;

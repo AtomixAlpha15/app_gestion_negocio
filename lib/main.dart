@@ -2,11 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app_root.dart';
+import 'services/notification_service.dart';
 
 void main() {
   runZonedGuarded(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
+      await NotificationService.instance.init();
 
       FlutterError.onError = (FlutterErrorDetails details) {
         debugPrint('[FLUTTER ERROR] ${details.exception}');

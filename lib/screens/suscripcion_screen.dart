@@ -13,6 +13,7 @@ class _SuscripcionState {
   final String? planStatus;
   final bool tieneStripeSubscription;
   final DateTime? planExpiresAt;
+  final DateTime? trialEndsAt;
 
   const _SuscripcionState({
     this.cargando = false,
@@ -22,6 +23,7 @@ class _SuscripcionState {
     this.planStatus,
     this.tieneStripeSubscription = false,
     this.planExpiresAt,
+    this.trialEndsAt,
   });
 
   _SuscripcionState copyWith({
@@ -40,6 +42,7 @@ class _SuscripcionState {
         planStatus: planStatus ?? this.planStatus,
         tieneStripeSubscription: tieneStripeSubscription ?? this.tieneStripeSubscription,
         planExpiresAt: planExpiresAt,
+        trialEndsAt: trialEndsAt,
       );
 }
 
@@ -69,15 +72,16 @@ const _planes = [
   _PlanInfo(
     id: 'basic',
     nombre: 'Basic',
-    precioMensual: 7,
-    precioAnual: 70,
+    precioMensual: 6,
+    precioAnual: 60,
     icono: Icons.star_outline,
     color: Colors.blueGrey,
     features: [
-      '1 dispositivo a la vez',
-      'Sincronización al iniciar sesión',
-      'Clientes, Servicios y Agenda',
-      'Bonos y Contabilidad',
+      'Clientes, citas y servicios ilimitados',
+      'Bonos y sesiones',
+      'Control de gastos',
+      'App móvil offline',
+      '1 dispositivo activo',
     ],
   ),
   _PlanInfo(
@@ -88,10 +92,10 @@ const _planes = [
     icono: Icons.star_half,
     color: Colors.indigo,
     features: [
-      'Multi-dispositivo',
-      'Sincronización en tiempo real',
       'Todo lo de Basic',
-      'Multi-agenda (varios trabajadores)',
+      'Múltiples dispositivos',
+      'Sincronización en tiempo real',
+      'Soporte prioritario',
     ],
   ),
   _PlanInfo(
@@ -103,9 +107,9 @@ const _planes = [
     color: Colors.amber,
     features: [
       'Todo lo de Pro',
-      'Multi-establecimiento',
-      'Cambiar entre locales en la misma cuenta',
-      'Soporte prioritario',
+      'Múltiples establecimientos',
+      'Gestión multi-agenda avanzada',
+      'Estadísticas por establecimiento',
     ],
   ),
 ];
@@ -151,6 +155,8 @@ class _SuscripcionScreenState extends ConsumerState<SuscripcionScreen>
       final data = await apiService.getSubscription();
       final expiresAtStr = data['plan_expires_at'] as String?;
       final expiresAt = expiresAtStr != null ? DateTime.tryParse(expiresAtStr) : null;
+      final trialEndsAtStr = data['trial_ends_at'] as String?;
+      final trialEndsAt = trialEndsAtStr != null ? DateTime.tryParse(trialEndsAtStr) : null;
       final newStatus = data['plan_status'] as String? ?? 'active';
       setState(() => _state = _SuscripcionState(
             billingPeriod: _state.billingPeriod,
@@ -158,6 +164,7 @@ class _SuscripcionScreenState extends ConsumerState<SuscripcionScreen>
             planStatus: newStatus,
             tieneStripeSubscription: data['stripe_subscription_id'] != null,
             planExpiresAt: expiresAt,
+            trialEndsAt: trialEndsAt,
           ));
       // Si el plan acaba de activarse, actualizar el AuthState para navegar a la app principal
       if (newStatus == 'active') {
@@ -260,8 +267,26 @@ class _SuscripcionScreenState extends ConsumerState<SuscripcionScreen>
                     plan: _state.planActual!,
                     status: _state.planStatus ?? 'active',
                     planExpiresAt: _state.planExpiresAt,
+                    trialEndsAt: _state.trialEndsAt,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 12),
+                ],
+
+                // Banner de aviso cuando quedan ≤3 días de trial
+                if (_state.planStatus == 'trialing' &&
+                    _state.trialEndsAt != null &&
+                    _state.trialEndsAt!.difference(DateTime.now()).inDays <= 3) ...[
+                  _TrialExpiringSoonBanner(
+                    trialEndsAt: _state.trialEndsAt!,
+                    onContratar: () => _contratar('basic'),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                // Banner de aviso cuando el pago falló
+                if (_state.planStatus == 'past_due') ...[
+                  _PastDueBanner(onActualizar: _gestionarSuscripcion),
+                  const SizedBox(height: 20),
                 ],
 
                 // Error
@@ -372,7 +397,13 @@ class _PlanActualBanner extends StatelessWidget {
   final String plan;
   final String status;
   final DateTime? planExpiresAt;
-  const _PlanActualBanner({required this.plan, required this.status, this.planExpiresAt});
+  final DateTime? trialEndsAt;
+  const _PlanActualBanner({
+    required this.plan,
+    required this.status,
+    this.planExpiresAt,
+    this.trialEndsAt,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -382,24 +413,32 @@ class _PlanActualBanner extends StatelessWidget {
         planExpiresAt != null &&
         planExpiresAt!.isAfter(DateTime.now());
 
+    final isTrialing = status == 'trialing';
+    final daysLeft = isTrialing && trialEndsAt != null
+        ? trialEndsAt!.difference(DateTime.now()).inDays + 1
+        : 0;
+
     final badgeColor = switch (status) {
       'active' => Colors.green.shade600,
+      'trialing' => Colors.blue.shade600,
       'canceled' when isCanceledWithAccess => Colors.orange.shade700,
       'past_due' => cs.error,
       _ => cs.error,
     };
     final statusLabel = switch (status) {
       'active' => 'Activo',
+      'trialing' => 'Prueba gratuita',
       'past_due' => 'Pago pendiente',
       'canceled' => 'Cancelado',
       _ => status,
     };
 
-    String? expiryNote;
+    String? note;
     if (isCanceledWithAccess) {
       final d = planExpiresAt!;
-      expiryNote =
-          'Acceso hasta el ${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+      note = 'Acceso hasta el ${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+    } else if (isTrialing && trialEndsAt != null) {
+      note = daysLeft > 0 ? 'Te quedan $daysLeft día${daysLeft == 1 ? '' : 's'} de prueba' : 'El trial expira hoy';
     }
 
     return Container(
@@ -427,13 +466,13 @@ class _PlanActualBanner extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       color: cs.onPrimaryContainer),
                 ),
-                if (expiryNote != null) ...[
+                if (note != null) ...[
                   const SizedBox(height: 2),
                   Text(
-                    expiryNote,
+                    note,
                     style: TextStyle(
                         fontSize: 12,
-                        color: Colors.orange.shade800,
+                        color: isTrialing ? Colors.blue.shade800 : Colors.orange.shade800,
                         fontWeight: FontWeight.w500),
                   ),
                 ],
@@ -462,6 +501,118 @@ class _PlanActualBanner extends StatelessWidget {
         'ultra' => 'Ultra',
         _ => id,
       };
+}
+
+// ── Banner trial a punto de expirar ──────────────────────────────────────────
+
+class _TrialExpiringSoonBanner extends StatelessWidget {
+  final DateTime trialEndsAt;
+  final VoidCallback onContratar;
+  const _TrialExpiringSoonBanner({required this.trialEndsAt, required this.onContratar});
+
+  @override
+  Widget build(BuildContext context) {
+    final daysLeft = trialEndsAt.difference(DateTime.now()).inDays + 1;
+    final mensaje = daysLeft > 0
+        ? 'Tu prueba gratuita termina en $daysLeft día${daysLeft == 1 ? '' : 's'}.'
+        : 'Tu prueba gratuita termina hoy.';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        border: Border.all(color: Colors.blue.shade300),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.hourglass_bottom_rounded, color: Colors.blue.shade700),
+              const SizedBox(width: 8),
+              Text(
+                'El trial está a punto de terminar',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: Colors.blue.shade700,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$mensaje Elige un plan para no perder el acceso.',
+            style: TextStyle(color: Colors.blue.shade800, fontSize: 13),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onContratar,
+              icon: const Icon(Icons.credit_card, size: 18),
+              label: const Text('Contratar plan Basic'),
+              style: FilledButton.styleFrom(backgroundColor: Colors.blue.shade600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Banner pago fallido ───────────────────────────────────────────────────────
+
+class _PastDueBanner extends StatelessWidget {
+  final VoidCallback onActualizar;
+  const _PastDueBanner({required this.onActualizar});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        border: Border.all(color: Colors.red.shade300),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: Colors.red.shade700),
+              const SizedBox(width: 8),
+              Text(
+                'Pago no procesado',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: Colors.red.shade700,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'No se pudo cobrar tu suscripción. Actualiza tu método de pago para mantener el acceso.',
+            style: TextStyle(color: Colors.red.shade800, fontSize: 13),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onActualizar,
+              icon: const Icon(Icons.credit_card, size: 18),
+              label: const Text('Actualizar método de pago'),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ── Tarjeta de plan ───────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -303,6 +304,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           } else if (next.errorCode == 'EMAIL_NOT_VERIFIED') {
             setState(() => _errorMessage =
                 'Debes verificar tu email antes de continuar. Revisa tu bandeja de entrada.');
+          } else if (next.errorCode == 'TRIAL_EXPIRED') {
+            setState(() => _errorMessage =
+                'Tu período de prueba de 14 días ha expirado. Elige un plan para seguir usando Centerly.');
           } else {
             setState(() => _errorMessage = message);
           }
@@ -346,10 +350,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                 // Marca
                 Center(
-                  child: Icon(
-                    Icons.storefront_rounded,
-                    size: 42,
-                    color: colorScheme.primary,
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 72,
+                    height: 72,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -467,7 +471,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         },
                         validator: _validatePassword,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
+
+                      // Olvidó contraseña
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => const ForgotPasswordScreen(),
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(0, 36),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text(
+                            '¿Olvidaste tu contraseña?',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
 
                       // Mantener sesión
                       GestureDetector(

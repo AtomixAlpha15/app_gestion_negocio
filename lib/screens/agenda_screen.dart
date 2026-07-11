@@ -9,6 +9,7 @@ import '../providers/bonos_provider.dart';
 import '../providers/extras_servicio_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/app_database.dart';
+import '../services/notification_service.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/responsive.dart';
 import '../widgets/custom_nav.dart';
@@ -940,13 +941,13 @@ class _AgendaVisualState extends State<AgendaVisual> {
                                     horizontal: 6,
                                     vertical: 4,
                                   ),
-                                  child: Builder(
-                                    builder: (ctx) {
-                                      final narrowWidth = cWidth ?? 80;
+                                  child: LayoutBuilder(
+                                    builder: (ctx, cardConstraints) {
+                                      final availableWidth = cardConstraints.maxWidth;
                                       final hora = horaFormato.split(' - ')[0];
 
-                                      // Tres niveles de layout según espacio disponible
-                                      if (narrowWidth < 60) {
+                                      // Tres niveles de layout según espacio disponible real
+                                      if (availableWidth < 60) {
                                         // Muy estrecho: solo hora
                                         return Center(
                                           child: Text(
@@ -960,7 +961,7 @@ class _AgendaVisualState extends State<AgendaVisual> {
                                             overflow: TextOverflow.ellipsis,
                                           ),
                                         );
-                                      } else if (narrowWidth < 100) {
+                                      } else if (availableWidth < 100) {
                                         // Estrecho: cliente sobre hora
                                         return Column(
                                           mainAxisAlignment: MainAxisAlignment.center,
@@ -990,8 +991,8 @@ class _AgendaVisualState extends State<AgendaVisual> {
                                             ),
                                           ],
                                         );
-                                      } else if (narrowWidth < 160) {
-                                        // Medio: cliente / servicio+hora
+                                      } else if (availableWidth < 200) {
+                                        // Medio: cliente / servicio+hora en columna
                                         return Column(
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1026,7 +1027,7 @@ class _AgendaVisualState extends State<AgendaVisual> {
                                         );
                                       }
 
-                                      // Ancho: todo en línea
+                                      // Ancho: todo en línea (cliente · servicio · hora)
                                       return Row(
                                         children: [
                                           Flexible(
@@ -1556,6 +1557,7 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                             final anio = widget.cita!.inicio.year;
                             await citasProv.eliminarCita(citaId, anio: anio);
                             await bonosProv.eliminarConsumoPorCita(citaId);
+                            await NotificationService.instance.cancelCitaReminder(citaId);
                             if (context.mounted) Navigator.pop(context, true);
                           }
                         },
@@ -1591,6 +1593,13 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
 
                         final citasProv = context.read<CitasProvider>();
                         final bonosProv = context.read<BonosProvider>();
+
+                        // Capturar valores de notificaciones antes del primer await
+                        final notifCitasOn = context.read<SettingsProvider>().notifCitas;
+                        final notifClienteNombre = context.read<ClientesProvider>().clientes
+                            .firstWhereOrNull((c) => c.id == clienteId!)?.nombre ?? '';
+                        final notifServicioNombre = servicios
+                            .firstWhereOrNull((s) => s.id == servicioId!)?.nombre ?? '';
 
                         double precioFinal = precioBase;
                         String? metodoPagoFinal = metodoPago;
@@ -1640,6 +1649,19 @@ class _NuevaCitaDialogState extends State<NuevaCitaDialog> {
                           if (hayBonoDisponible) {
                             await bonosProv.consumirSesion(bonoActivo.id, citaId, DateTime.now());
                           }
+                        }
+
+                        // Gestión de recordatorio de cita (sin acceder a context tras await)
+                        if (editando) {
+                          await NotificationService.instance.cancelCitaReminder(citaId);
+                        }
+                        if (notifCitasOn) {
+                          await NotificationService.instance.scheduleCitaReminder(
+                            citaId: citaId,
+                            clienteNombre: notifClienteNombre,
+                            servicioNombre: notifServicioNombre,
+                            inicio: inicio,
+                          );
                         }
 
                         await citasProv.cargarCitasAnio(widget.fecha.year);

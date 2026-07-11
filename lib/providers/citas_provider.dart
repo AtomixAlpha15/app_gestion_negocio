@@ -26,6 +26,7 @@ class CitasProvider extends ChangeNotifier {
       ..where((c) =>
         c.inicio.isBiggerOrEqualValue(ini) &
         c.inicio.isSmallerThanValue(fin) &
+        c.deleted.equals(false) &
         // metodoPago no nulo/ni vacío
         (c.metodoPago.isNotNull()) &
         c.metodoPago.isNotIn(['']) // evita string vacío
@@ -117,7 +118,7 @@ class CitasProvider extends ChangeNotifier {
 
     final q = db.select(db.citas)
       ..where((c) {
-        final base = c.inicio.isBiggerOrEqualValue(inicio) & c.inicio.isSmallerOrEqualValue(fin);
+        final base = c.inicio.isBiggerOrEqualValue(inicio) & c.inicio.isSmallerOrEqualValue(fin) & c.deleted.equals(false);
         if (establecimientoId == null || establecimientoId.isEmpty) return base;
         // Muestra citas del local activo + citas sin local asignado (datos legacy)
         return base & (c.establecimientoId.equals(establecimientoId) | c.establecimientoId.isNull());
@@ -256,7 +257,7 @@ class CitasProvider extends ChangeNotifier {
     final fin = DateTime(anio, 12, 31, 23, 59, 59);
 
     _todasLasCitas = await (db.select(db.citas)
-      ..where((c) => c.inicio.isBetweenValues(ini, fin)))
+      ..where((c) => c.inicio.isBetweenValues(ini, fin) & c.deleted.equals(false)))
       .get();
 
     notifyListeners();
@@ -278,7 +279,8 @@ Future<List<Cita>> ultimasCitasCliente(String clienteId, {int limit = 10}) async
   final q = (db.select(db.citas)
     ..where((c) =>
       c.clienteId.equals(clienteId) &
-      c.inicio.isSmallerThanValue(hoy) // 👈 SOLO citas pasadas
+      c.inicio.isSmallerThanValue(hoy) &
+      c.deleted.equals(false)
     )
     ..orderBy([
       (c) => d.OrderingTerm(expression: c.inicio, mode: d.OrderingMode.desc),
@@ -296,6 +298,7 @@ Future<List<Cita>> ultimasCitasCliente(String clienteId, {int limit = 10}) async
       SELECT COALESCE(SUM(precio), 0) AS total
       FROM citas
       WHERE cliente_id = ?1
+        AND deleted = 0
         AND metodo_pago IS NOT NULL
         AND metodo_pago <> ''
       ''',
@@ -315,12 +318,73 @@ Future<List<Cita>> impagosCliente(String clienteId) async {
   final q = db.select(db.citas)
     ..where((c) =>
       c.clienteId.equals(clienteId) &
-      c.inicio.isSmallerThanValue(hoy) &                     // <-- antes de hoy 00:00
-      (c.metodoPago.isNull() | c.metodoPago.equals(''))      // <-- sin pago
+      c.inicio.isSmallerThanValue(hoy) &
+      c.deleted.equals(false) &
+      (c.metodoPago.isNull() | c.metodoPago.equals(''))
     )
   ..orderBy([(c) => d.OrderingTerm.asc(c.inicio)]);
   return q.get();
 }
+
+  /// Cuenta y suma total de citas impagadas en toda la BD (para notificaciones).
+  Future<({int count, double total})> totalImpagosGlobal() async {
+    final now = DateTime.now();
+    final hoy = DateTime(now.year, now.month, now.day);
+
+    final rows = await db.customSelect(
+      '''
+      SELECT COUNT(*) AS cnt, COALESCE(SUM(precio), 0.0) AS total
+      FROM citas
+      WHERE deleted = 0
+        AND inicio < ?1
+        AND (metodo_pago IS NULL OR metodo_pago = '')
+      ''',
+      variables: [d.Variable<DateTime>(hoy)],
+    ).get();
+
+    if (rows.isEmpty) return (count: 0, total: 0.0);
+    final cnt   = rows.first.data['cnt'];
+    final total = rows.first.data['total'];
+    return (
+      count: (cnt is int) ? cnt : 0,
+      total: (total is num) ? total.toDouble() : 0.0,
+    );
+  }
+
+  /// Cuenta clientes con al menos una cita pasada cuya última cita fue
+  /// hace más de [dias] días (clientes inactivos).
+  Future<int> countClientesInactivos(int dias) async {
+    final now = DateTime.now();
+    final hoy    = DateTime(now.year, now.month, now.day);
+    final umbral = hoy.subtract(Duration(days: dias));
+
+    final rows = await db.customSelect(
+      '''
+      SELECT COUNT(*) AS cnt FROM clientes
+      WHERE deleted = 0
+        AND (
+          SELECT MAX(citas.inicio) FROM citas
+          WHERE citas.cliente_id = clientes.id
+            AND citas.deleted = 0
+            AND citas.inicio < ?1
+        ) IS NOT NULL
+        AND (
+          SELECT MAX(citas.inicio) FROM citas
+          WHERE citas.cliente_id = clientes.id
+            AND citas.deleted = 0
+            AND citas.inicio < ?1
+        ) < ?2
+      ''',
+      variables: [
+        d.Variable<DateTime>(hoy),
+        d.Variable<DateTime>(umbral),
+      ],
+    ).get();
+
+    if (rows.isEmpty) return 0;
+    final cnt = rows.first.data['cnt'];
+    return (cnt is int) ? cnt : 0;
+  }
 
   /// Total impagado por cliente
   Future<double> totalImpagosCliente(String clienteId) async {

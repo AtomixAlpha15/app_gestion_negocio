@@ -18,6 +18,7 @@ import 'services/app_database.dart';
 import 'services/api_service.dart';
 import 'services/backup_services.dart';
 import 'services/sync_service.dart';
+import 'services/notification_service.dart';
 import 'l10n/app_localizations.dart';
 
 class MyApp extends ConsumerStatefulWidget {
@@ -26,12 +27,13 @@ class MyApp extends ConsumerStatefulWidget {
   ConsumerState<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends ConsumerState<MyApp> {
+class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   SyncService? _syncService;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       final db = context.read<AppDatabase>();
@@ -55,6 +57,9 @@ class _MyAppState extends ConsumerState<MyApp> {
         onLoading: () {},
         onError: (_) {},
       );
+
+      // Chequeo inicial de notificaciones de negocio
+      _checkBusinessNotifications();
     });
   }
 
@@ -114,8 +119,55 @@ class _MyAppState extends ConsumerState<MyApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _stopSync(inDispose: true);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkBusinessNotifications();
+    }
+  }
+
+  Future<void> _checkBusinessNotifications() async {
+    if (!mounted) return;
+    // Solo ejecutar si hay sesión activa
+    bool isAuth = false;
+    ref.read(authStateProvider).when(
+      onAuthenticated: (_) => isAuth = true,
+      onUnauthenticated: () {},
+      onLoading: () {},
+      onError: (_) {},
+    );
+    if (!isAuth) return;
+
+    try {
+      final settings   = context.read<SettingsProvider>();
+      final citasProv  = context.read<CitasProvider>();
+      final ns         = NotificationService.instance;
+
+      if (settings.alertasImpagos) {
+        if (await ns.shouldShowToday('notif_impagos_date')) {
+          final (:count, :total) = await citasProv.totalImpagosGlobal();
+          if (count > 0) {
+            await ns.showImpagosNotif(count, total, settings.simboloMoneda);
+          }
+        }
+      }
+
+      if (settings.notifClientesInactivos) {
+        if (await ns.shouldShowToday('notif_inactivos_date')) {
+          final count = await citasProv.countClientesInactivos(settings.diasInactividad);
+          if (count > 0) {
+            await ns.showClientesInactivosNotif(count, settings.diasInactividad);
+          }
+        }
+      }
+    } catch (_) {
+      // Silenciar errores para no interrumpir el arranque de la app
+    }
   }
 
   @override

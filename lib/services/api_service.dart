@@ -121,6 +121,28 @@ class ApiService {
     return await _get('/auth/me');
   }
 
+  Future<void> forgotPassword(String email) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/forgot-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email}),
+      ).timeout(_kTimeout);
+
+      if (response.statusCode != 200) {
+        throw _parseError(response);
+      }
+    } on ApiException {
+      rethrow;
+    } on SocketException {
+      throw const ApiException('Sin conexión al servidor. Comprueba tu red.');
+    } on TimeoutException {
+      throw const ApiException('El servidor tardó demasiado. Comprueba tu red.');
+    } catch (e) {
+      throw ApiException('Error inesperado: $e');
+    }
+  }
+
   // Billing endpoints
   Future<Map<String, dynamic>> getSubscription() async {
     return await _get('/billing/subscription');
@@ -285,6 +307,13 @@ class ApiService {
           body['message'] as String? ?? 'Debes verificar tu email antes de iniciar sesión.',
           statusCode: 403,
           code: 'EMAIL_NOT_VERIFIED',
+        );
+      }
+      if (response.statusCode == 403 && raw == 'TRIAL_EXPIRED') {
+        return ApiException(
+          body['message'] as String? ?? 'Tu período de prueba ha expirado.',
+          statusCode: 403,
+          code: 'TRIAL_EXPIRED',
         );
       }
       if (response.statusCode == 403 && raw == 'PLAN_REQUIRED') {

@@ -122,8 +122,8 @@ class SyncRepository {
           'activo': true,
           'imagen_base64': imagenBase64,
           'deleted': r.deleted,
-          'created_at': r.createdAt?.toIso8601String(),
-          'updated_at': r.updatedAt?.toIso8601String(),
+          'created_at': r.createdAt?.toUtc().toIso8601String(),
+          'updated_at': r.updatedAt?.toUtc().toIso8601String(),
           'sync_id': r.syncId ?? r.id,
         },
       ));
@@ -147,8 +147,8 @@ class SyncRepository {
         'telefono': r.telefono,
         'es_default': r.esDefault,
         'deleted': r.deleted,
-        'created_at': r.createdAt?.toIso8601String(),
-        'updated_at': r.updatedAt?.toIso8601String(),
+        'created_at': r.createdAt?.toUtc().toIso8601String(),
+        'updated_at': r.updatedAt?.toUtc().toIso8601String(),
         'sync_id': r.syncId ?? r.id,
       },
     )).toList();
@@ -177,8 +177,8 @@ class SyncRepository {
           'notas': r.notas,
           'imagen_base64': imagenBase64,
           'deleted': r.deleted,
-          'created_at': r.createdAt?.toIso8601String(),
-          'updated_at': r.updatedAt?.toIso8601String(),
+          'created_at': r.createdAt?.toUtc().toIso8601String(),
+          'updated_at': r.updatedAt?.toUtc().toIso8601String(),
           'sync_id': r.syncId ?? r.id,
         },
       ));
@@ -210,8 +210,8 @@ class SyncRepository {
           'activo': true,
           'imagen_base64': imagenBase64,
           'deleted': r.deleted,
-          'created_at': r.createdAt?.toIso8601String(),
-          'updated_at': r.updatedAt?.toIso8601String(),
+          'created_at': r.createdAt?.toUtc().toIso8601String(),
+          'updated_at': r.updatedAt?.toUtc().toIso8601String(),
           'sync_id': r.syncId ?? r.id,
         },
       ));
@@ -234,7 +234,7 @@ class SyncRepository {
           'id': r.id,
           'cliente_id': r.clienteId,
           'servicio_id': r.servicioId,
-          'fecha': r.inicio.toIso8601String(),
+          'fecha': r.inicio.toUtc().toIso8601String(),
           'duracion_minutos': duracion,
           'precio': r.precio,
           'metodo_pago': r.metodoPago,
@@ -243,8 +243,8 @@ class SyncRepository {
           'trabajador': r.trabajador,
           'establecimiento_id': r.establecimientoId,
           'deleted': r.deleted,
-          'created_at': r.createdAt?.toIso8601String(),
-          'updated_at': r.updatedAt?.toIso8601String(),
+          'created_at': r.createdAt?.toUtc().toIso8601String(),
+          'updated_at': r.updatedAt?.toUtc().toIso8601String(),
           'sync_id': r.syncId ?? r.id,
         },
       );
@@ -272,12 +272,12 @@ class SyncRepository {
         'reconocimiento': r.reconocimiento,
         'precio': r.precioBono ?? 0.0,
         'metodo_pago': 'efectivo',
-        'fecha_compra': r.compradoEl.toIso8601String(),
-        'caduca_el': r.caducaEl?.toIso8601String(),
+        'fecha_compra': r.compradoEl.toUtc().toIso8601String(),
+        'caduca_el': r.caducaEl?.toUtc().toIso8601String(),
         'activo': r.activo,
         'deleted': r.deleted,
-        'created_at': r.createdAt?.toIso8601String(),
-        'updated_at': r.updatedAt?.toIso8601String(),
+        'created_at': r.createdAt?.toUtc().toIso8601String(),
+        'updated_at': r.updatedAt?.toUtc().toIso8601String(),
         'sync_id': r.syncId ?? r.id,
       },
     )).toList();
@@ -296,11 +296,11 @@ class SyncRepository {
         'id': r.id,
         'bono_id': r.bonoId,
         'cita_id': r.citaId,
-        'fecha': r.fecha.toIso8601String(),
+        'fecha': r.fecha.toUtc().toIso8601String(),
         'nota': r.nota,
         'deleted': r.deleted,
-        'created_at': r.createdAt?.toIso8601String(),
-        'updated_at': r.updatedAt?.toIso8601String(),
+        'created_at': r.createdAt?.toUtc().toIso8601String(),
+        'updated_at': r.updatedAt?.toUtc().toIso8601String(),
         'sync_id': r.syncId ?? r.id,
       },
     )).toList();
@@ -320,11 +320,11 @@ class SyncRepository {
         'bono_id': r.bonoId,
         'importe': r.importe,
         'metodo': r.metodo,
-        'fecha': r.fecha.toIso8601String(),
+        'fecha': r.fecha.toUtc().toIso8601String(),
         'nota': r.nota,
         'deleted': r.deleted,
-        'created_at': r.createdAt?.toIso8601String(),
-        'updated_at': r.updatedAt?.toIso8601String(),
+        'created_at': r.createdAt?.toUtc().toIso8601String(),
+        'updated_at': r.updatedAt?.toUtc().toIso8601String(),
         'sync_id': r.syncId ?? r.id,
       },
     )).toList();
@@ -345,8 +345,8 @@ class SyncRepository {
         'nombre': r.nombre,
         'precio': r.precio,
         'deleted': r.deleted,
-        'created_at': r.createdAt?.toIso8601String(),
-        'updated_at': r.updatedAt?.toIso8601String(),
+        'created_at': r.createdAt?.toUtc().toIso8601String(),
+        'updated_at': r.updatedAt?.toUtc().toIso8601String(),
         'sync_id': r.syncId ?? r.id,
       },
     )).toList();
@@ -365,8 +365,8 @@ class SyncRepository {
         'cita_id': r.citaId,
         'extra_id': r.extraId,
         'deleted': r.deleted,
-        'created_at': r.createdAt?.toIso8601String(),
-        'updated_at': r.updatedAt?.toIso8601String(),
+        'created_at': r.createdAt?.toUtc().toIso8601String(),
+        'updated_at': r.updatedAt?.toUtc().toIso8601String(),
         'sync_id': r.syncId ?? '${r.citaId}_${r.extraId}',
       },
     )).toList();
@@ -385,11 +385,11 @@ class SyncRepository {
         'id': r.id,
         'concepto': r.concepto,
         'precio': r.precio,
-        'fecha': r.fecha.toIso8601String(),
+        'fecha': r.fecha.toUtc().toIso8601String(),
         'establecimiento_id': r.establecimientoId,
         'deleted': r.deleted,
-        'created_at': r.createdAt?.toIso8601String(),
-        'updated_at': r.updatedAt?.toIso8601String(),
+        'created_at': r.createdAt?.toUtc().toIso8601String(),
+        'updated_at': r.updatedAt?.toUtc().toIso8601String(),
         'sync_id': r.syncId ?? r.id,
       },
     )).toList();
@@ -409,12 +409,12 @@ class SyncRepository {
         'concepto': r.concepto,
         'precio': r.precio,
         'frecuencia_meses': r.frecuenciaMeses,
-        'fecha_inicio': r.fechaInicio.toIso8601String(),
-        'fecha_fin': r.fechaFin?.toIso8601String(),
+        'fecha_inicio': r.fechaInicio.toUtc().toIso8601String(),
+        'fecha_fin': r.fechaFin?.toUtc().toIso8601String(),
         'establecimiento_id': r.establecimientoId,
         'deleted': r.deleted,
-        'created_at': r.createdAt?.toIso8601String(),
-        'updated_at': r.updatedAt?.toIso8601String(),
+        'created_at': r.createdAt?.toUtc().toIso8601String(),
+        'updated_at': r.updatedAt?.toUtc().toIso8601String(),
         'sync_id': r.syncId ?? r.id,
       },
     )).toList();
@@ -474,8 +474,8 @@ class SyncRepository {
       esDefault: Value(d['es_default'] ?? false),
       deleted: Value(d['deleted'] ?? false),
       syncId: Value(d['sync_id']),
-      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
-      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']) : DateTime.now()),
+      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']).toLocal() : DateTime.now()),
+      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']).toLocal() : DateTime.now()),
     );
     await db.into(db.establecimientos).insertOnConflictUpdate(companion);
   }
@@ -501,8 +501,8 @@ class SyncRepository {
       imagenPath: imagenPathValue,
       deleted: Value(d['deleted'] ?? false),
       syncId: Value(d['sync_id']),
-      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
-      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']) : DateTime.now()),
+      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']).toLocal() : DateTime.now()),
+      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']).toLocal() : DateTime.now()),
     );
     await db.into(db.clientes).insertOnConflictUpdate(companion);
   }
@@ -528,15 +528,15 @@ class SyncRepository {
       imagenPath: imagenPathValue,
       deleted: Value(d['deleted'] ?? false),
       syncId: Value(d['sync_id']),
-      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
-      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']) : DateTime.now()),
+      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']).toLocal() : DateTime.now()),
+      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']).toLocal() : DateTime.now()),
     );
     await db.into(db.servicios).insertOnConflictUpdate(companion);
   }
 
   Future<void> _applyCita(SyncChange change) async {
     final d = change.data;
-    final inicio = DateTime.parse(d['fecha']);
+    final inicio = DateTime.parse(d['fecha']).toLocal();
     final duracion = d['duracion_minutos'] as int? ?? 60;
     final fin = inicio.add(Duration(minutes: duracion));
     final companion = CitasCompanion(
@@ -553,8 +553,8 @@ class SyncRepository {
       establecimientoId: Value(d['establecimiento_id'] as String?),
       deleted: Value(d['deleted'] ?? false),
       syncId: Value(d['sync_id']),
-      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
-      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']) : DateTime.now()),
+      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']).toLocal() : DateTime.now()),
+      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']).toLocal() : DateTime.now()),
     );
     await db.into(db.citas).insertOnConflictUpdate(companion);
   }
@@ -581,15 +581,15 @@ class SyncRepository {
       sesionesUsadas: Value(d['sesiones_usadas'] ?? 0),
       precioBono: Value(d['precio'] != null ? _toDouble(d['precio']) : null),
       compradoEl: d['fecha_compra'] != null
-          ? Value(DateTime.parse(d['fecha_compra']))
+          ? Value(DateTime.parse(d['fecha_compra']).toLocal())
           : const Value.absent(),
-      caducaEl: Value(d['caduca_el'] != null ? DateTime.parse(d['caduca_el']) : null),
+      caducaEl: Value(d['caduca_el'] != null ? DateTime.parse(d['caduca_el']).toLocal() : null),
       reconocimiento: Value(d['reconocimiento'] ?? 'prorrateado'),
       activo: Value(d['activo'] ?? true),
       deleted: Value(d['deleted'] ?? false),
       syncId: Value(d['sync_id']),
-      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
-      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']) : DateTime.now()),
+      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']).toLocal() : DateTime.now()),
+      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']).toLocal() : DateTime.now()),
     );
     await db.into(db.bonos).insertOnConflictUpdate(companion);
   }
@@ -600,12 +600,12 @@ class SyncRepository {
       id: Value(d['id']),
       bonoId: Value(d['bono_id']),
       citaId: Value(d['cita_id']),
-      fecha: Value(d['fecha'] != null ? DateTime.parse(d['fecha']) : DateTime.now()),
+      fecha: Value(d['fecha'] != null ? DateTime.parse(d['fecha']).toLocal() : DateTime.now()),
       nota: Value(d['nota']),
       deleted: Value(d['deleted'] ?? false),
       syncId: Value(d['sync_id']),
-      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
-      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']) : DateTime.now()),
+      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']).toLocal() : DateTime.now()),
+      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']).toLocal() : DateTime.now()),
     );
     await db.into(db.bonoConsumos).insertOnConflictUpdate(companion);
   }
@@ -617,12 +617,12 @@ class SyncRepository {
       bonoId: Value(d['bono_id']),
       importe: Value(_toDouble(d['importe'])),
       metodo: Value(d['metodo']),
-      fecha: Value(d['fecha'] != null ? DateTime.parse(d['fecha']) : DateTime.now()),
+      fecha: Value(d['fecha'] != null ? DateTime.parse(d['fecha']).toLocal() : DateTime.now()),
       nota: Value(d['nota']),
       deleted: Value(d['deleted'] ?? false),
       syncId: Value(d['sync_id']),
-      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
-      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']) : DateTime.now()),
+      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']).toLocal() : DateTime.now()),
+      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']).toLocal() : DateTime.now()),
     );
     await db.into(db.bonoPagos).insertOnConflictUpdate(companion);
   }
@@ -636,8 +636,8 @@ class SyncRepository {
       precio: Value(_toDouble(d['precio'])),
       deleted: Value(d['deleted'] ?? false),
       syncId: Value(d['sync_id']),
-      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
-      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']) : DateTime.now()),
+      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']).toLocal() : DateTime.now()),
+      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']).toLocal() : DateTime.now()),
     );
     await db.into(db.extrasServicio).insertOnConflictUpdate(companion);
   }
@@ -649,8 +649,8 @@ class SyncRepository {
       extraId: Value(d['extra_id']),
       deleted: Value(d['deleted'] ?? false),
       syncId: Value(d['sync_id']),
-      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
-      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']) : DateTime.now()),
+      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']).toLocal() : DateTime.now()),
+      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']).toLocal() : DateTime.now()),
     );
     await db.into(db.extrasCita).insertOnConflictUpdate(companion);
   }
@@ -661,12 +661,12 @@ class SyncRepository {
       id: Value(d['id']),
       concepto: Value(d['concepto'] ?? ''),
       precio: Value(_toDouble(d['precio'])),
-      fecha: Value(d['fecha'] != null ? DateTime.parse(d['fecha']) : DateTime.now()),
+      fecha: Value(d['fecha'] != null ? DateTime.parse(d['fecha']).toLocal() : DateTime.now()),
       establecimientoId: Value(d['establecimiento_id'] as String?),
       deleted: Value(d['deleted'] ?? false),
       syncId: Value(d['sync_id']),
-      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
-      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']) : DateTime.now()),
+      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']).toLocal() : DateTime.now()),
+      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']).toLocal() : DateTime.now()),
     );
     await db.into(db.gastos).insertOnConflictUpdate(companion);
   }
@@ -678,13 +678,13 @@ class SyncRepository {
       concepto: Value(d['concepto'] ?? ''),
       precio: Value(_toDouble(d['precio'])),
       frecuenciaMeses: Value((d['frecuencia_meses'] as num?)?.toInt() ?? 1),
-      fechaInicio: Value(d['fecha_inicio'] != null ? DateTime.parse(d['fecha_inicio']) : DateTime.now()),
-      fechaFin: Value(d['fecha_fin'] != null ? DateTime.parse(d['fecha_fin']) : null),
+      fechaInicio: Value(d['fecha_inicio'] != null ? DateTime.parse(d['fecha_inicio']).toLocal() : DateTime.now()),
+      fechaFin: Value(d['fecha_fin'] != null ? DateTime.parse(d['fecha_fin']).toLocal() : null),
       establecimientoId: Value(d['establecimiento_id'] as String?),
       deleted: Value(d['deleted'] ?? false),
       syncId: Value(d['sync_id']),
-      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']) : DateTime.now()),
-      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']) : DateTime.now()),
+      updatedAt: Value(d['updated_at'] != null ? DateTime.parse(d['updated_at']).toLocal() : DateTime.now()),
+      createdAt: Value(d['created_at'] != null ? DateTime.parse(d['created_at']).toLocal() : DateTime.now()),
     );
     await db.into(db.gastosFijos).insertOnConflictUpdate(companion);
   }
