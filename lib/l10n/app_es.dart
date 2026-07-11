@@ -263,7 +263,7 @@ class AppLocalizationsEs extends AppLocalizations {
   @override String get settingsSecondaryPreview => 'Secundario';
   @override String get settingsTertiaryPreview => 'Terciario';
   @override String get settingsSurfacePreview => 'Surface';
-  @override String get settingsEmployeesDesc => 'Para agendas por empleado (próximamente)';
+  @override String get settingsEmployeesDesc => 'Para agendas por empleado';
   @override String get settingsInactiveDaysLabel => 'Días sin visita';
   @override String get settingsInactiveClientsDesc => '';
   @override String get settingsAlertUnpaidDesc => 'Avisar cuando un cliente tiene pagos pendientes';

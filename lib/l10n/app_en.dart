@@ -263,7 +263,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override String get settingsSecondaryPreview => 'Secondary';
   @override String get settingsTertiaryPreview => 'Tertiary';
   @override String get settingsSurfacePreview => 'Surface';
-  @override String get settingsEmployeesDesc => 'For per-employee scheduling (coming soon)';
+  @override String get settingsEmployeesDesc => 'For per-employee scheduling';
   @override String get settingsInactiveDaysLabel => 'Days without visit';
   @override String get settingsInactiveClientsDesc => '';
   @override String get settingsAlertUnpaidDesc => 'Alert when a client has pending payments';

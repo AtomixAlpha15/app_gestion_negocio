@@ -849,35 +849,35 @@ class IngresosTab extends StatelessWidget {
           );
         }
 
-        return ListView.builder(
-          itemCount: movsFiltrados.length + 1,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: scheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                  child: Row(
-                    children: [
-                      Expanded(flex: 2, child: Text(AppLocalizations.of(context).labelDate, style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
-                      Expanded(flex: 3, child: Text(AppLocalizations.of(context).agendaClient, style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
-                      Expanded(flex: 3, child: Text(AppLocalizations.of(context).accountingDescription, style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
-                      Expanded(flex: 2, child: Text(AppLocalizations.of(context).labelPrice, style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
-                      Expanded(child: Center(child: Icon(Icons.money, size: 16, color: scheme.onSecondaryContainer))),
-                      Expanded(child: Center(child: Icon(Icons.phone_android, size: 16, color: scheme.onSecondaryContainer))),
-                      Expanded(child: Center(child: Icon(Icons.credit_card, size: 16, color: scheme.onSecondaryContainer))),
-                    ],
-                  ),
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: scheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              );
-            }
-
-            final m = movsFiltrados[index - 1];
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                child: Row(
+                  children: [
+                    Expanded(flex: 2, child: Text(AppLocalizations.of(context).labelDate, style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
+                    Expanded(flex: 3, child: Text(AppLocalizations.of(context).agendaClient, style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
+                    Expanded(flex: 3, child: Text(AppLocalizations.of(context).accountingDescription, style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
+                    Expanded(flex: 2, child: Text(AppLocalizations.of(context).labelPrice, style: text.labelSmall?.copyWith(fontWeight: FontWeight.w600, color: scheme.onSecondaryContainer))),
+                    Expanded(child: Center(child: Icon(Icons.money, size: 16, color: scheme.onSecondaryContainer))),
+                    Expanded(child: Center(child: Icon(Icons.phone_android, size: 16, color: scheme.onSecondaryContainer))),
+                    Expanded(child: Center(child: Icon(Icons.credit_card, size: 16, color: scheme.onSecondaryContainer))),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+          itemCount: movsFiltrados.length,
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          itemBuilder: (context, index) {
+            final m = movsFiltrados[index];
             final clienteNombre = clientes.firstWhereOrNull((c) => c.id == m.clienteId)?.nombre ?? 'Cliente';
             final servicioNombre = (m.servicioId != null)
                 ? servicios.firstWhereOrNull((s) => s.id == m.servicioId)?.nombre
@@ -990,7 +990,10 @@ class IngresosTab extends StatelessWidget {
               ),
             );
           },
-        );
+        ),
+      ),
+    ],
+  );
       },
     );
   }
