@@ -1,10 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import '../services/api_service.dart';
+
+class HorarioDia {
+  final int inicioMin; // minutos desde medianoche (ej. 540 = 09:00)
+  final int finMin;
+  final bool cerrado;
+
+  const HorarioDia({
+    required this.inicioMin,
+    required this.finMin,
+    this.cerrado = false,
+  });
+
+  Map<String, dynamic> toJson() => {'ini': inicioMin, 'fin': finMin, 'cer': cerrado};
+
+  factory HorarioDia.fromJson(Map<String, dynamic> m) => HorarioDia(
+        inicioMin: (m['ini'] as num?)?.toInt() ?? 540,
+        finMin: (m['fin'] as num?)?.toInt() ?? 1140,
+        cerrado: (m['cer'] as bool?) ?? false,
+      );
+
+  static List<HorarioDia> defaults() => [
+        HorarioDia(inicioMin: 9 * 60, finMin: 19 * 60),  // Lun
+        HorarioDia(inicioMin: 9 * 60, finMin: 19 * 60),  // Mar
+        HorarioDia(inicioMin: 9 * 60, finMin: 19 * 60),  // Mié
+        HorarioDia(inicioMin: 9 * 60, finMin: 19 * 60),  // Jue
+        HorarioDia(inicioMin: 9 * 60, finMin: 19 * 60),  // Vie
+        HorarioDia(inicioMin: 10 * 60, finMin: 14 * 60), // Sáb
+        const HorarioDia(inicioMin: 0, finMin: 0, cerrado: true), // Dom
+      ];
+}
 
 class SettingsProvider extends ChangeNotifier {
   final String? userId;
@@ -55,6 +86,18 @@ class SettingsProvider extends ChangeNotifier {
 
   // --- MULTI-ESTABLECIMIENTO ---
   String establecimientoActualId = '';
+
+  // --- HORARIO LABORAL ---
+  List<HorarioDia> _horarioSemana = HorarioDia.defaults();
+
+  List<HorarioDia> get horarioSemana => List.unmodifiable(_horarioSemana);
+  HorarioDia horarioPara(int weekday) => _horarioSemana[(weekday - 1).clamp(0, 6)];
+
+  Future<void> setHorarioDia(int weekday, HorarioDia horario) async {
+    _horarioSemana[(weekday - 1).clamp(0, 6)] = horario;
+    await guardarAjustes();
+    notifyListeners();
+  }
 
   // --- NOTIFICACIONES ---
   bool alertasImpagos = true;
@@ -162,6 +205,8 @@ class SettingsProvider extends ChangeNotifier {
   static const _kColorSecundarioManual  = 'aj_color_secundario_manual';
   static const _kColorTerciarioManual   = 'aj_color_terciario_manual';
 
+  static const _kHorarioSemana          = 'aj_horario_semana';
+
   // ---------- CARGAR ----------
   Future<void> cargarAjustes() async {
     final prefs = await SharedPreferences.getInstance();
@@ -229,6 +274,18 @@ class SettingsProvider extends ChangeNotifier {
 
     establecimientoActualId = prefs.getString(_k('establecimientoActualId')) ?? '';
 
+    final horarioJson = prefs.getString(_k(_kHorarioSemana));
+    if (horarioJson != null) {
+      try {
+        final list = jsonDecode(horarioJson) as List;
+        if (list.length == 7) {
+          _horarioSemana = list
+              .map((e) => HorarioDia.fromJson(e as Map<String, dynamic>))
+              .toList();
+        }
+      } catch (_) {}
+    }
+
     notifyListeners();
   }
 
@@ -274,6 +331,10 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setInt(_k('intervaloBackupDias'), intervaloBackupDias);
     await prefs.setString(_k('ultimaFechaBackup'), ultimaFechaBackup?.toIso8601String() ?? '');
     await prefs.setString(_k('establecimientoActualId'), establecimientoActualId);
+    await prefs.setString(
+      _k(_kHorarioSemana),
+      jsonEncode(_horarioSemana.map((h) => h.toJson()).toList()),
+    );
 
     if (!_applyingFromServer) {
       _settingsLocalUpdatedAt = DateTime.now().toUtc();
@@ -522,6 +583,7 @@ class SettingsProvider extends ChangeNotifier {
     notifCitas = true;
     notifClientesInactivos = false;
     diasInactividad = 30;
+    _horarioSemana = HorarioDia.defaults();
 
     guardarAjustes();
     notifyListeners();
@@ -547,6 +609,7 @@ class SettingsProvider extends ChangeNotifier {
       'idioma': idioma,
       'formatoFecha': formatoFecha,
       'simboloMoneda': simboloMoneda,
+      'horarioSemana': _horarioSemana.map((h) => h.toJson()).toList(),
     };
   }
 
@@ -570,6 +633,12 @@ class SettingsProvider extends ChangeNotifier {
       idioma = _migrarIdioma((m['idioma'] ?? idioma) as String);
       formatoFecha = (m['formatoFecha'] ?? formatoFecha) as String;
       simboloMoneda = (m['simboloMoneda'] ?? simboloMoneda) as String;
+      final rawHorario = m['horarioSemana'];
+      if (rawHorario is List && rawHorario.length == 7) {
+        _horarioSemana = rawHorario
+            .map((e) => HorarioDia.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
       await guardarAjustes();
       notifyListeners();
     } finally {

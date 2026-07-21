@@ -59,12 +59,12 @@ class _EntityCardState extends State<EntityCard> {
         duration: const Duration(milliseconds: 160),
         curve: Curves.easeOut,
         transform: _hover
-            ? (Matrix4.identity()..translate(0.0, -4.0))
+            ? Matrix4.translationValues(0.0, -4.0, 0.0)
             : Matrix4.identity(),
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(_hover ? 0.18 : 0.08),
+              color: Colors.black.withValues(alpha: _hover ? 0.18 : 0.08),
               blurRadius: _hover ? 20 : 12,
               offset: const Offset(0, 8),
             ),
@@ -123,7 +123,7 @@ class _EntityCardState extends State<EntityCard> {
       child: InkWell(
         onTap: widget.onTap,
         borderRadius: BorderRadius.circular(12),
-        splashColor: scheme.primary.withOpacity(0.08),
+        splashColor: scheme.primary.withValues(alpha:0.08),
         highlightColor: Colors.transparent,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
@@ -144,16 +144,16 @@ class _EntityCardState extends State<EntityCard> {
                           )
                         : Container(
                             decoration: BoxDecoration(
-                              color: scheme.surfaceVariant,
+                              color: scheme.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: scheme.outlineVariant.withOpacity(0.6),
+                                color: scheme.outlineVariant.withValues(alpha:0.6),
                               ),
                             ),
                             child: Icon(
                               Icons.image_outlined,
                               size: 36,
-                              color: scheme.onSurfaceVariant.withOpacity(0.6),
+                              color: scheme.onSurfaceVariant.withValues(alpha:0.6),
                             ),
                           ),
                   ),
@@ -180,7 +180,7 @@ class _EntityCardState extends State<EntityCard> {
                 Text(
                   widget.subtitle!,
                   style: text.bodyMedium?.copyWith(
-                    color: scheme.onSecondaryContainer.withOpacity(0.9),
+                    color: scheme.onSecondaryContainer.withValues(alpha:0.9),
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,

@@ -60,6 +60,9 @@ class _AjustesBody extends ConsumerWidget {
         _SectionHeader(icon: Icons.business_outlined, label: loc.settingsCompany),
         const _TileEmpresa(),
         const SizedBox(height: 8),
+        _SectionHeader(icon: Icons.schedule_outlined, label: 'Horario laboral'),
+        const _TileHorario(),
+        const SizedBox(height: 8),
         if (plan == 'ultra') ...[
           _SectionHeader(icon: Icons.store_rounded, label: 'Locales'),
           const _TileLocales(),
@@ -351,7 +354,7 @@ class _SettingsCard extends StatelessWidget {
                 height: 1,
                 indent: 56,
                 endIndent: 16,
-                color: cs.outlineVariant.withOpacity(0.5),
+                color: cs.outlineVariant.withValues(alpha: 0.5),
               ),
           ],
         ],
@@ -550,17 +553,20 @@ class _TileApariencia extends StatelessWidget {
       context: context,
       builder: (_) => SimpleDialog(
         title: Text(loc.settingsFont),
-        children: fuentes
-            .map((f) => RadioListTile<String>(
-                  value: f,
-                  groupValue: s.fuente,
-                  title: Text(f),
-                  onChanged: (v) {
-                    s.setFuente(v!);
-                    Navigator.pop(context);
-                  },
-                ))
-            .toList(),
+        children: [
+          RadioGroup<String>(
+            groupValue: s.fuente,
+            onChanged: (v) {
+              if (v != null) s.setFuente(v);
+              Navigator.pop(context);
+            },
+            child: Column(
+              children: fuentes
+                  .map((f) => RadioListTile<String>(value: f, title: Text(f)))
+                  .toList(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -575,17 +581,20 @@ class _TileApariencia extends StatelessWidget {
       context: context,
       builder: (_) => SimpleDialog(
         title: Text(loc.settingsTextSize),
-        children: opciones
-            .map((o) => RadioListTile<double>(
-                  value: o.value,
-                  groupValue: s.tamanoFuente,
-                  title: Text(o.label),
-                  onChanged: (v) {
-                    s.setTamanoFuente(v!);
-                    Navigator.pop(context);
-                  },
-                ))
-            .toList(),
+        children: [
+          RadioGroup<double>(
+            groupValue: s.tamanoFuente,
+            onChanged: (v) {
+              if (v != null) s.setTamanoFuente(v);
+              Navigator.pop(context);
+            },
+            child: Column(
+              children: opciones
+                  .map((o) => RadioListTile<double>(value: o.value, title: Text(o.label)))
+                  .toList(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -936,7 +945,6 @@ class _NombresEmpleadosDialogState extends State<_NombresEmpleadosDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return AlertDialog(
       title: const Text('Nombres de empleados'),
       content: SizedBox(
@@ -1012,7 +1020,7 @@ class _EditableTile extends StatelessWidget {
         value.isEmpty ? hint : value,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: value.isEmpty
-                  ? cs.onSurfaceVariant.withOpacity(0.5)
+                  ? cs.onSurfaceVariant.withValues(alpha: 0.5)
                   : cs.onSurfaceVariant,
             ),
         maxLines: 1,
@@ -1221,17 +1229,20 @@ class _TileRegional extends StatelessWidget {
       context: context,
       builder: (_) => SimpleDialog(
         title: Text(title),
-        children: opciones
-            .map((o) => RadioListTile<T>(
-                  value: o.$1,
-                  groupValue: valorActual,
-                  title: Text(o.$2),
-                  onChanged: (v) {
-                    onSelected(v as T);
-                    Navigator.pop(context);
-                  },
-                ))
-            .toList(),
+        children: [
+          RadioGroup<T>(
+            groupValue: valorActual,
+            onChanged: (v) {
+              if (v != null) onSelected(v);
+              Navigator.pop(context);
+            },
+            child: Column(
+              children: opciones
+                  .map((o) => RadioListTile<T>(value: o.$1, title: Text(o.$2)))
+                  .toList(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1403,6 +1414,200 @@ class _TileSistema extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/* ─── 2b. HORARIO LABORAL ───────────────────────────────────────────────── */
+class _TileHorario extends StatelessWidget {
+  const _TileHorario();
+
+  static const _dias = [
+    'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo',
+  ];
+
+  String _minToHora(int min) =>
+      '${(min ~/ 60).toString().padLeft(2, '0')}:${(min % 60).toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.watch<SettingsProvider>();
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return _SettingsCard(
+      children: List.generate(7, (i) {
+        final horario = s.horarioSemana[i];
+        final weekday = i + 1;
+        return ListTile(
+          leading: SizedBox(
+            width: 40,
+            child: Text(
+              _dias[i].substring(0, 3),
+              style: tt.labelMedium?.copyWith(
+                color: cs.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          title: Text(_dias[i]),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                horario.cerrado
+                    ? 'Cerrado'
+                    : '${_minToHora(horario.inicioMin)} – ${_minToHora(horario.finMin)}',
+                style: tt.bodyMedium?.copyWith(
+                  color: horario.cerrado ? cs.onSurfaceVariant : cs.onSurface,
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+          onTap: () => _editarHorario(context, s, weekday, horario),
+        );
+      }),
+    );
+  }
+
+  Future<void> _editarHorario(
+    BuildContext context,
+    SettingsProvider s,
+    int weekday,
+    HorarioDia horario,
+  ) async {
+    await showDialog(
+      context: context,
+      builder: (_) => _HorarioDiaDialog(
+        diaNombre: _dias[weekday - 1],
+        horario: horario,
+        onSave: (nuevo) => s.setHorarioDia(weekday, nuevo),
+      ),
+    );
+  }
+}
+
+class _HorarioDiaDialog extends StatefulWidget {
+  final String diaNombre;
+  final HorarioDia horario;
+  final void Function(HorarioDia) onSave;
+
+  const _HorarioDiaDialog({
+    required this.diaNombre,
+    required this.horario,
+    required this.onSave,
+  });
+
+  @override
+  State<_HorarioDiaDialog> createState() => _HorarioDiaDialogState();
+}
+
+class _HorarioDiaDialogState extends State<_HorarioDiaDialog> {
+  late bool cerrado;
+  late TimeOfDay inicio;
+  late TimeOfDay fin;
+
+  @override
+  void initState() {
+    super.initState();
+    cerrado = widget.horario.cerrado;
+    inicio = TimeOfDay(
+      hour: widget.horario.inicioMin ~/ 60,
+      minute: widget.horario.inicioMin % 60,
+    );
+    fin = TimeOfDay(
+      hour: widget.horario.finMin ~/ 60,
+      minute: widget.horario.finMin % 60,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
+    return AlertDialog(
+      title: Text(widget.diaNombre),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SwitchListTile(
+            title: const Text('Día cerrado'),
+            value: cerrado,
+            onChanged: (v) => setState(() => cerrado = v),
+            contentPadding: EdgeInsets.zero,
+          ),
+          if (!cerrado) ...[
+            const Divider(),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () async {
+                      final picked = await showTimePicker(
+                          context: context, initialTime: inicio);
+                      if (picked != null) setState(() => inicio = picked);
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Apertura', style: tt.labelSmall),
+                        const SizedBox(height: 4),
+                        Text(
+                          inicio.format(context),
+                          style: tt.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () async {
+                      final picked = await showTimePicker(
+                          context: context, initialTime: fin);
+                      if (picked != null) setState(() => fin = picked);
+                    },
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('Cierre', style: tt.labelSmall),
+                        const SizedBox(height: 4),
+                        Text(
+                          fin.format(context),
+                          style: tt.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () {
+            widget.onSave(HorarioDia(
+              inicioMin: cerrado ? 0 : inicio.hour * 60 + inicio.minute,
+              finMin: cerrado ? 0 : fin.hour * 60 + fin.minute,
+              cerrado: cerrado,
+            ));
+            Navigator.pop(context);
+          },
+          child: const Text('Guardar'),
+        ),
+      ],
     );
   }
 }

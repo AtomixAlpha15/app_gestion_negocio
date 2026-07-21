@@ -151,6 +151,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
 
   Future<void> _eliminar() async {
     final localized = AppLocalizations.of(context);
+    final provider = context.read<ClientesProvider>();
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -166,7 +167,6 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
       ),
     );
     if (ok == true) {
-      final provider = context.read<ClientesProvider>();
       await provider.eliminarCliente(widget.cliente.id, imagenPath: widget.cliente.imagenPath);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -237,7 +237,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                               ? Image.file(File(imagenPath!)).image
                               : null,
                           child: (imagenPath == null || imagenPath!.isEmpty)
-                              ? Icon(Icons.person, size: 64, color: scheme.onSecondaryContainer.withOpacity(0.6))
+                              ? Icon(Icons.person, size: 64, color: scheme.onSecondaryContainer.withValues(alpha:0.6))
                               : null,
                         ),
                         const SizedBox(height: 16),
@@ -294,7 +294,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                       _totalChip(context,
                                         label: localized.dashUnpaidTotal,
                                         value: context.read<SettingsProvider>().formatCurrency(data.totalImpagos),
-                                        bg: data.totalImpagos > 0 ? scheme.tertiaryContainer : scheme.surfaceVariant,
+                                        bg: data.totalImpagos > 0 ? scheme.tertiaryContainer : scheme.surfaceContainerHighest,
                                         fg: data.totalImpagos > 0 ? scheme.onTertiaryContainer : scheme.onSurfaceVariant,
                                       ),
                                     ],
@@ -415,7 +415,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                                     style: text.bodyMedium?.copyWith(color: scheme.onTertiaryContainer)),
                                                 subtitle: Text(s.formatDateTime(c.inicio),
                                                     style: text.bodySmall?.copyWith(
-                                                        color: scheme.onTertiaryContainer.withOpacity(0.9))),
+                                                        color: scheme.onTertiaryContainer.withValues(alpha:0.9))),
                                                 trailing: FilledButton.tonal(
                                                   onPressed: () async {
                                                     await context.read<CitasProvider>().actualizarCita(
@@ -547,7 +547,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                   ? Image.file(File(imagenPath!)).image
                   : null,
               child: (imagenPath == null || imagenPath!.isEmpty)
-                  ? Icon(Icons.person, size: 48, color: scheme.onSurfaceVariant.withOpacity(0.6))
+                  ? Icon(Icons.person, size: 48, color: scheme.onSurfaceVariant.withValues(alpha:0.6))
                   : null,
             ),
           ),
@@ -596,7 +596,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                     _totalChip(context,
                       label: localized.dashUnpaidTotal,
                       value: context.read<SettingsProvider>().formatCurrency(data.totalImpagos),
-                      bg: data.totalImpagos > 0 ? scheme.tertiaryContainer : scheme.surfaceVariant,
+                      bg: data.totalImpagos > 0 ? scheme.tertiaryContainer : scheme.surfaceContainerHighest,
                       fg: data.totalImpagos > 0 ? scheme.onTertiaryContainer : scheme.onSurfaceVariant,
                     ),
                   ],
@@ -675,7 +675,7 @@ class _FichaClienteScreenState extends State<FichaClienteScreen> {
                                   style: text.bodyMedium?.copyWith(color: scheme.onTertiaryContainer)),
                               subtitle: Text(s.formatDateTime(c.inicio),
                                   style: text.bodySmall?.copyWith(
-                                      color: scheme.onTertiaryContainer.withOpacity(0.9))),
+                                      color: scheme.onTertiaryContainer.withValues(alpha:0.9))),
                               trailing: FilledButton.tonal(
                                 onPressed: () async {
                                   await context.read<CitasProvider>().actualizarCita(
@@ -829,7 +829,7 @@ class _DialogCrearBonoState extends State<_DialogCrearBono> {
           mainAxisSize: MainAxisSize.min,
           children: [
             DropdownButtonFormField<String>(
-              value: servicioId,
+              initialValue: servicioId,
               items: servicios.map((s) =>
                 DropdownMenuItem(value: s.id, child: Text(s.nombre))).toList(),
               onChanged: (v) => setState(() => servicioId = v),

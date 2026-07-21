@@ -24,7 +24,8 @@ class _ClientesScreenState extends State<ClientesScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => context.read<ClientesProvider>().cargarClientes());
+    final provider = context.read<ClientesProvider>();
+    Future.microtask(provider.cargarClientes);
   }
 
   String _norm(String s) {

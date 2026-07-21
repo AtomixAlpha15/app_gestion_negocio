@@ -32,8 +32,6 @@ class AgendaScreen extends StatefulWidget {
 
 class _AgendaScreenState extends State<AgendaScreen> {
   DateTime fechaSeleccionada = DateTime.now();
-  TimeOfDay horaInicio = const TimeOfDay(hour: 8, minute: 0);
-  TimeOfDay horaFin = const TimeOfDay(hour: 20, minute: 0);
   late SettingsProvider _settingsRef;
 
   // Día izquierdo
@@ -198,10 +196,31 @@ class _AgendaScreenState extends State<AgendaScreen> {
   ) {
     final settings = context.read<SettingsProvider>();
     final numT = settings.numeroEmpleados;
+
+    // Rango basado en el horario de ESTE día, expandido por sus propias citas
+    final horario = settings.horarioPara(fecha.weekday);
+    TimeOfDay iniDia = horario.cerrado
+        ? const TimeOfDay(hour: 8, minute: 0)
+        : TimeOfDay(hour: horario.inicioMin ~/ 60, minute: horario.inicioMin % 60);
+    TimeOfDay finDia = horario.cerrado
+        ? const TimeOfDay(hour: 20, minute: 0)
+        : TimeOfDay(hour: horario.finMin ~/ 60, minute: horario.finMin % 60);
+
+    for (final cita in citas) {
+      final citaIni = cita.inicio.hour * 60 + cita.inicio.minute;
+      final citaFin = cita.fin.hour * 60 + cita.fin.minute;
+      if (citaIni < iniDia.hour * 60 + iniDia.minute) {
+        iniDia = TimeOfDay(hour: cita.inicio.hour, minute: 0);
+      }
+      if (citaFin > finDia.hour * 60 + finDia.minute) {
+        finDia = TimeOfDay(hour: ((citaFin + 59) ~/ 60).clamp(0, 23), minute: 0);
+      }
+    }
+
     return AgendaVisual(
       fecha: fecha,
-      horaInicio: horaInicio,
-      horaFin: horaFin,
+      horaInicio: iniDia,
+      horaFin: finDia,
       citas: citas,
       servicioYExtrasPorCita: extras,
       zoom: _zoom,
@@ -295,46 +314,6 @@ class _AgendaScreenState extends State<AgendaScreen> {
               ],
             ),
           ),
-          if (!mobile) ...[
-            const SizedBox(width: 16),
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 12),
-                    child: Text('${AppLocalizations.of(context).labelTime}:', style: text.labelSmall?.copyWith(color: scheme.onSurface)),
-                  ),
-                  TextButton(
-                    onPressed: () async {
-                      final hora = await showTimePicker(context: context, initialTime: horaInicio);
-                      if (hora != null) setState(() => horaInicio = hora);
-                    },
-                    child: Text(
-                      horaInicio.format(context),
-                      style: text.labelMedium?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Text('–', style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant)),
-                  TextButton(
-                    onPressed: () async {
-                      final hora = await showTimePicker(context: context, initialTime: horaFin);
-                      if (hora != null) setState(() => horaFin = hora);
-                    },
-                    child: Text(
-                      horaFin.format(context),
-                      style: text.labelMedium?.copyWith(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
           const SizedBox(width: 16),
           const UserAvatarAction(),
         ],
@@ -392,11 +371,18 @@ class _AgendaScreenState extends State<AgendaScreen> {
         onPressed: () async {
           final settings = context.read<SettingsProvider>();
           final estId = settings.establecimientoActualId;
+          final horario = settings.horarioPara(fechaSeleccionada.weekday);
+          final horaInicial = horario.cerrado
+              ? const TimeOfDay(hour: 9, minute: 0)
+              : TimeOfDay(
+                  hour: horario.inicioMin ~/ 60,
+                  minute: horario.inicioMin % 60,
+                );
           final result = await showDialog(
             context: context,
             builder: (_) => NuevaCitaDialog(
               fecha: fechaSeleccionada,
-              horaInicial: horaInicio,
+              horaInicial: horaInicial,
               establecimientoId: estId.isNotEmpty ? estId : null,
               nombresEmpleados: settings.nombresEmpleados,
             ),
@@ -425,6 +411,7 @@ class _DiaHeader extends StatelessWidget {
     final label = settings.idioma == 'en'
         ? '$diaSemana ${mesNombre[0].toUpperCase()}${mesNombre.substring(1)} ${fecha.day}'
         : '$diaSemana ${fecha.day} de $mesNombre';
+    final cerrado = settings.horarioPara(fecha.weekday).cerrado;
 
     return Container(
       width: double.infinity,
@@ -462,6 +449,23 @@ class _DiaHeader extends StatelessWidget {
               letterSpacing: 0.5,
             ),
           ),
+          if (cerrado) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: scheme.errorContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                'Cerrado',
+                style: text.labelSmall?.copyWith(
+                  color: scheme.onErrorContainer,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -526,10 +530,9 @@ class _AgendaVisualState extends State<AgendaVisual> {
   bool _sobreVacio = false;
 
   // Tap preview state (mobile)
-  double? _tapPreviewY;
   DateTime? _tapPreviewInicio;
   DateTime? _tapPreviewFin;
-  int _tapPreviewTrabajador = 1;
+  final int _tapPreviewTrabajador = 1;
 
   // Drag state
   Cita? _citaDrag;
@@ -789,7 +792,6 @@ class _AgendaVisualState extends State<AgendaVisual> {
                           onTap: () {
                             widget.onCrearCita?.call(ini, fin, _tapPreviewTrabajador);
                             setState(() {
-                              _tapPreviewY = null;
                               _tapPreviewInicio = null;
                               _tapPreviewFin = null;
                             });
@@ -885,7 +887,6 @@ class _AgendaVisualState extends State<AgendaVisual> {
                             _dragCurrentY = top + d.localPosition.dy;
                             _hoverY = null;
                             _sobreVacio = false;
-                            _tapPreviewY = null;
                             _tapPreviewInicio = null;
                             _tapPreviewFin = null;
                           });
@@ -1142,7 +1143,6 @@ class _AgendaVisualState extends State<AgendaVisual> {
                     final x = details.localPosition.dx;
                     if (x <= labelW || y <= _padTop || y >= totalH - _padBot) {
                       setState(() {
-                        _tapPreviewY = null;
                         _tapPreviewInicio = null;
                         _tapPreviewFin = null;
                       });
@@ -1160,7 +1160,6 @@ class _AgendaVisualState extends State<AgendaVisual> {
                       if (y >= previewTop && y <= previewBot) {
                         widget.onCrearCita?.call(_tapPreviewInicio!, _tapPreviewFin!, _tapPreviewTrabajador);
                         setState(() {
-                          _tapPreviewY = null;
                           _tapPreviewInicio = null;
                           _tapPreviewFin = null;
                         });
@@ -1176,7 +1175,6 @@ class _AgendaVisualState extends State<AgendaVisual> {
                     final ini = DateTime(widget.fecha.year, widget.fecha.month,
                         widget.fecha.day, minAbs ~/ 60, minAbs % 60);
                     setState(() {
-                      _tapPreviewY = y;
                       _tapPreviewInicio = ini;
                       _tapPreviewFin = ini.add(const Duration(hours: 1));
                     });

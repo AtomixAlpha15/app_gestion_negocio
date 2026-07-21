@@ -546,6 +546,13 @@ class _GreetingCard extends StatelessWidget {
     return 'Buenas noches';
   }
 
+  IconData _icono() {
+    final h = DateTime.now().hour;
+    if (h < 12) return Icons.wb_sunny_rounded;
+    if (h < 20) return Icons.wb_twilight;
+    return Icons.nights_stay_rounded;
+  }
+
   String _fechaLarga(SettingsProvider settings) {
     final now = DateTime.now();
     final dayName = settings.weekdayAbbrev(now.weekday);
@@ -605,7 +612,7 @@ class _GreetingCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Icon(Icons.wb_sunny_rounded,
+              Icon(_icono(),
                   color: Colors.white.withValues(alpha: 0.85), size: 36),
               const SizedBox(height: 6),
               Text(
@@ -803,7 +810,7 @@ class _BarChartPainter extends CustomPainter {
     if (maxVal <= 0) return;
 
     // Calcular intervalo redondeado
-    double _roundInterval(double max) {
+    double roundInterval(double max) {
       if (max <= 0) return 100;
       final exp = (log(max) / ln10).floor();
       final base = pow(10, exp).toDouble();
@@ -815,7 +822,7 @@ class _BarChartPainter extends CustomPainter {
       return base;
     }
 
-    final interval = _roundInterval(maxVal);
+    final interval = roundInterval(maxVal);
     final roundedMax = ((maxVal / interval).ceil() * interval);
 
     final gridP = Paint()

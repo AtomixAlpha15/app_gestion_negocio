@@ -34,7 +34,8 @@ class _ServiciosScreenState extends State<ServiciosScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => context.read<ServiciosProvider>().cargarServicios());
+    final provider = context.read<ServiciosProvider>();
+    Future.microtask(provider.cargarServicios);
   }
 
   String _norm(String s) {
@@ -52,7 +53,7 @@ void _mostrarDialogoServicio({dynamic servicio}) {
     context: context,
     barrierDismissible: true,
     barrierLabel: 'Servicio',
-    barrierColor: Colors.black.withOpacity(0.35),
+    barrierColor: Colors.black.withValues(alpha:0.35),
     transitionDuration: const Duration(milliseconds: 220),
     pageBuilder: (_, __, ___) {
       return Center(
@@ -606,7 +607,7 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
                     ? FileImage(File(imagenPath!))
                     : null,
                 child: (imagenPath == null || imagenPath!.isEmpty)
-                    ? Icon(Icons.image, size: 44, color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6))
+                    ? Icon(Icons.image, size: 44, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha:0.6))
                     : null,
               ),
             ),
@@ -675,6 +676,7 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
             tooltip: localized.servicesDelete,
             icon: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
             onPressed: () async {
+              final serviciosProv = context.read<ServiciosProvider>();
               final ok = await showDialog<bool>(
                 context: context,
                 builder: (_) => AlertDialog(
@@ -687,7 +689,7 @@ class _ServicioDialogoState extends State<_ServicioDialogo> {
                 ),
               );
               if (ok == true) {
-                await context.read<ServiciosProvider>().eliminarServicio(widget.servicio.id);
+                await serviciosProv.eliminarServicio(widget.servicio.id);
                 if (context.mounted) Navigator.pop(context);
               }
             },

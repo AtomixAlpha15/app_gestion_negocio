@@ -25,7 +25,7 @@ class BonosProvider extends ChangeNotifier {
       id: Value(id),
       clienteId: Value(clienteId),
       servicioId: Value(servicioId),
-      nombre: Value(nombre ?? 'Bono ${sesiones} sesiones'),
+      nombre: Value(nombre ?? 'Bono $sesiones sesiones'),
       sesionesTotales: Value(sesiones),
       precioBono: Value(precioBono),
       caducaEl: Value(caducaEl),

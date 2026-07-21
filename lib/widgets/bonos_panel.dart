@@ -46,6 +46,8 @@ class _BonosPanelState extends State<BonosPanel> {
                   icon: const Icon(Icons.card_membership),
                   label: Text(l.bonosNew),
                   onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    final bg = scheme.secondaryContainer;
                     final creado = await showDialog<bool>(
                       context: context,
                       builder: (_) => _CrearBonoDialog(clienteId: clienteId),
@@ -54,10 +56,10 @@ class _BonosPanelState extends State<BonosPanel> {
                       setState(() {
                         _bonoSeleccionadoId = null; // resetea selección
                       });
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         SnackBar(
                           content: const Text('Bono creado'),
-                          backgroundColor: scheme.secondaryContainer,
+                          backgroundColor: bg,
                           behavior: SnackBarBehavior.floating,
                         ),
                       );
@@ -353,28 +355,28 @@ class _BonoFaceplate extends StatelessWidget {
                       icon: const Icon(Icons.delete_outline),
                       color: Theme.of(context).colorScheme.error,
                       onPressed: () async {
-                        final ctx = context;
+                        final bonosProv = context.read<BonosProvider>();
+                        final messenger = ScaffoldMessenger.of(context);
                         final ok = await showDialog<bool>(
-                          context: ctx,
+                          context: context,
                           builder: (_) => AlertDialog(
                             title: const Text('Eliminar bono'),
                             content: const Text('Esta acción no se puede deshacer.'),
                             actions: [
                               TextButton(
-                                onPressed: () => Navigator.pop(ctx, false),
+                                onPressed: () => Navigator.pop(context, false),
                                 child: const Text('Cancelar'),
                               ),
                               FilledButton(
-                                onPressed: () => Navigator.pop(ctx, true),
+                                onPressed: () => Navigator.pop(context, true),
                                 child: const Text('Eliminar'),
                               ),
                             ],
                           ),
                         );
-                        if (ok == true && ctx.mounted) {
-                          await ctx.read<BonosProvider>().eliminarBono(bono.id);
-                          ScaffoldMessenger.of(ctx)
-                              .showSnackBar(const SnackBar(content: Text('Bono eliminado')));
+                        if (ok == true && context.mounted) {
+                          await bonosProv.eliminarBono(bono.id);
+                          messenger.showSnackBar(const SnackBar(content: Text('Bono eliminado')));
                           onChanged?.call();
                         }
                       },
@@ -488,10 +490,7 @@ class _BonoFaceplate extends StatelessWidget {
                         builder: (_) => _AnadirPagoDialog(bonoId: bono.id),
                       );
                       if (ok == true && ctx.mounted) {
-                        // ignore: use_build_context_synchronously
-                        (ctx.findAncestorStateOfType<_BonosPanelState>())?.setState(() {});
-                        // ignore: use_build_context_synchronously
-                        ScaffoldMessenger.of(ctx).showSnackBar(
+                        ScaffoldMessenger.of(ctx).showSnackBar( // ignore: use_build_context_synchronously
                           const SnackBar(content: Text('Pago registrado')),
                         );
                       }
@@ -747,7 +746,7 @@ class _BonoListTile extends StatelessWidget {
             )
           : Chip(
               label: const Text('Inactivo'),
-              backgroundColor: scheme.surfaceVariant,
+              backgroundColor: scheme.surfaceContainerHighest,
               labelStyle: text.labelLarge?.copyWith(color: scheme.onSurfaceVariant),
               side: BorderSide(color: scheme.outlineVariant),
             ),
@@ -784,7 +783,7 @@ class _CrearBonoDialogState extends State<_CrearBonoDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             DropdownButtonFormField<String>(
-              value: servicioId,
+              initialValue: servicioId,
               items: servicios
                   .map((s) => DropdownMenuItem(value: s.id, child: Text(s.nombre)))
                   .toList(),
@@ -796,7 +795,7 @@ class _CrearBonoDialogState extends State<_CrearBonoDialog> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<int>(
-                    value: sesiones,
+                    initialValue: sesiones,
                     items: List.generate(32, (i) => i + 1)
                         .map((n) => DropdownMenuItem(value: n, child: Text('$n sesiones')))
                         .toList(),
@@ -907,7 +906,7 @@ class _AnadirPagoDialogState extends State<_AnadirPagoDialog> {
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               decoration: InputDecoration(labelText: l.bonosPaymentMethodLabel),
-              value: metodo,
+              initialValue: metodo,
               items: [
                 DropdownMenuItem(value: 'Efectivo', child: Text(l.accountingPaymentMethodCash)),
                 DropdownMenuItem(value: 'Bizum', child: Text(l.accountingPaymentMethodBizum)),

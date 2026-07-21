@@ -237,7 +237,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
           foregroundColor: WidgetStateProperty.all(scheme.onPrimary),
           overlayColor: WidgetStateProperty.resolveWith((states) =>
               states.contains(WidgetState.pressed)
-                  ? scheme.primary.withOpacity(0.12)
+                  ? scheme.primary.withValues(alpha: 0.12)
                   : null),
         ),
       ),
@@ -253,7 +253,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
           side: WidgetStateProperty.all(BorderSide(color: scheme.primary)),
           overlayColor: WidgetStateProperty.resolveWith((states) =>
               states.contains(WidgetState.pressed)
-                  ? scheme.primary.withOpacity(0.08)
+                  ? scheme.primary.withValues(alpha: 0.08)
                   : null),
         ),
       ),
@@ -267,12 +267,12 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         thumbColor: WidgetStateProperty.resolveWith((states) {
           return states.contains(WidgetState.selected)
               ? scheme.primary
-              : scheme.surfaceVariant;
+              : scheme.surfaceContainerHighest;
         }),
 
         trackColor: WidgetStateProperty.resolveWith((states) {
           return states.contains(WidgetState.selected)
-              ? scheme.primary.withOpacity(0.5)
+              ? scheme.primary.withValues(alpha: 0.5)
               : scheme.outlineVariant;
         }),
         ),
@@ -285,7 +285,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
 
         chipTheme: ChipThemeData(
           selectedColor: scheme.secondaryContainer,
-          backgroundColor: scheme.surfaceVariant,
+          backgroundColor: scheme.surfaceContainerHighest,
           labelStyle: TextStyle(color: scheme.onSurface),
           secondaryLabelStyle: TextStyle(color: scheme.onSecondaryContainer),
           side: BorderSide(color: scheme.outlineVariant),
@@ -300,20 +300,20 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         ),
 
         radioTheme: RadioThemeData(
-          fillColor: MaterialStateProperty.resolveWith(
-            (s) => s.contains(MaterialState.selected) ? scheme.secondary : scheme.outline,
+          fillColor: WidgetStateProperty.resolveWith(
+            (s) => s.contains(WidgetState.selected) ? scheme.secondary : scheme.outline,
           ),
         ),
 
         sliderTheme: SliderThemeData(
           activeTrackColor: scheme.secondary,
           thumbColor: scheme.secondary,
-          inactiveTrackColor: scheme.secondary.withOpacity(0.24),
+          inactiveTrackColor: scheme.secondary.withValues(alpha: 0.24),
         ),
 
         progressIndicatorTheme: ProgressIndicatorThemeData(
           color: scheme.secondary,
-          linearTrackColor: scheme.secondary.withOpacity(0.2),
+          linearTrackColor: scheme.secondary.withValues(alpha: 0.2),
         ),
 
         snackBarTheme: SnackBarThemeData(
@@ -334,7 +334,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         iconColor: scheme.onSurfaceVariant,
         textColor: scheme.onSurface,
         selectedColor: scheme.primary,
-        selectedTileColor: scheme.primary.withOpacity(0.08),
+        selectedTileColor: scheme.primary.withValues(alpha: 0.08),
       ),
       inputDecorationTheme: InputDecorationTheme(
         border: const OutlineInputBorder(),
@@ -359,21 +359,11 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       // Escalado global del texto según ajustes (sin usar textTheme.apply factor)
       builder: (context, child) {
         final mq = MediaQuery.of(context);
-        final scale = settings.tamanoFuente; // p.ej. 0.90, 1.00, 1.20
-
-        try {
-          // Flutter moderno (TextScaler)
-          return MediaQuery(
-            data: mq.copyWith(textScaler: TextScaler.linear(scale)),
-            child: child!,
-          );
-        } catch (_) {
-          // Fallback para versiones antiguas (textScaleFactor)
-          return MediaQuery(
-            data: mq.copyWith(textScaleFactor: scale),
-            child: child!,
-          );
-        }
+        final scale = settings.tamanoFuente;
+        return MediaQuery(
+          data: mq.copyWith(textScaler: TextScaler.linear(scale)),
+          child: child!,
+        );
       },
 
       home: _buildHome(),

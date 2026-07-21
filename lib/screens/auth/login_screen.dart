@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
@@ -13,7 +12,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _AnimatedBackground extends StatefulWidget {
-  const _AnimatedBackground({super.key});
+  const _AnimatedBackground();
 
   @override
   State<_AnimatedBackground> createState() => _AnimatedBackgroundState();

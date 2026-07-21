@@ -551,7 +551,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
         Text(titulo, style: text.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         DropdownButtonFormField<dynamic>(
-          value: valor,
+          initialValue: valor,
           items: opciones.map((o) => DropdownMenuItem(value: o, child: Text(labelFn(o)))).toList(),
           onChanged: onChanged,
           decoration: InputDecoration(
@@ -751,7 +751,7 @@ class _ContabilidadScreenState extends State<ContabilidadScreen>
             final settings = context.read<SettingsProvider>();
             final mesLabel = settings.monthAbbrev(i + 1).toUpperCase();
             final selected = (i + 1) == mesActual;
-            final cardColor = selected ? scheme.primaryContainer : scheme.surfaceVariant;
+            final cardColor = selected ? scheme.primaryContainer : scheme.surfaceContainerHighest;
             final titleColor = selected ? scheme.onPrimaryContainer : scheme.onSurfaceVariant;
 
             return GestureDetector(
@@ -1441,7 +1441,7 @@ class _DialogNuevoGastoFijoState extends State<DialogNuevoGastoFijo> {
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<int>(
-            value: _frecuenciaSeleccionada,
+            initialValue: _frecuenciaSeleccionada,
             items: [
               DropdownMenuItem(value: 1, child: Text(l.frequencyMonthly)),
               DropdownMenuItem(value: 3, child: Text(l.frequencyQuarterly)),
